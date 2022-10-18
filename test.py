@@ -43,6 +43,12 @@ def initialize_api():
     global API
     logged_in = False
 
+    # This is complicated, but I found that while the garminconnect library is
+    # supposed to fallback to re-authing with name/pass if session is invalid I
+    # found that didn't actually work correctly (the call to .login() would
+    # return True, but then I'd get 403 forbidden on the first call to get step
+    # data)
+
     # Try logging in with session data
     with contextlib.suppress(Exception):
         with open("session_data.json", "r") as fobj:
