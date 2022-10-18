@@ -41,33 +41,23 @@ def summarize(start_date, end_date, data):
 
 def initialize_api():
     global API
-    logged_in = False
 
-    # This is complicated, but I found that while the garminconnect library is
-    # supposed to fallback to re-authing with name/pass if session is invalid I
-    # found that didn't actually work correctly (the call to .login() would
-    # return True, but then I'd get 403 forbidden on the first call to get step
-    # data)
+    API = Garmin(
+        os.getenv("GARMIN_EMAIL"),
+        os.getenv("GARMIN_PASSWORD"),
+        session_data=read_session(),
+    )
+    if not API.login():
+        logging.exception("failed to log in, aborting")
+        exit(1)
 
-    # Try logging in with session data
+
+def read_session():
+    restored_session = None
     with contextlib.suppress(Exception):
         with open("session_data.json", "r") as fobj:
             restored_session = json.loads(fobj.readlines()[0])
-        API = Garmin("", "", session_data=restored_session)
-        logged_in = API.login()
-
-    # if failed to log in, fallback to user/pass authentication
-    if not logged_in:
-        logging.warning("Failed to restore session, re-logging in")
-        API = Garmin(os.getenv("GARMIN_EMAIL"), os.getenv("GARMIN_PASSWORD"))
-        try:
-            if API.login():
-                return
-            else:
-                raise RuntimeError("Failed to log in")
-        except Exception as e:
-            logging.exception(f"failed to log in ({e}), aborting")
-            exit(1)
+    return restored_session
 
 
 def write_session():
