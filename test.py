@@ -6,7 +6,10 @@ import logging
 import os
 import sys
 from datetime import date, timedelta
+from random import random
+from time import sleep
 
+import requests
 from garminconnect import Garmin
 
 
@@ -19,7 +22,11 @@ API = None
 
 def day_count(day):
     day = day.isoformat()
+    logging.info(f"Requesting steps for {day}")
     steps = API.get_steps_data(day)
+    # throttle a little bit
+    sleep(random())
+
     total_steps_for_day = sum(x["steps"] for x in steps)
     return {
         "day": day,
@@ -30,18 +37,23 @@ def day_count(day):
 
 def summarize(start_date, end_date, data):
     total_steps = sum(x["steps"] for x in data)
-    avg_daily = total_steps // DAYS_IN_PERIOD
     goal_days = sum(x["goal_met"] for x in data)
-    logging.info(
-        f"For the period from {start_date} to {end_date}, averaged {avg_daily:,} "
-        f"steps per day, for a total of {total_steps:,} steps.  Step goal met on "
-        f"{goal_days}/{DAYS_IN_PERIOD} ({(goal_days/DAYS_IN_PERIOD* 100):.1f}%) of days."
-    )
+    return {
+        "start_date": f"{start_date:%-d-%b-%Y}",
+        "end_date": f"{end_date:%-d-%b-%Y}",
+        "step_total": f"{total_steps:,}",
+        "step_average": f"{total_steps // DAYS_IN_PERIOD:,}",
+        "num_days_goal_met": goal_days,
+        "days_in_period": DAYS_IN_PERIOD,
+        "percent_goal_met": f"{(goal_days/DAYS_IN_PERIOD* 100):.1f}%",
+        "username": "aparkin",
+    }
 
 
 def initialize_api():
     global API
 
+    logging.info("Logging in with garmin...")
     API = Garmin(
         os.getenv("GARMIN_EMAIL"),
         os.getenv("GARMIN_PASSWORD"),
@@ -50,6 +62,7 @@ def initialize_api():
     if not API.login():
         logging.exception("failed to log in, aborting")
         exit(1)
+    logging.info("Logged in")
 
 
 def read_session():
@@ -76,6 +89,14 @@ def garmin_api():
         write_session()
 
 
+def post_to_zap(data):
+    url = "https://hooks.zapier.com/hooks/catch/12432035/b0lwp7z/"
+    headers = {"Content-type": "application/json"}
+    logging.info(f"Posting to zap -- {url}")
+    result = requests.post(url, data=data, headers=headers)
+    logging.info(f"Response: {result.status_code} - {result.json()}")
+
+
 def main():
     with garmin_api():
         end_date = date.today()
@@ -83,7 +104,9 @@ def main():
         result = [
             day_count(start_date + timedelta(days=i)) for i in range(DAYS_IN_PERIOD)
         ]
-        summarize(start_date, end_date, result)
+        data = summarize(start_date, end_date, result)
+        logging.info(f"Data: {data}")
+        post_to_zap(data)
 
 
 if __name__ == "__main__":
