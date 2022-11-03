@@ -92,6 +92,7 @@ def garmin_api():
 def post_to_zap(data):
     url = os.getenv("ZAPIER_WEBHOOK_URL", None)
     headers = {"Content-type": "application/json"}
+    data = json.dumps(data)
     logging.info(f"Posting to zap -- {url} - data {json.dumps(data)}")
     result = requests.post(url, data=data, headers=headers)
     logging.info(f"Response: {result.status_code} - {result.json()}")
