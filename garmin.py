@@ -8,9 +8,11 @@ import sys
 from datetime import date, timedelta
 from random import random
 from time import sleep
+from typing import Optional
 
 import requests
 from garminconnect import Garmin
+from sqlmodel import Field, Session, SQLModel, create_engine, select
 
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -20,24 +22,45 @@ TARGET_STEP_GOAL = 11_000
 API = None
 
 
-def day_count(day):
-    day = day.isoformat()
-    logging.info(f"Requesting steps for {day}")
-    steps = API.get_steps_data(day)
-    # throttle a little bit
-    sleep(random())
+class StepEntry(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    day: date = Field(sa_column_kwargs={"unique": True})
+    step_count: int
+    goal_met: bool
 
-    total_steps_for_day = sum(x["steps"] for x in steps)
-    return {
-        "day": day,
-        "steps": total_steps_for_day,
-        "goal_met": total_steps_for_day > TARGET_STEP_GOAL,
-    }
+
+def day_count(day):
+    engine = init_db()
+    with Session(engine, expire_on_commit=False) as session:
+        stmt = select(StepEntry).where(StepEntry.day == day)
+
+        if entry := session.exec(stmt).first():
+            logging.info(f"Entry for {day} in DB, returning cached value")
+            return entry
+
+        orig_day = day
+        day = day.isoformat()
+        logging.info(f"Requesting steps for {day}")
+        steps = API.get_steps_data(day)
+        # throttle a little bit
+        sleep(random())
+
+        total_steps_for_day = sum(x["steps"] for x in steps)
+        entry = StepEntry(
+            day=orig_day,
+            step_count=total_steps_for_day,
+            goal_met=total_steps_for_day > TARGET_STEP_GOAL,
+        )
+
+        session.add(entry)
+        session.commit()
+
+    return entry
 
 
 def summarize(start_date, end_date, data):
-    total_steps = sum(x["steps"] for x in data)
-    goal_days = sum(x["goal_met"] for x in data)
+    total_steps = sum(x.step_count for x in data)
+    goal_days = sum(x.goal_met for x in data)
     return {
         "start_date": f"{start_date:%-d-%b-%Y}",
         "end_date": f"{end_date:%-d-%b-%Y}",
@@ -98,6 +121,12 @@ def post_to_zap(data):
     logging.info(f"Response: {result.status_code} - {result.json()}")
 
 
+def init_db():
+    engine = create_engine("sqlite:///database.db")
+    SQLModel.metadata.create_all(engine)
+    return engine
+
+
 def main():
     # end date is yesterday
     end_date = date.today() - timedelta(days=1)
@@ -111,7 +140,7 @@ def main():
 
     data = summarize(start_date, end_date, result)
     logging.info(f"Data: {data}")
-    post_to_zap(data)
+    # post_to_zap(data)
 
 
 if __name__ == "__main__":
