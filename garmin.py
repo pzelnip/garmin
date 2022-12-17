@@ -11,9 +11,9 @@ from time import sleep
 from typing import Optional
 
 import requests
+from bullet import Bullet
 from garminconnect import Garmin
 from sqlmodel import Field, Session, SQLModel, create_engine, select
-
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
@@ -113,7 +113,12 @@ def garmin_api():
 
 
 def post_to_zap(data):
+    if not ask_to_post():
+        return
+
+    # Step challenge channel url
     url = os.getenv("ZAPIER_WEBHOOK_URL", None)
+
     headers = {"Content-type": "application/json"}
     data = json.dumps(data)
     logging.info(f"Posting to zap -- {url} - data {json.dumps(data)}")
@@ -125,6 +130,20 @@ def init_db():
     engine = create_engine("sqlite:///database.db")
     SQLModel.metadata.create_all(engine)
     return engine
+
+
+def ask_to_post():
+    return (
+        Bullet(
+            prompt="\nPost to Step Challenge channel? ",
+            choices=["Yes", "No"],
+            align=5,
+            margin=2,
+            bullet="",
+            pad_right=5,
+        ).launch()
+        == "Yes"
+    )
 
 
 def main():
@@ -140,7 +159,7 @@ def main():
 
     data = summarize(start_date, end_date, result)
     logging.info(f"Data: {data}")
-    # post_to_zap(data)
+    post_to_zap(data)
 
 
 if __name__ == "__main__":
