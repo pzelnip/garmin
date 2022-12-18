@@ -136,7 +136,7 @@ def ask_to_post():
     return (
         Bullet(
             prompt="\nPost to Step Challenge channel? ",
-            choices=["Yes", "No"],
+            choices=["No", "Yes"],
             align=5,
             margin=2,
             bullet="",
