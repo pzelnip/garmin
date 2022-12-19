@@ -13,14 +13,29 @@ from time import sleep
 from typing import Optional
 
 import requests
-from bullet import Bullet, Numbers, ScrollBar, YesNo, colors
+from bullet import Bullet, Numbers, ScrollBar, colors
 from garminconnect import Garmin
 from sqlmodel import Field, Session, SQLModel, create_engine, select
+
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
 TARGET_STEP_GOAL = 11_000
 API = None
+
+
+def yes_no(prompt, default):
+    return (
+        Bullet(
+            prompt=f"\n{prompt} ",
+            choices=["No", "Yes"],
+            align=5,
+            margin=2,
+            bullet="",
+            pad_right=5,
+        ).launch(default=default)
+        == "Yes"
+    )
 
 
 def date_picker(number_of_years=15):
@@ -85,6 +100,10 @@ def date_picker(number_of_years=15):
             state = State.DONE if day else State.PICK_MONTH
 
     return date(year, month, day)
+
+
+def number_of_days_picker():
+    return Numbers("How many days in period? (default 7) ", type=int).launch(default=7)
 
 
 class StepEntry(SQLModel, table=True):
@@ -181,10 +200,6 @@ def init_db():
     return engine
 
 
-def number_of_days_picker():
-    return Numbers("How many days in period? ", type=int).launch(default=7)
-
-
 def process_range(start_date: date, days: int):
     dates = {start_date + timedelta(days=i): None for i in range(days)}
 
@@ -199,20 +214,6 @@ def process_range(start_date: date, days: int):
                 dates[day] = get_from_garmin(day)
 
     return dates.values()
-
-
-def yes_no(prompt, default):
-    return (
-        Bullet(
-            prompt=f"\n{prompt} ",
-            choices=["No", "Yes"],
-            align=5,
-            margin=2,
-            bullet="",
-            pad_right=5,
-        ).launch(default=default)
-        == "Yes"
-    )
 
 
 def get_end_date():
