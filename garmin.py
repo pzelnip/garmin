@@ -65,7 +65,7 @@ def date_picker(number_of_years=15):
     def pick_month():
         months = "January February March April May June July August September October November December".split()
         result = scrollbar("Month", months, return_index=True)
-        return result + 1 if result else result
+        return result if result is None else result + 1
 
     def pick_day(year, month):
         max_days = monthrange(year, month)[1]
@@ -129,37 +129,6 @@ def get_from_garmin(day: date) -> StepEntry:
     return entry
 
 
-def day_count(day: date) -> StepEntry:
-    return get_from_db(day) or get_from_garmin(day)
-
-    # engine = init_db()
-    # with Session(engine, expire_on_commit=False) as session:
-    #     stmt = select(StepEntry).where(StepEntry.day == day)
-
-    #     if entry := session.exec(stmt).first():
-    #         logging.info(f"Entry for {day} in DB, returning cached value")
-    #         return entry
-
-    #     orig_day = day
-    #     day = day.isoformat()
-    #     logging.info(f"Requesting steps for {day}")
-    #     steps = API.get_steps_data(day)
-    #     # throttle a little bit
-    #     sleep(random())
-
-    #     total_steps_for_day = sum(x["steps"] for x in steps)
-    #     entry = StepEntry(
-    #         day=orig_day,
-    #         step_count=total_steps_for_day,
-    #         goal_met=total_steps_for_day > TARGET_STEP_GOAL,
-    #     )
-
-    #     session.add(entry)
-    #     session.commit()
-
-    # return entry
-
-
 def summarize(start_date, end_date, data, days):
     total_steps = sum(x.step_count for x in data)
     goal_days = sum(x.goal_met for x in data)
@@ -179,43 +148,21 @@ def initialize_api():
     global API
 
     logging.info("Logging in with garmin...")
-    API = Garmin(
-        os.getenv("GARMIN_EMAIL"),
-        os.getenv("GARMIN_PASSWORD"),
-        session_data=read_session(),
-    )
+    API = Garmin(os.getenv("GARMIN_EMAIL"), os.getenv("GARMIN_PASSWORD"))
     if not API.login():
         logging.exception("failed to log in, aborting")
         exit(1)
     logging.info("Logged in")
 
 
-def read_session():
-    restored_session = None
-    with contextlib.suppress(Exception):
-        with open("session_data.json", "r") as fobj:
-            restored_session = json.loads(fobj.readlines()[0])
-    return restored_session
-
-
-def write_session():
-    # Write out session data for next run
-    session_data = json.dumps(API.session_data)
-    with open("session_data.json", "w") as fobj:
-        fobj.write(session_data)
-
-
 @contextlib.contextmanager
 def garmin_api():
     initialize_api()
-    try:
-        yield
-    finally:
-        write_session()
+    yield
 
 
 def post_to_zap(data):
-    if not ask_to_post():
+    if not yes_no("Post to Step Challenge channel?", 0):
         return
 
     # Step challenge channel url
@@ -234,22 +181,8 @@ def init_db():
     return engine
 
 
-def ask_to_post():
-    return (
-        Bullet(
-            prompt="\nPost to Step Challenge channel? ",
-            choices=["No", "Yes"],
-            align=5,
-            margin=2,
-            bullet="",
-            pad_right=5,
-        ).launch()
-        == "Yes"
-    )
-
-
 def number_of_days_picker():
-    return Numbers("How many days in period? ", type=int).launch()
+    return Numbers("How many days in period? ", type=int).launch(default=7)
 
 
 def process_range(start_date: date, days: int):
@@ -268,9 +201,23 @@ def process_range(start_date: date, days: int):
     return dates.values()
 
 
+def yes_no(prompt, default):
+    return (
+        Bullet(
+            prompt=f"\n{prompt} ",
+            choices=["No", "Yes"],
+            align=5,
+            margin=2,
+            bullet="",
+            pad_right=5,
+        ).launch(default=default)
+        == "Yes"
+    )
+
+
 def get_end_date():
     today = datetime.now().date()
-    if YesNo(f"Use today ({today}) as end date? ", default="y").launch():
+    if yes_no(f"Use today ({today}) as end date? ", default=1):
         return today
     return date_picker()
 
