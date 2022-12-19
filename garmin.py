@@ -5,21 +5,86 @@ import json
 import logging
 import os
 import sys
-from datetime import date, timedelta
+from calendar import monthrange
+from datetime import date, datetime, timedelta
+from enum import Enum, auto
 from random import random
 from time import sleep
 from typing import Optional
 
 import requests
-from bullet import Bullet
+from bullet import Bullet, Numbers, ScrollBar, colors
 from garminconnect import Garmin
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
-DAYS_IN_PERIOD = 7
 TARGET_STEP_GOAL = 11_000
 API = None
+
+
+def date_picker(number_of_years=15):
+    class State(Enum):
+        PICK_YEAR = auto()
+        PICK_MONTH = auto()
+        PICK_DAY = auto()
+        DONE = auto()
+
+    BACK_STRING = "... previous"
+
+    def scrollbar(prompt, options, return_index=False, allow_previous=True):
+        print("\n")
+
+        result = ScrollBar(
+            f"{prompt}: ",
+            options + [BACK_STRING] if allow_previous else options,
+            height=5,
+            align=5,
+            margin=0,
+            pointer="👉 ",
+            background_on_switch=colors.background["default"],
+            word_on_switch=colors.foreground["default"],
+            return_index=True,
+        ).launch()
+
+        # if picked BACK_STRING return None
+        if result[1] == len(options):
+            return None
+
+        # Otherwise int the result
+        return int(result[1]) if return_index else int(result[0])
+
+    def pick_year():
+        current_year = datetime.now().year
+
+        years = [
+            str(i) for i in range(current_year, current_year - number_of_years, -1)
+        ]
+        return scrollbar("Year", years, allow_previous=False)
+
+    def pick_month():
+        months = "January February March April May June July August September October November December".split()
+        result = scrollbar("Month", months, return_index=True)
+        return result + 1 if result else result
+
+    def pick_day(year, month):
+        max_days = monthrange(year, month)[1]
+        days = [str(i) for i in range(1, max_days + 1)]
+        return scrollbar("Day", days)
+
+    state = State.PICK_YEAR
+    while state != State.DONE:
+        if state == State.PICK_YEAR:
+            year = pick_year()
+            state = State.PICK_MONTH
+        elif state == State.PICK_MONTH:
+            month = pick_month()
+            state = State.PICK_DAY if month else State.PICK_YEAR
+        elif state == State.PICK_DAY:
+            day = pick_day(year, month)
+            state = State.DONE if day else State.PICK_MONTH
+
+    return date(year, month, day)
 
 
 class StepEntry(SQLModel, table=True):
@@ -58,17 +123,17 @@ def day_count(day):
     return entry
 
 
-def summarize(start_date, end_date, data):
+def summarize(start_date, end_date, data, days):
     total_steps = sum(x.step_count for x in data)
     goal_days = sum(x.goal_met for x in data)
     return {
         "start_date": f"{start_date:%-d-%b-%Y}",
         "end_date": f"{end_date:%-d-%b-%Y}",
         "step_total": f"{total_steps:,}",
-        "step_average": f"{total_steps // DAYS_IN_PERIOD:,}",
+        "step_average": f"{total_steps // days:,}",
         "num_days_goal_met": goal_days,
-        "days_in_period": DAYS_IN_PERIOD,
-        "percent_goal_met": f"{(goal_days/DAYS_IN_PERIOD* 100):.1f}%",
+        "days_in_period": days,
+        "percent_goal_met": f"{(goal_days/days* 100):.1f}%",
         "username": "aparkin",
     }
 
@@ -146,18 +211,21 @@ def ask_to_post():
     )
 
 
+def number_of_days_picker():
+    return Numbers("How many days in period? ", type=int).launch()
+
+
 def main():
     # end date is yesterday
-    end_date = date.today() - timedelta(days=1)
-    start_date = end_date - timedelta(days=DAYS_IN_PERIOD - 1)
+    end_date = date_picker() - timedelta(days=1)
+    days = number_of_days_picker()
+    start_date = end_date - timedelta(days=days - 1)
 
     with garmin_api():
         # calculate steps between the two dates
-        result = [
-            day_count(start_date + timedelta(days=i)) for i in range(DAYS_IN_PERIOD)
-        ]
+        result = [day_count(start_date + timedelta(days=i)) for i in range(days)]
 
-    data = summarize(start_date, end_date, result)
+    data = summarize(start_date, end_date, result, days)
     logging.info(f"Data: {data}")
     post_to_zap(data)
 
