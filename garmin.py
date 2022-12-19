@@ -13,7 +13,7 @@ from time import sleep
 from typing import Optional
 
 import requests
-from bullet import Bullet, Numbers, ScrollBar, colors
+from bullet import Bullet, Numbers, ScrollBar, YesNo, colors
 from garminconnect import Garmin
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 
@@ -94,7 +94,7 @@ class StepEntry(SQLModel, table=True):
     goal_met: bool
 
 
-def day_count(day):
+def get_from_db(day: date) -> StepEntry:
     engine = init_db()
     with Session(engine, expire_on_commit=False) as session:
         stmt = select(StepEntry).where(StepEntry.day == day)
@@ -103,6 +103,12 @@ def day_count(day):
             logging.info(f"Entry for {day} in DB, returning cached value")
             return entry
 
+    return None
+
+
+def get_from_garmin(day: date) -> StepEntry:
+    engine = init_db()
+    with Session(engine, expire_on_commit=False) as session:
         orig_day = day
         day = day.isoformat()
         logging.info(f"Requesting steps for {day}")
@@ -121,6 +127,37 @@ def day_count(day):
         session.commit()
 
     return entry
+
+
+def day_count(day: date) -> StepEntry:
+    return get_from_db(day) or get_from_garmin(day)
+
+    # engine = init_db()
+    # with Session(engine, expire_on_commit=False) as session:
+    #     stmt = select(StepEntry).where(StepEntry.day == day)
+
+    #     if entry := session.exec(stmt).first():
+    #         logging.info(f"Entry for {day} in DB, returning cached value")
+    #         return entry
+
+    #     orig_day = day
+    #     day = day.isoformat()
+    #     logging.info(f"Requesting steps for {day}")
+    #     steps = API.get_steps_data(day)
+    #     # throttle a little bit
+    #     sleep(random())
+
+    #     total_steps_for_day = sum(x["steps"] for x in steps)
+    #     entry = StepEntry(
+    #         day=orig_day,
+    #         step_count=total_steps_for_day,
+    #         goal_met=total_steps_for_day > TARGET_STEP_GOAL,
+    #     )
+
+    #     session.add(entry)
+    #     session.commit()
+
+    # return entry
 
 
 def summarize(start_date, end_date, data, days):
@@ -215,15 +252,36 @@ def number_of_days_picker():
     return Numbers("How many days in period? ", type=int).launch()
 
 
+def process_range(start_date: date, days: int):
+    dates = {start_date + timedelta(days=i): None for i in range(days)}
+
+    # grab any existing values from the DB
+    for day in dates:
+        dates[day] = get_from_db(day)
+
+    # any unknown values read from Garmin
+    if remaining_days := [k for k, count in dates.items() if not count]:
+        with garmin_api():
+            for day in remaining_days:
+                dates[day] = get_from_garmin(day)
+
+    return dates.values()
+
+
+def get_end_date():
+    today = datetime.now().date()
+    if YesNo(f"Use today ({today}) as end date? ", default="y").launch():
+        return today
+    return date_picker()
+
+
 def main():
     # end date is yesterday
-    end_date = date_picker() - timedelta(days=1)
+    end_date = get_end_date() - timedelta(days=1)
     days = number_of_days_picker()
     start_date = end_date - timedelta(days=days - 1)
 
-    with garmin_api():
-        # calculate steps between the two dates
-        result = [day_count(start_date + timedelta(days=i)) for i in range(days)]
+    result = process_range(start_date, days)
 
     data = summarize(start_date, end_date, result, days)
     logging.info(f"Data: {data}")
