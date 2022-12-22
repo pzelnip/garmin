@@ -8,14 +8,12 @@ import sys
 from datetime import date, datetime, timedelta
 from random import random
 from time import sleep
-from typing import Optional
 
 import requests
-
 from garminconnect import Garmin
-from sqlmodel import Field, Session, SQLModel, create_engine, select
 
-from inputs import date_picker, yes_no, number_picker
+from db import StepEntry, db_session, get_steps_per_day_from_db
+from inputs import date_picker, number_picker, yes_no
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
@@ -27,28 +25,8 @@ def number_of_days_picker():
     return number_picker("How many days in period?", 7)
 
 
-class StepEntry(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    day: date = Field(sa_column_kwargs={"unique": True})
-    step_count: int
-    goal_met: bool
-
-
-def get_from_db(day: date) -> StepEntry:
-    engine = init_db()
-    with Session(engine, expire_on_commit=False) as session:
-        stmt = select(StepEntry).where(StepEntry.day == day)
-
-        if entry := session.exec(stmt).first():
-            logging.info(f"Entry for {day} in DB, returning cached value")
-            return entry
-
-    return None
-
-
 def get_from_garmin(day: date) -> StepEntry:
-    engine = init_db()
-    with Session(engine, expire_on_commit=False) as session:
+    with db_session() as session:
         orig_day = day
         day = day.isoformat()
         logging.info(f"Requesting steps for {day}")
@@ -115,18 +93,12 @@ def post_to_zap(data):
     logging.info(f"Response: {result.status_code} - {result.json()}")
 
 
-def init_db():
-    engine = create_engine("sqlite:///database.db")
-    SQLModel.metadata.create_all(engine)
-    return engine
-
-
 def process_range(start_date: date, days: int):
     dates = {start_date + timedelta(days=i): None for i in range(days)}
 
     # grab any existing values from the DB
     for day in dates:
-        dates[day] = get_from_db(day)
+        dates[day] = get_steps_per_day_from_db(day)
 
     # any unknown values read from Garmin
     if remaining_days := [k for k, count in dates.items() if not count]:
