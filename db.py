@@ -2,7 +2,7 @@ import contextlib
 from datetime import date
 import logging
 import sys
-from typing import Optional
+from typing import List, Optional
 
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 
@@ -38,3 +38,9 @@ def get_steps_per_day_from_db(day: date) -> StepEntry:
             return entry
 
     return None
+
+
+def get_all_entries() -> List[StepEntry]:
+    with db_session() as session:
+        stmt = select(StepEntry).order_by(StepEntry.day)
+        return list(session.exec(stmt))

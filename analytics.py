@@ -4,13 +4,12 @@
 # * max/min steps in a day (top 10)
 # * use rich/textual for prettiness
 
+import contextlib
 from datetime import date, datetime, timedelta
 from itertools import groupby
 from typing import List
 
-from sqlmodel import select
-
-from db import StepEntry, db_session
+from db import StepEntry, get_all_entries
 
 
 class Streak:
@@ -54,13 +53,24 @@ class Streak:
         return self.day_in_streak(yesterday)
 
 
+def build_streaks(entries=None):
+    if not entries:
+        entries = get_all_entries()
+    return Streak.extract_streaks(entries)
+
+
+def find_current_streak(streaks=None):
+    if not streaks:
+        streaks = build_streaks()
+    current_streak = None
+    with contextlib.suppress(StopIteration):
+        current_streak = next(s for s in streaks if s.is_current())
+    return current_streak
+
+
 def main():
-    with db_session() as session:
-        stmt = select(StepEntry).order_by(StepEntry.day)
-        entries = list(session.exec(stmt))
-
-    streaks = Streak.extract_streaks(entries)
-
+    entries = get_all_entries()
+    streaks = build_streaks(entries)
     max_steps = sorted(entries, key=lambda x: x.step_count, reverse=True)
     min_steps = sorted(entries, key=lambda x: x.step_count)
 
@@ -69,6 +79,9 @@ def main():
 
     top_10("Top 10 step totals:", max_steps)
     top_10("Bottom 10 step totals:", min_steps)
+
+    if current_streak := find_current_streak(streaks):
+        print(f"\nOn current streak: {current_streak}")
 
 
 def top_10(prompt, entries):

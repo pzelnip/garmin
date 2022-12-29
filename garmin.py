@@ -11,6 +11,7 @@ from time import sleep
 
 import requests
 from garminconnect import Garmin
+from analytics import find_current_streak
 
 from db import StepEntry, db_session, get_steps_per_day_from_db
 from inputs import date_picker, number_picker, yes_no
@@ -47,9 +48,16 @@ def get_from_garmin(day: date) -> StepEntry:
     return entry
 
 
-def summarize(start_date, end_date, data, days):
+def summarize(start_date, end_date, data, days, current_streak):
     total_steps = sum(x.step_count for x in data)
     goal_days = sum(x.goal_met for x in data)
+    streak_data = {}
+    if current_streak:
+        streak_data = {
+            "days": current_streak.days,
+            "start": current_streak.start.strftime("%-d-%b-%Y"),
+            "end": current_streak.end.strftime("%-d-%b-%Y"),
+        }
     return {
         "start_date": f"{start_date:%-d-%b-%Y}",
         "end_date": f"{end_date:%-d-%b-%Y}",
@@ -59,6 +67,7 @@ def summarize(start_date, end_date, data, days):
         "days_in_period": days,
         "percent_goal_met": f"{(goal_days/days* 100):.1f}%",
         "username": "aparkin",
+        "streak": streak_data,
     }
 
 
@@ -123,8 +132,9 @@ def main():
     start_date = end_date - timedelta(days=days - 1)
 
     result = process_range(start_date, days)
+    current_streak = find_current_streak()
 
-    data = summarize(start_date, end_date, result, days)
+    data = summarize(start_date, end_date, result, days, current_streak)
     logging.info(f"Data: {data}")
     post_to_zap(data)
 
