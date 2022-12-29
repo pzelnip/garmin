@@ -4,7 +4,7 @@
 # * max/min steps in a day (top 10)
 # * use rich/textual for prettiness
 
-from datetime import date
+from datetime import date, datetime, timedelta
 from itertools import groupby
 from typing import List
 
@@ -39,6 +39,20 @@ class Streak:
         streaks.sort(key=lambda x: len(x.entries), reverse=True)
         return streaks
 
+    def day_in_streak(self, day):
+        return self.start <= day <= self.end
+
+    @property
+    def days(self) -> int:
+        return len(self.entries)
+
+    def __str__(self) -> str:
+        return f"Streak from {self.start} to {self.end} ({self.days} days){' (current streak)' if self.is_current() else ''}"
+
+    def is_current(self):
+        yesterday = datetime.now().date() - timedelta(days=1)
+        return self.day_in_streak(yesterday)
+
 
 def main():
     with db_session() as session:
@@ -51,9 +65,7 @@ def main():
     min_steps = sorted(entries, key=lambda x: x.step_count)
 
     for streak in streaks:
-        print(
-            f"Streak from {streak.start} to {streak.end} ({len(streak.entries)} days)"
-        )
+        print(streak)
 
     top_10("Top 10 step totals:", max_steps)
     top_10("Bottom 10 step totals:", min_steps)
