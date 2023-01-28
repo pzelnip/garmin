@@ -26,24 +26,23 @@ def number_of_days_picker():
     return number_picker("How many days in period?", 7)
 
 
-def get_from_garmin(day: date) -> StepEntry:
-    with db_session() as session:
-        orig_day = day
-        day = day.isoformat()
-        logging.info(f"Requesting steps for {day}")
-        steps = API.get_steps_data(day)
-        # throttle a little bit
-        sleep(random())
+def get_from_garmin(day: date, session) -> StepEntry:
+    orig_day = day
+    day = day.isoformat()
+    logging.info(f"Requesting steps for {day}")
+    steps = API.get_steps_data(day)
+    # throttle a little bit
+    sleep(random())
 
-        total_steps_for_day = sum(x["steps"] for x in steps)
-        entry = StepEntry(
-            day=orig_day,
-            step_count=total_steps_for_day,
-            goal_met=total_steps_for_day > TARGET_STEP_GOAL,
-        )
+    total_steps_for_day = sum(x["steps"] for x in steps)
+    entry = StepEntry(
+        day=orig_day,
+        step_count=total_steps_for_day,
+        goal_met=total_steps_for_day > TARGET_STEP_GOAL,
+    )
 
-        session.add(entry)
-        session.commit()
+    session.add(entry)
+    session.commit()
 
     return entry
 
@@ -106,14 +105,15 @@ def process_range(start_date: date, days: int):
     dates = {start_date + timedelta(days=i): None for i in range(days)}
 
     # grab any existing values from the DB
-    for day in dates:
-        dates[day] = get_steps_per_day_from_db(day)
+    with db_session() as session:
+        for day in dates:
+            dates[day] = get_steps_per_day_from_db(day, session)
 
-    # any unknown values read from Garmin
-    if remaining_days := [k for k, count in dates.items() if not count]:
-        with garmin_api():
-            for day in remaining_days:
-                dates[day] = get_from_garmin(day)
+        # any unknown values read from Garmin
+        if remaining_days := [k for k, count in dates.items() if not count]:
+            with garmin_api():
+                for day in remaining_days:
+                    dates[day] = get_from_garmin(day, session)
 
     return dates.values()
 

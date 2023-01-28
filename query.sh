@@ -6,8 +6,8 @@ echo "From $LAST_SUN"
 
 echo "============================================="
 
-echo "select sum(step_count) || ' steps so far' from stepentry where day > '$LAST_SUN';" | sqlite3 database.db
+psql $CONN_STR -t -c "SELECT sum(step_count) || ' steps so far' FROM stepentry WHERE day > '$LAST_SUN';"
 
 echo "============================================="
 
-echo "select STRFTIME('%m/%d', day) || ' - ' || printf('%,d', step_count) || ' :check:' FROM stepentry WHERE day > '$LAST_SUN';" | sqlite3 database.db
+psql $CONN_STR -t -c "SELECT TO_CHAR(day::date, 'mm/dd') || ' - ' || TO_CHAR(step_count, 'fm999G999') || ' :check:' FROM stepentry WHERE day > '$LAST_SUN';"
