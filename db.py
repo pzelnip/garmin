@@ -1,6 +1,7 @@
 import contextlib
 from datetime import date
 import logging
+import os
 import sys
 from typing import List, Optional
 
@@ -17,25 +18,26 @@ class StepEntry(SQLModel, table=True):
 
 
 def _init_db():
-    engine = create_engine("sqlite:///database.db")
+    engine = create_engine(os.getenv("CONN_STR", ""))
     SQLModel.metadata.create_all(engine)
     return engine
 
 
 @contextlib.contextmanager
 def db_session():
+    logging.info("Starting DB Session")
     engine = _init_db()
     with Session(engine, expire_on_commit=False) as session:
         yield session
+    logging.info("Closing DB Session")
 
 
-def get_steps_per_day_from_db(day: date) -> StepEntry:
-    with db_session() as session:
-        stmt = select(StepEntry).where(StepEntry.day == day)
+def get_steps_per_day_from_db(day: date, session) -> StepEntry:
+    stmt = select(StepEntry).where(StepEntry.day == day)
 
-        if entry := session.exec(stmt).first():
-            logging.info(f"Entry for {day} in DB, returning cached value")
-            return entry
+    if entry := session.exec(stmt).first():
+        logging.info(f"Entry for {day} in DB, returning cached value")
+        return entry
 
     return None
 

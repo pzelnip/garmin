@@ -1,4 +1,5 @@
 bullet
 requests
 garminconnect
+psycopg2-binary
 sqlmodel
