@@ -1,4 +1,3 @@
-
 .PHONY: update-dependencies
 update-dependencies: ## Update the requirements.txt file
 	pip-compile --upgrade --generate-hashes --output-file requirements.txt requirements.in
