@@ -23,7 +23,7 @@ small Python script to pull my step data from Garmin using `garminconnect` and
 then POST to that webhook to trigger the Slack message. It worked, and on
 October 31st, 2022, StepBot was born:
 
-![First Post to Slack](https://cdn.zappy.app/85d3063208af82d59ce05b8064ead3aa.png)
+![First Post to Slack](./img/firstpost.png)
 
 Since that time, this script has grown in scope.  Now it's a way for me to keep
 a copy of my daily step counts in a DB, and post some more interesting metrics
