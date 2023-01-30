@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-LAST_SUN=`python -c 'from datetime import datetime,timedelta; today = datetime.now(); print((today - timedelta(days=today.weekday()+1)).strftime("%Y-%m-%d"))'`
+LAST_SUN=`python last_day_for_weekly_post.py`
 echo "From $LAST_SUN"
 
 echo "============================================="

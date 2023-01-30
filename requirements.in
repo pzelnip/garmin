@@ -1,5 +1,7 @@
 bullet
-requests
+freezegun
 garminconnect
 psycopg2-binary
+pytest
+requests
 sqlmodel
