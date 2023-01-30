@@ -36,5 +36,14 @@
             },
             "problemMatcher": []
         },
+        {
+            "label": "Daily Query",
+            "type": "shell",
+            "command": "source .env && make daily-query | pbcopy",
+            "presentation": {
+                "focus": true,
+            },
+            "problemMatcher": []
+        },
     ]
 }
