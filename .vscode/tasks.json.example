@@ -39,7 +39,7 @@
         {
             "label": "Daily Query",
             "type": "shell",
-            "command": "source .env && make daily-query | pbcopy",
+            "command": "source .env && source ${userHome}$PYTHON_VENV && make daily-query | pbcopy",
             "presentation": {
                 "focus": true,
             },
