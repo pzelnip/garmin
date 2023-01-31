@@ -86,6 +86,7 @@ def get_from_garmin(day: date, session) -> StepEntry:
         max_stress=entry["maxStressLevel"],
         resting_heart_rate=entry["restingHeartRate"],
         stress=entry["averageStressLevel"],
+        source="GARMIN",
     )
 
     session.add(daystats)

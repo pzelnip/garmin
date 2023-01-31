@@ -41,6 +41,8 @@ class DayStats(SQLModel, table=True):
     resting_heart_rate: Optional[int]  # restingHeartRate
     stress: Optional[int]  # averageStressLevel
 
+    source: Optional[str]  # where the data came from
+
     @property
     def step_goal_met(self):
         return self.step_count >= self.daily_step_goal
