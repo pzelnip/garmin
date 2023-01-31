@@ -106,8 +106,9 @@ def initialize_api():
 
 @contextlib.contextmanager
 def garmin_api():
+    global API
     initialize_api()
-    yield
+    yield API
 
 
 def post_to_zap(data):
