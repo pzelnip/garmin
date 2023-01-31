@@ -13,7 +13,7 @@ import requests
 from garminconnect import Garmin
 from analytics import find_current_streak
 
-from db import StepEntry, db_session, get_steps_per_day_from_db
+from db import DayStats, StepEntry, db_session, get_steps_per_day_from_db
 from inputs import date_picker, number_picker, yes_no
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -63,11 +63,35 @@ def get_from_garmin(day: date, session) -> StepEntry:
         step_count=steps,
         goal_met=steps > target_step_goal,
     )
-
     session.add(entry)
+    to_return = entry
+
+    entry = API.get_stats_and_body(day)
+    daystats = DayStats(
+        day=orig_day,
+        step_count=entry["totalSteps"],
+        bmi=entry["bmi"],
+        body_fat=entry["bodyFat"],
+        body_water=entry["bodyWater"],
+        bone_mass=entry["boneMass"],
+        muscle_mass=entry["muscleMass"],
+        weight_grams=entry["weight"],
+        daily_step_goal=entry["dailyStepGoal"],
+        distance_traveled_metres=entry["totalDistanceMeters"],
+        floors_climbed_goal=entry["userFloorsAscendedGoal"],
+        floors_climbed=entry["floorsAscended"],
+        floors_descended=entry["floorsDescended"],
+        max_heart_rate=entry["maxHeartRate"],
+        min_heart_rate=entry["minHeartRate"],
+        max_stress=entry["maxStressLevel"],
+        resting_heart_rate=entry["restingHeartRate"],
+        stress=entry["averageStressLevel"],
+    )
+
+    session.add(daystats)
     session.commit()
 
-    return entry
+    return to_return
 
 
 def summarize(start_date, end_date, data, days, current_streak):
