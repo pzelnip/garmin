@@ -1,11 +1,12 @@
 import contextlib
-from datetime import date
+import enum
 import logging
 import os
 import sys
+from datetime import date
 from typing import List, Optional
 
-from sqlmodel import Field, Session, SQLModel, create_engine, select
+from sqlmodel import Column, Enum, Field, Session, SQLModel, create_engine, select
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
@@ -15,6 +16,12 @@ class StepEntry(SQLModel, table=True):
     day: date = Field(sa_column_kwargs={"unique": True})
     step_count: int
     goal_met: bool
+
+
+class Source(enum.Enum):
+    manual_entry = 0
+    garmin = 1
+    fitbit = 2
 
 
 class DayStats(SQLModel, table=True):
@@ -41,7 +48,7 @@ class DayStats(SQLModel, table=True):
     resting_heart_rate: Optional[int]  # restingHeartRate
     stress: Optional[int]  # averageStressLevel
 
-    source: Optional[str]  # where the data came from
+    source: Source = Field(sa_column=Column(Enum(Source)))  # where the data came from
 
     @property
     def step_goal_met(self):

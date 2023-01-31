@@ -14,3 +14,14 @@ GROUP BY
 ORDER BY
     year,
     month;
+
+-------------------------------
+-- Find all daystats that don't have a source of garmin:
+SELECT
+    id,
+    day,
+    source
+FROM
+    daystats
+WHERE
+    source != 'garmin';

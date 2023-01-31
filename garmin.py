@@ -13,7 +13,7 @@ import requests
 from garminconnect import Garmin
 from analytics import find_current_streak
 
-from db import DayStats, StepEntry, db_session, get_steps_per_day_from_db
+from db import DayStats, StepEntry, db_session, get_steps_per_day_from_db, Source
 from inputs import date_picker, number_picker, yes_no
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -86,7 +86,7 @@ def get_from_garmin(day: date, session) -> StepEntry:
         max_stress=entry["maxStressLevel"],
         resting_heart_rate=entry["restingHeartRate"],
         stress=entry["averageStressLevel"],
-        source="GARMIN",
+        source=Source.garmin,
     )
 
     session.add(daystats)
