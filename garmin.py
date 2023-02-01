@@ -26,7 +26,7 @@ def number_of_days_picker():
     return number_picker("How many days in period?", 7)
 
 
-def get_from_garmin(day: date, session) -> StepEntry:
+def get_from_garmin(day: date, session) -> DayStats:
     orig_day = day
     day = day.isoformat()
     logging.info(f"Requesting steps for {day}")
@@ -91,13 +91,14 @@ def get_from_garmin(day: date, session) -> StepEntry:
 
     session.add(daystats)
     session.commit()
+    to_return = daystats
 
     return to_return
 
 
 def summarize(start_date, end_date, data, days, current_streak):
     total_steps = sum(x.step_count for x in data)
-    goal_days = sum(x.goal_met for x in data)
+    goal_days = sum(x.step_goal_met for x in data)
     streak_data = {}
     if current_streak:
         streak_data = {
