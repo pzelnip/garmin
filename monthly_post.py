@@ -48,18 +48,6 @@ def get_last_month_day_entries():
     )
 
 
-#     print(
-#         f"""For the month of {first_day_of_last_month.strftime("%B")}, @aparkin walked {total_steps:,} steps, averaging {avg_per_day:,.2f} steps per day.  Weekly totals:
-
-# {month}/1 - {month}/7: {week1_steps:,} steps
-# {month}/8 - {month}/14: {week2_steps:,} steps
-# {month}/15 - {month}/21: {week3_steps:,} steps
-# {month}/22 - {month}/28: {week4_steps:,} steps
-# {month}/29 - {month}/31: {week5_steps:,} steps
-# """
-#     )
-
-
 def main():
     get_last_month_day_entries()
 

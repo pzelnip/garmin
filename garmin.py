@@ -64,7 +64,6 @@ def get_from_garmin(day: date, session) -> DayStats:
         goal_met=steps > target_step_goal,
     )
     session.add(entry)
-    to_return = entry
 
     entry = API.get_stats_and_body(day)
     daystats = DayStats(
@@ -91,9 +90,7 @@ def get_from_garmin(day: date, session) -> DayStats:
 
     session.add(daystats)
     session.commit()
-    to_return = daystats
-
-    return to_return
+    return daystats
 
 
 def summarize(start_date, end_date, data, days, current_streak):
