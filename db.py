@@ -92,3 +92,13 @@ def get_all_entries() -> List[StepEntry]:
     with db_session() as session:
         stmt = select(StepEntry).order_by(StepEntry.day)
         return list(session.exec(stmt))
+
+
+def get_day_stats_for_date_range(session, start_date, end_date):
+    stmt = (
+        select(DayStats)
+        .where(DayStats.day >= start_date)
+        .where(DayStats.day <= end_date)
+        .order_by(DayStats.day)
+    )
+    return list(session.exec(stmt))

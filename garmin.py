@@ -137,12 +137,10 @@ def garmin_api():
     yield API
 
 
-def post_to_zap(data):
+def post_to_zap(data, url):
+    logging.info(f"Data: {data}")
     if not yes_no("Post to Step Challenge channel?", 0):
         return
-
-    # Step challenge channel url
-    url = os.getenv("ZAPIER_WEBHOOK_URL", None)
 
     headers = {"Content-type": "application/json"}
     data = json.dumps(data)
@@ -185,8 +183,8 @@ def main():
     current_streak = find_current_streak()
 
     data = summarize(start_date, end_date, result, days, current_streak)
-    logging.info(f"Data: {data}")
-    post_to_zap(data)
+
+    post_to_zap(data, os.getenv("ZAPIER_WEEKLY_ZAP_HOOK_URL", None))
 
 
 if __name__ == "__main__":

@@ -1,8 +1,11 @@
 export GARMIN_EMAIL=""
 export GARMIN_PASSWORD=""
 
-# Step challenge channel url
-export ZAPIER_WEBHOOK_URL=""
+# Weekly step challenge channel url
+export ZAPIER_WEEKLY_ZAP_HOOK_URL=""
+
+# Monthly step challenge channel url
+export ZAPIER_MONTHLY_ZAP_HOOK_URL=""
 
 # database connection string
 export CONN_STR=""
