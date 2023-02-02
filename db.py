@@ -88,9 +88,9 @@ def get_steps_per_day_from_db(day: date, session) -> DayStats:
     return None
 
 
-def get_all_entries() -> List[StepEntry]:
+def get_all_entries() -> List[DayStats]:
     with db_session() as session:
-        stmt = select(StepEntry).order_by(StepEntry.day)
+        stmt = select(DayStats).order_by(DayStats.day)
         return list(session.exec(stmt))
 
 

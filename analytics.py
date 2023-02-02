@@ -9,13 +9,13 @@ from datetime import date, datetime, timedelta
 from itertools import groupby
 from typing import List
 
-from db import StepEntry, get_all_entries
+from db import DayStats, get_all_entries
 
 
 class Streak:
     start: date
     end: date
-    entries: List[StepEntry]
+    entries: List[DayStats]
 
     def __init__(self, iterable):
         self.entries = []
@@ -30,7 +30,7 @@ class Streak:
     @classmethod
     def extract_streaks(cls, entries):
         streaks = []
-        for goal_met, group_items in groupby(entries, key=lambda x: x.goal_met):
+        for goal_met, group_items in groupby(entries, key=lambda x: x.step_goal_met):
             if goal_met:
                 streak = Streak(group_items)
                 streaks.append(streak)
