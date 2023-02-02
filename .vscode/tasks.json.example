@@ -12,7 +12,7 @@
         {
             "label": "DB Shell",
             "type": "shell",
-            "command": "source .env && ./db_sess.sh",
+            "command": "source .envrc && ./db_sess.sh",
             "presentation": {
                 "focus": true,
             },
@@ -21,7 +21,7 @@
         {
             "label": "Pull and Post",
             "type": "shell",
-            "command": "source .env && source ${userHome}$PYTHON_VENV && make pull-and-post",
+            "command": "source .envrc && source ${userHome}$PYTHON_VENV && make pull-and-post",
             "presentation": {
                 "focus": true,
             },
@@ -39,7 +39,7 @@
         {
             "label": "Daily Query",
             "type": "shell",
-            "command": "source .env && source ${userHome}$PYTHON_VENV && make daily-query | pbcopy",
+            "command": "source .envrc && source ${userHome}$PYTHON_VENV && make daily-query | pbcopy",
             "presentation": {
                 "focus": true,
             },
