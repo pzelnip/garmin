@@ -13,7 +13,7 @@ import requests
 from garminconnect import Garmin
 from analytics import find_current_streak
 
-from db import DayStats, StepEntry, db_session, get_steps_per_day_from_db, Source
+from db import DayStats, db_session, get_steps_per_day_from_db, Source
 from inputs import date_picker, number_picker, yes_no
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -57,13 +57,6 @@ def get_from_garmin(day: date, session) -> DayStats:
 
     # throttle a little bit
     sleep(random())
-
-    entry = StepEntry(
-        day=orig_day,
-        step_count=steps,
-        goal_met=steps > target_step_goal,
-    )
-    session.add(entry)
 
     entry = API.get_stats_and_body(day)
     daystats = DayStats(
