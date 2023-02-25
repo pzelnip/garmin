@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 
+import sys
 from datetime import datetime, timedelta
 from last_day_for_weekly_post import last_day
 from db import db_session, get_day_stats_for_date_range
 
 GOALS = list(range(100_000, 130_000, 5_000))
-
-STEPS_TODAY = 17_447
 
 
 def from_goal(so_far, target, days_left):
@@ -20,18 +19,16 @@ def from_goal(so_far, target, days_left):
 
 
 def main():
+    steps_today = int(sys.argv[1])
     start = last_day().date()
     today = datetime.now().date()
     next_sunday = today + timedelta((6 - today.weekday()) % 7)
     with db_session() as session:
         days = get_day_stats_for_date_range(session, start + timedelta(days=1), today)
 
-    # for day in days:
-    #     print(f"{day.day} {day.step_count} steps")
     steps_so_far = sum(day.step_count for day in days)
-    # print(steps_so_far)
     for goal in GOALS:
-        from_goal(steps_so_far + STEPS_TODAY, goal, (next_sunday - today).days)
+        from_goal(steps_so_far + steps_today, goal, (next_sunday - today).days)
 
 
 if __name__ == "__main__":
