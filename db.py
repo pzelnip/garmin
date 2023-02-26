@@ -3,9 +3,10 @@ import enum
 import logging
 import os
 import sys
-from datetime import date
+from datetime import date, datetime
 from typing import List, Optional
 
+from sqlalchemy import UniqueConstraint
 from sqlmodel import Column, Enum, Field, Session, SQLModel, create_engine, select
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -16,6 +17,16 @@ class StepEntry(SQLModel, table=True):
     day: date = Field(sa_column_kwargs={"unique": True})
     step_count: int
     goal_met: bool
+
+
+class StepsToday(SQLModel, table=True):
+    __table_args__ = (UniqueConstraint("day", "hour"),)
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    day: date
+    step_count: int
+    hour: int
+    retrieved_at: datetime
 
 
 class Source(enum.Enum):
