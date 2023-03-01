@@ -31,30 +31,6 @@ def get_from_garmin(day: date, session) -> DayStats:
     day = day.isoformat()
     logging.info(f"Requesting steps for {day}")
 
-    # Use get_daily_steps, sample response:
-    #
-    # [
-    #     {
-    #         "calendarDate": "2023-01-29",
-    #         "stepGoal": 11000,
-    #         "totalDistance": 14170,
-    #         "totalSteps": 16643,
-    #     },
-    #     {
-    #         "calendarDate": "2023-01-30",
-    #         "stepGoal": 11000,
-    #         "totalDistance": 8160,
-    #         "totalSteps": 9755,
-    #     },
-    # ]
-    #
-
-    # We just request one day, so assume one entry in the list
-    entry = API.get_daily_steps(day, day)[0]
-
-    steps = entry["totalSteps"]
-    target_step_goal = entry["stepGoal"]
-
     # throttle a little bit
     sleep(random())
 
