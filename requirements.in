@@ -1,7 +1,9 @@
 black
 bullet
+flask
 freezegun
 garminconnect
+Jinja2
 psycopg2-binary
 pytest
 requests
