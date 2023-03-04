@@ -3,3 +3,4 @@ session_data.json
 __pycache__/
 .vscode/tasks.json
 .envrc
+dailysteps.json
