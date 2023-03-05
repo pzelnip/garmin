@@ -6,7 +6,7 @@ from garminconnect import Garmin
 from db import StepsToday, db_session
 
 
-def main():
+def retrieve_steps_at_hour():
     API = Garmin(os.getenv("GARMIN_EMAIL"), os.getenv("GARMIN_PASSWORD"))
     if not API.login():
         raise ValueError("failed to login")
@@ -19,6 +19,10 @@ def main():
         entry = StepsToday(day=today, step_count=steps, hour=hour, retrieved_at=now)
         session.add(entry)
         session.commit()
+
+
+def main():
+    retrieve_steps_at_hour()
 
 
 if __name__ == "__main__":
