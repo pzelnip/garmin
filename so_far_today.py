@@ -6,6 +6,14 @@ from garminconnect import Garmin
 from db import StepsToday, db_session
 
 
+def write_steps(day, hour, steps):
+    now = datetime.now()
+    with db_session() as session:
+        entry = StepsToday(day=day, step_count=steps, hour=hour, retrieved_at=now)
+        session.add(entry)
+        session.commit()
+
+
 def retrieve_steps_at_hour():
     API = Garmin(os.getenv("GARMIN_EMAIL"), os.getenv("GARMIN_PASSWORD"))
     if not API.login():
@@ -13,12 +21,8 @@ def retrieve_steps_at_hour():
 
     now = datetime.now()
     today = now.date()
-    hour = now.hour
     steps = API.get_daily_steps(today, today)[0]["totalSteps"]
-    with db_session() as session:
-        entry = StepsToday(day=today, step_count=steps, hour=hour, retrieved_at=now)
-        session.add(entry)
-        session.commit()
+    write_steps(today, now.hour, steps)
 
 
 def main():
