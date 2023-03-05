@@ -6,16 +6,15 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from flask import Flask
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from sqlalchemy.exc import OperationalError
-from sqlmodel import Session, select
 
-from db import StepsToday, _init_db
+from sqlmodel import select
+
+from db import StepsToday, _init_db, db_session
 from so_far_today import retrieve_steps_at_hour
 
 DEBUG = True
 
 app = Flask(__name__)
-engine = _init_db()
 
 
 # Make sure scheduler is only started once
@@ -29,25 +28,12 @@ if not DEBUG or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
 
 def get_hourly_steps():
     today = datetime.now().date()
-    attempts = 1
-    # sqlalchmy sucks at handling db connection errors
-    while True:
-        try:
-            with Session(engine, expire_on_commit=False) as session:
-                stmt = (
-                    select(StepsToday)
-                    .where(StepsToday.day == today)
-                    .order_by(StepsToday.hour)
-                )
+    with db_session() as session:
+        stmt = (
+            select(StepsToday).where(StepsToday.day == today).order_by(StepsToday.hour)
+        )
 
-                steps = [r.step_count for r in session.exec(stmt)]
-            break
-        except OperationalError as e:
-            print(f"error connecting to db, retrying -- {e}")
-            attempts += 1
-            if attempts > 3:
-                print("failed to connect to db, giving up")
-                raise
+        steps = [r.step_count for r in session.exec(stmt)]
     return steps
 
 
@@ -61,4 +47,5 @@ def step_progress():
 
 
 if __name__ == "__main__":
+    _init_db()
     app.run(debug=DEBUG, port=9329)

@@ -7,9 +7,13 @@ from datetime import date, datetime
 from typing import List, Optional
 
 from sqlalchemy import UniqueConstraint
+from sqlalchemy.exc import OperationalError
 from sqlmodel import Column, Enum, Field, Session, SQLModel, create_engine, select
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+
+
+ENGINE = None
 
 
 class StepsToday(SQLModel, table=True):
@@ -68,16 +72,37 @@ class DayStats(SQLModel, table=True):
 
 
 def _init_db():
-    engine = create_engine(os.getenv("CONN_STR", ""), pool_pre_ping=True)
-    SQLModel.metadata.create_all(engine)
-    return engine
+    global ENGINE
+    if not ENGINE:
+        logging.info("Init DB Engine")
+        ENGINE = create_engine(os.getenv("CONN_STR", ""), pool_pre_ping=True)
+        SQLModel.metadata.create_all(ENGINE)
+
+
+def _try_select_one(session):
+    try:
+        logging.info("Trying select 1")
+        # Do a SELECT 1 to make sure the connection is alive because
+        # sqlalchemy sucks at connection errors
+        session.exec("SELECT 1")
+        return True
+    except OperationalError as e:
+        logging.warn(f"error connecting to db -- {e}")
+        return False
 
 
 @contextlib.contextmanager
 def db_session():
     logging.info("Starting DB Session")
-    engine = _init_db()
-    with Session(engine, expire_on_commit=False) as session:
+    _init_db()
+    with Session(ENGINE, expire_on_commit=False) as session:
+        # Try 3 times to connect to the DB, if it fails, raise an error
+        if not (
+            _try_select_one(session)
+            or _try_select_one(session)
+            or _try_select_one(session)
+        ):
+            raise RuntimeError("Failed to connect to DB")
         yield session
     logging.info("Closing DB Session")
 
