@@ -1,0 +1,7 @@
+{
+  "editor.formatOnSave": true,
+  "[jinja-html]": {
+    "editor.formatOnSave": false
+  },
+  "cSpell.words": ["apscheduler"]
+}
