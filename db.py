@@ -68,7 +68,7 @@ class DayStats(SQLModel, table=True):
 
 
 def _init_db():
-    engine = create_engine(os.getenv("CONN_STR", ""))
+    engine = create_engine(os.getenv("CONN_STR", ""), pool_pre_ping=True)
     SQLModel.metadata.create_all(engine)
     return engine
 
