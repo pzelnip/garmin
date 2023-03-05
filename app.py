@@ -22,7 +22,7 @@ engine = _init_db()
 # See: https://stackoverflow.com/a/25519547/808804
 if not DEBUG or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
     scheduler = BackgroundScheduler()
-    scheduler.add_job(retrieve_steps_at_hour, CronTrigger.from_crontab("0 * * * *"))
+    scheduler.add_job(retrieve_steps_at_hour, CronTrigger.from_crontab("0 9-22 * * *"))
     scheduler.start()
     atexit.register(lambda: scheduler.shutdown())
 
