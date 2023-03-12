@@ -19,7 +19,7 @@
         };
 
         function drawChart() {
-            const actualStepData = {{ hourly_step_data }};
+            const actualStepData = [{% for steps in hourly_step_data %} {{ steps if steps is not none else 'null' }}, {% endfor %}];
 
             // const startHour = parseInt(document.getElementById('startHour').value);
             // const endHour = parseInt(document.getElementById('endHour').value);
