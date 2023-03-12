@@ -33,7 +33,10 @@ def get_hourly_steps():
             select(StepsToday).where(StepsToday.day == today).order_by(StepsToday.hour)
         )
 
-        steps = [r.step_count for r in session.exec(stmt)]
+        steps = ["null"] * 14
+        for entry in session.exec(stmt):
+            steps[entry.hour - 9] = entry.step_count
+
     return steps
 
 
