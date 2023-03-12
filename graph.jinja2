@@ -23,8 +23,8 @@
 
             // const startHour = parseInt(document.getElementById('startHour').value);
             // const endHour = parseInt(document.getElementById('endHour').value);
-            const startHour = 9;
-            const endHour = 10;
+            const startHour = {{ start_hour }};
+            const endHour = {{ end_hour - 12}};
             const targetSteps = parseInt(document.getElementById('targetSteps').value || 15000);
 
             // build data for the goal line

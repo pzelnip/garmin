@@ -17,6 +17,11 @@ DEBUG = True
 app = Flask(__name__)
 
 
+# Start and end hour for the graph
+START_HOUR = 9
+END_HOUR = 22
+
+
 # Make sure scheduler is only started once
 # See: https://stackoverflow.com/a/25519547/808804
 if not DEBUG or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
@@ -36,12 +41,17 @@ def get_hourly_steps():
     today = datetime.now().date()
     with db_session() as session:
         stmt = (
-            select(StepsToday).where(StepsToday.day == today).order_by(StepsToday.hour)
+            select(StepsToday)
+            .where(StepsToday.day == today)
+            .where(StepsToday.hour >= START_HOUR)
+            .where(StepsToday.hour <= END_HOUR)
+            .order_by(StepsToday.hour)
         )
 
-        steps = [None] * 14
+        # Pre-allocate array to allow missing entries
+        steps = [None] * (END_HOUR - START_HOUR + 1)
         for entry in session.exec(stmt):
-            steps[entry.hour - 9] = entry.step_count
+            steps[entry.hour - START_HOUR] = entry.step_count
 
     return steps
 
@@ -53,7 +63,11 @@ def step_progress():
         autoescape=select_autoescape(["html", "xml"]),
     )
     env.filters["none_to_null"] = none_to_null
-    return env.get_template("graph.jinja2").render(hourly_step_data=get_hourly_steps())
+    return env.get_template("graph.jinja2").render(
+        hourly_step_data=get_hourly_steps(),
+        start_hour=START_HOUR,
+        end_hour=END_HOUR,
+    )
 
 
 if __name__ == "__main__":
