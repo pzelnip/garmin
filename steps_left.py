@@ -10,7 +10,7 @@ GOALS = list(range(100_000, 130_000, 5_000))
 
 def from_goal(so_far, target, days_left):
     remaining = target - so_far
-    per_day = remaining / days_left
+    per_day = remaining / days_left if days_left else remaining
     print(f"From {so_far:,} steps to {target:,} steps in {days_left} days:")
     print(
         f"{remaining:,} steps left to reach {target:,} steps in {days_left} days {round(per_day):,} steps per day"
