@@ -33,8 +33,7 @@ if not DEBUG or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
 
 def none_to_null(iterable):
     """Convert None to 'null' in a list of values."""
-    to_str = ["null" if x is None else x for x in iterable]
-    return str(to_str).replace("'", "")
+    return str(iterable).replace("None", "null")
 
 
 def get_hourly_steps():
