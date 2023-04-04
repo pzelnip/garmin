@@ -86,7 +86,7 @@ def summarize(start_date, end_date, data, days, current_streak):
 
 
 def initialize_api():
-    global API
+    global API  # pylint: disable=global-statement
 
     logging.info("Logging in with garmin...")
     API = Garmin(os.getenv("GARMIN_EMAIL"), os.getenv("GARMIN_PASSWORD"))
@@ -98,7 +98,6 @@ def initialize_api():
 
 @contextlib.contextmanager
 def garmin_api():
-    global API
     initialize_api()
     yield API
 
@@ -111,7 +110,7 @@ def post_to_zap(data, url):
     headers = {"Content-type": "application/json"}
     data = json.dumps(data)
     logging.info(f"Posting to zap -- {url} - data {json.dumps(data)}")
-    result = requests.post(url, data=data, headers=headers)
+    result = requests.post(url, data=data, headers=headers, timeout=20)
     logging.info(f"Response: {result.status_code} - {result.json()}")
 
 
