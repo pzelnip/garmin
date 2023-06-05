@@ -13,3 +13,7 @@ pull-and-post: ## Pull data from Garmin into the DB, and prompt to post to chann
 .PHONY: daily-query
 daily-query: ## Run the daily step counts query
 	./query.sh
+
+.PHONY: monthly-post
+monthly-post: ## Pull data from Garmin into the DB, and prompt to post to channel
+	python monthly_post.py
