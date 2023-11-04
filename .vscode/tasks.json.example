@@ -1,49 +1,67 @@
 {
-    // See https://go.microsoft.com/fwlink/?LinkId=733558
-    // for the documentation about the tasks.json format
-    "version": "2.0.0",
-    "options": {
-        "env": {
-            // Path to Python virtual environment relative to user home directory
-            "PYTHON_VENV": "/.envs/garmin/bin/activate"
-        }
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "options": {
+    "env": {
+      // Path to Python virtual environment relative to user home directory
+      "PYTHON_VENV": "/.envs/garmin/bin/activate"
+    }
+  },
+  "tasks": [
+    {
+      "label": "DB Shell",
+      "type": "shell",
+      "command": "source .envrc && ./db_sess.sh",
+      "presentation": {
+        "focus": true
+      },
+      "problemMatcher": []
     },
-    "tasks": [
-        {
-            "label": "DB Shell",
-            "type": "shell",
-            "command": "source .envrc && ./db_sess.sh",
-            "presentation": {
-                "focus": true,
-            },
-            "problemMatcher": []
-        },
-        {
-            "label": "Pull and Post",
-            "type": "shell",
-            "command": "source .envrc && source ${userHome}$PYTHON_VENV && make pull-and-post",
-            "presentation": {
-                "focus": true,
-            },
-            "problemMatcher": []
-        },
-        {
-            "label": "Update Depedencies",
-            "type": "shell",
-            "command": "source ${userHome}$PYTHON_VENV && make update-dependencies",
-            "presentation": {
-                "focus": true,
-            },
-            "problemMatcher": []
-        },
-        {
-            "label": "Daily Query",
-            "type": "shell",
-            "command": "source .envrc && source ${userHome}$PYTHON_VENV && make daily-query | pbcopy",
-            "presentation": {
-                "focus": true,
-            },
-            "problemMatcher": []
-        },
-    ]
+    {
+      "label": "Pull and Post",
+      "type": "shell",
+      "command": "source .envrc && source ${userHome}$PYTHON_VENV && make pull-and-post",
+      "presentation": {
+        "focus": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run Server",
+      "type": "shell",
+      "command": "source .envrc && source ${userHome}$PYTHON_VENV && make pull-and-post ARGS='--auto'",
+      "presentation": {
+        "focus": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Monthly Post",
+      "type": "shell",
+      "command": "source .envrc && source ${userHome}$PYTHON_VENV && make monthly-post",
+      "presentation": {
+        "focus": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Update Depedencies",
+      "type": "shell",
+      "command": "source ${userHome}$PYTHON_VENV && make update-dependencies",
+      "presentation": {
+        "focus": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Daily Query",
+      "type": "shell",
+      "command": "source .envrc && source ${userHome}$PYTHON_VENV && make daily-query | pbcopy",
+      "presentation": {
+        "focus": true
+      },
+      "problemMatcher": []
+    }
+  ]
 }

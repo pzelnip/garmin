@@ -8,7 +8,7 @@ db-session: ## Start a database session
 
 .PHONY: pull-and-post
 pull-and-post: ## Pull data from Garmin into the DB, and prompt to post to channel
-	python garmin.py
+	python garmin.py $(ARGS)
 
 .PHONY: daily-query
 daily-query: ## Run the daily step counts query

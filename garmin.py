@@ -138,18 +138,28 @@ def get_end_date():
     return date_picker()
 
 
-def main():
+def get_range():
     # end date is yesterday
-    end_date = get_end_date() - timedelta(days=1)
-    days = number_of_days_picker()
+    if len(sys.argv) > 1 and sys.argv[1] == "--auto":
+        today = datetime.now().date()
+        end_date = today - timedelta(days=1)
+        days = 7
+    else:
+        end_date = get_end_date() - timedelta(days=1)
+        days = number_of_days_picker()
     start_date = end_date - timedelta(days=days - 1)
+    return start_date, end_date, days
 
+
+def main():
+    start_date, end_date, days = get_range()
     result = process_range(start_date, days)
     current_streak = find_current_streak()
 
     data = summarize(start_date, end_date, result, days, current_streak)
 
-    post_to_zap(data, os.getenv("ZAPIER_WEEKLY_ZAP_HOOK_URL", None))
+    if len(sys.argv) == 1:
+        post_to_zap(data, os.getenv("ZAPIER_WEEKLY_ZAP_HOOK_URL", None))
 
 
 if __name__ == "__main__":
