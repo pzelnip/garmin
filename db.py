@@ -87,7 +87,7 @@ def _try_select_one(session):
         session.exec("SELECT 1")
         return True
     except OperationalError as e:
-        logging.warn(f"error connecting to db -- {e}")
+        logging.warning(f"error connecting to db -- {e}")
         return False
 
 
@@ -107,7 +107,7 @@ def db_session():
     logging.info("Closing DB Session")
 
 
-def get_steps_per_day_from_db(day: date, session) -> DayStats:
+def get_steps_per_day_from_db(day: date, session) -> DayStats | None:
     stmt = select(DayStats).where(DayStats.day == day)
 
     if entry := session.exec(stmt).first():
