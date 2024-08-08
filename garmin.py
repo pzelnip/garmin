@@ -59,6 +59,7 @@ def get_from_garmin(day: date, session) -> DayStats:
 
     session.add(daystats)
     session.commit()
+    logging.info(f"Got {daystats.step_count} steps for {day}")
     return daystats
 
 

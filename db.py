@@ -111,7 +111,9 @@ def get_steps_per_day_from_db(day: date, session) -> DayStats:
     stmt = select(DayStats).where(DayStats.day == day)
 
     if entry := session.exec(stmt).first():
-        logging.info(f"Entry for {day} in DB, returning cached value")
+        logging.info(
+            f"Entry for {day} in DB, returning cached value ({entry.step_count})"
+        )
         return entry
 
     return None
