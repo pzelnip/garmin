@@ -14,6 +14,7 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
 
 ENGINE = None
+NUM_RETRIES = 3
 
 
 class StepsToday(SQLModel, table=True):
@@ -96,12 +97,8 @@ def db_session():
     logging.info("Starting DB Session")
     _init_db()
     with Session(ENGINE, expire_on_commit=False) as session:
-        # Try 3 times to connect to the DB, if it fails, raise an error
-        if not (
-            _try_select_one(session)
-            or _try_select_one(session)
-            or _try_select_one(session)
-        ):
+        # Try NUM_RETRIES times to connect to the DB, if it fails, raise an error
+        if not any(_try_select_one(session) for _ in range(NUM_RETRIES)):
             raise RuntimeError("Failed to connect to DB")
         yield session
     logging.info("Closing DB Session")
