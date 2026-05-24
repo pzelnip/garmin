@@ -149,6 +149,11 @@ def get_range():
         today = datetime.now().date()
         end_date = today - timedelta(days=1)
         days = 7
+    elif len(sys.argv) > 1 and sys.argv[1] == "--backfill":
+        start_date = date.fromisoformat(sys.argv[2])
+        end_date = date.fromisoformat(sys.argv[3])
+        days = (end_date - start_date).days + 1
+        return start_date, end_date, days
     else:
         end_date = get_end_date() - timedelta(days=1)
         days = number_of_days_picker()
