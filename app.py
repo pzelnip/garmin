@@ -9,7 +9,8 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from sqlmodel import select
 
-from db import StepsToday, _init_db, db_session
+from analytics import build_streaks, find_current_streak
+from db import StepsToday, _init_db, db_session, get_all_entries
 from so_far_today import retrieve_steps_at_hour
 
 DEBUG = True
@@ -66,6 +67,39 @@ def step_progress():
         hourly_step_data=get_hourly_steps(),
         start_hour=START_HOUR,
         end_hour=END_HOUR,
+    )
+
+
+@app.route("/dashboard")
+def dashboard():
+    entries = get_all_entries()
+    streaks = build_streaks(entries)
+    current_streak = find_current_streak(streaks)
+
+    total_days = len(entries)
+    total_steps = sum(e.step_count for e in entries)
+    avg_steps = total_steps // total_days if total_days else 0
+    goal_days = sum(1 for e in entries if e.step_goal_met)
+    goal_pct = (goal_days / total_days * 100) if total_days else 0
+
+    top_step_days = sorted(entries, key=lambda e: e.step_count, reverse=True)[:10]
+    bottom_step_days = sorted(entries, key=lambda e: e.step_count)[:10]
+    top_streaks = streaks[:10]
+
+    env = Environment(
+        loader=FileSystemLoader("."),
+        autoescape=select_autoescape(["html", "xml"]),
+    )
+    return env.get_template("dashboard.jinja2").render(
+        total_days=total_days,
+        total_steps=total_steps,
+        avg_steps=avg_steps,
+        goal_days=goal_days,
+        goal_pct=goal_pct,
+        current_streak=current_streak,
+        top_streaks=top_streaks,
+        top_step_days=top_step_days,
+        bottom_step_days=bottom_step_days,
     )
 
 
