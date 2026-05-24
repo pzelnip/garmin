@@ -2,8 +2,7 @@ from calendar import monthrange
 from datetime import date, datetime
 from enum import Enum, auto
 
-from bullet import Bullet, ScrollBar, colors
-from bullet import Bullet, Numbers
+from bullet import Bullet, Numbers, ScrollBar, colors
 
 
 def date_picker(number_of_years=15):
