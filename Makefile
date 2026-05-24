@@ -17,3 +17,7 @@ daily-query: ## Run the daily step counts query
 .PHONY: monthly-post
 monthly-post: ## Pull data from Garmin into the DB, and prompt to post to channel
 	python monthly_post.py
+
+.PHONY: run-server
+run-server: ## Run the Flask server
+	python app.py
