@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Steps Dashboard</title>
+    <link rel="shortcut icon" href="/static/favicon.png" />
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css" />
+    <style>
+        body { padding: 24px; }
+        .stat-card { padding: 16px; }
+        .stat-value { font-size: 28px; font-weight: 600; }
+        .stat-label { color: #666; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; }
+        table { margin-top: 12px; }
+        h2 { margin-top: 32px; }
+    </style>
+</head>
+<body>
+    <h1>Steps Dashboard</h1>
+
+    <div class="w3-row-padding">
+        <div class="w3-quarter">
+            <div class="w3-card stat-card">
+                <div class="stat-label">Days Recorded</div>
+                <div class="stat-value">{{ "{:,}".format(total_days) }}</div>
+            </div>
+        </div>
+        <div class="w3-quarter">
+            <div class="w3-card stat-card">
+                <div class="stat-label">Total Steps</div>
+                <div class="stat-value">{{ "{:,}".format(total_steps) }}</div>
+            </div>
+        </div>
+        <div class="w3-quarter">
+            <div class="w3-card stat-card">
+                <div class="stat-label">Avg Steps / Day</div>
+                <div class="stat-value">{{ "{:,}".format(avg_steps) }}</div>
+            </div>
+        </div>
+        <div class="w3-quarter">
+            <div class="w3-card stat-card">
+                <div class="stat-label">Goal Met</div>
+                <div class="stat-value">{{ goal_days }} ({{ "%.1f"|format(goal_pct) }}%)</div>
+            </div>
+        </div>
+    </div>
+
+    <h2>Current Streak</h2>
+    {% if current_streak %}
+        <p><strong>{{ current_streak.days }} days</strong> — {{ current_streak.start }} to {{ current_streak.end }}</p>
+    {% else %}
+        <p>No active streak.</p>
+    {% endif %}
+
+    <h2>Top 10 Streaks</h2>
+    <table class="w3-table w3-bordered w3-striped">
+        <thead>
+            <tr><th>#</th><th>Days</th><th>Start</th><th>End</th></tr>
+        </thead>
+        <tbody>
+            {% for s in top_streaks %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ s.days }}</td>
+                <td>{{ s.start }}</td>
+                <td>{{ s.end }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="w3-row-padding">
+        <div class="w3-half">
+            <h2>Top 10 Step Days</h2>
+            <table class="w3-table w3-bordered w3-striped">
+                <thead><tr><th>#</th><th>Day</th><th>Steps</th></tr></thead>
+                <tbody>
+                    {% for e in top_step_days %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ e.day }}</td>
+                        <td>{{ "{:,}".format(e.step_count) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="w3-half">
+            <h2>Bottom 10 Step Days</h2>
+            <table class="w3-table w3-bordered w3-striped">
+                <thead><tr><th>#</th><th>Day</th><th>Steps</th></tr></thead>
+                <tbody>
+                    {% for e in bottom_step_days %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ e.day }}</td>
+                        <td>{{ "{:,}".format(e.step_count) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
