@@ -1,6 +1,6 @@
 .PHONY: update-dependencies
-update-dependencies: ## Update the requirements.txt file
-	pip-compile --upgrade --generate-hashes --output-file requirements.txt requirements.in
+update-dependencies: ## Upgrade locked dependencies
+	uv lock --upgrade
 
 .PHONY: db-session
 db-session: ## Start a database session

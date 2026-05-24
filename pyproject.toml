@@ -1,3 +1,25 @@
+[project]
+name = "garmin"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "APScheduler",
+    "bullet",
+    "flask",
+    "garminconnect",
+    "Jinja2",
+    "psycopg2-binary",
+    "requests",
+    "sqlmodel",
+]
+
+[dependency-groups]
+dev = [
+    "black",
+    "freezegun",
+    "pytest",
+]
+
 [tool.pylint.main]
 # Analyse import fallback blocks. This can be used to support both Python 2 and 3
 # compatible code, which means that the block might have code that exists only in
