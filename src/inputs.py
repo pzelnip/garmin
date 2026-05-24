@@ -7,19 +7,26 @@ from bullet import Bullet, Numbers, ScrollBar, colors
 
 def date_picker(number_of_years=15):
     class State(Enum):
+        """Steps of the interactive date-picker state machine.
+
+        The picker walks the user through year → month → day prompts, with
+        DONE signaling completion. A user can back up from a later prompt to
+        the previous one by selecting the "... previous" option.
+        """
+
         PICK_YEAR = auto()
         PICK_MONTH = auto()
         PICK_DAY = auto()
         DONE = auto()
 
-    BACK_STRING = "... previous"
+    back_string = "... previous"
 
     def scrollbar(prompt, options, return_index=False, allow_previous=True):
         print("\n")
 
         result = ScrollBar(
             f"{prompt}: ",
-            options + [BACK_STRING] if allow_previous else options,
+            options + [back_string] if allow_previous else options,
             height=5,
             align=5,
             margin=0,
@@ -45,7 +52,20 @@ def date_picker(number_of_years=15):
         return scrollbar("Year", years, allow_previous=False)
 
     def pick_month():
-        months = "January February March April May June July August September October November December".split()
+        months = [
+            "January",
+            "February",
+            "March",
+            "April",
+            "May",
+            "June",
+            "July",
+            "August",
+            "September",
+            "October",
+            "November",
+            "December",
+        ]
         result = scrollbar("Month", months, return_index=True)
         return result if result is None else result + 1
 

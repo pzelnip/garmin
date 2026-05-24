@@ -18,6 +18,14 @@ NUM_RETRIES = 3
 
 
 class StepsToday(SQLModel, table=True):
+    """Hourly step-count snapshot for the current day.
+
+    Populated by the APScheduler job in `app.py` once per hour and used to
+    render the intra-day progress graph at the `/` route. Each row records
+    the cumulative step total observed at a specific hour on a specific day;
+    the (day, hour) pair is unique.
+    """
+
     __table_args__ = (UniqueConstraint("day", "hour"),)
 
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -28,12 +36,28 @@ class StepsToday(SQLModel, table=True):
 
 
 class Source(enum.Enum):
-    manual_entry = 0
-    garmin = 1
-    fitbit = 2
+    """Origin of a DayStats row.
+
+    Indicates whether the day's data came from the Garmin API, was entered
+    by hand, or was imported from Fitbit. Used to distinguish synthesized or
+    backfilled rows from authoritative device data.
+    """
+
+    manual_entry = 0  # pylint: disable=invalid-name
+    garmin = 1  # pylint: disable=invalid-name
+    fitbit = 2  # pylint: disable=invalid-name
 
 
 class DayStats(SQLModel, table=True):
+    """Daily summary of activity, body, and health metrics for one day.
+
+    One row per calendar day (the `day` column is unique). Populated by
+    `garmin.py` from the Garmin Connect `get_stats_and_body` endpoint;
+    step_count and daily_step_goal are required, all other biometric fields
+    are optional since they depend on which features the user's device
+    captures (e.g. weight requires a connected scale).
+    """
+
     id: Optional[int] = Field(default=None, primary_key=True)
     day: date = Field(sa_column_kwargs={"unique": True})
 
@@ -73,7 +97,7 @@ class DayStats(SQLModel, table=True):
 
 
 def _init_db():
-    global ENGINE
+    global ENGINE  # pylint: disable=global-statement
     if not ENGINE:
         logging.info("Init DB Engine")
         ENGINE = create_engine(os.getenv("CONN_STR", ""), pool_pre_ping=True)

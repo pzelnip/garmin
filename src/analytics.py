@@ -13,6 +13,13 @@ from db import DayStats, get_all_entries
 
 
 class Streak:
+    """A consecutive run of days where the daily step goal was met.
+
+    Constructed from an iterable of DayStats entries known to be
+    goal-met and contiguous (see `extract_streaks`). Holds the date range
+    spanning the run plus the underlying entries.
+    """
+
     start: date
     end: date
     entries: List[DayStats]
@@ -46,7 +53,7 @@ class Streak:
         return len(self.entries)
 
     def __str__(self) -> str:
-        return f"Streak from {self.start} to {self.end} ({self.days} days){' (current streak)' if self.is_current() else ''}"
+        return f"Streak from {self.start} to {self.end} ({self.days} days){' (current streak)' if self.is_current() else ''}"  # pylint: disable=line-too-long
 
     def is_current(self):
         yesterday = datetime.now().date() - timedelta(days=1)

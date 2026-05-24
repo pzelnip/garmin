@@ -15,7 +15,9 @@ def write_steps(day, hour, steps):
 
 
 def retrieve_steps_at_hour():
-    API = Garmin(os.getenv("GARMIN_EMAIL"), os.getenv("GARMIN_PASSWORD"))
+    API = Garmin(
+        os.getenv("GARMIN_EMAIL"), os.getenv("GARMIN_PASSWORD")
+    )  # pylint: disable=invalid-name
     if not API.login():
         raise ValueError("failed to login")
 
