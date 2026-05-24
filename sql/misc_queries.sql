@@ -25,3 +25,24 @@ FROM
     daystats
 WHERE
     source != 'garmin';
+
+--------------------------------
+-- find all gaps (missing entries) in daystats, useful for backfilling:
+WITH missing AS (
+  SELECT d::date AS day
+  FROM generate_series(
+    (SELECT MIN(day) FROM daystats),
+    CURRENT_DATE - 1,
+    interval '1 day'
+  ) AS d
+  WHERE NOT EXISTS (SELECT 1 FROM daystats ds WHERE ds.day = d::date)
+),
+grouped AS (
+  SELECT day,
+         day - (ROW_NUMBER() OVER (ORDER BY day))::int AS grp
+  FROM missing
+)
+SELECT MIN(day) AS gap_start, MAX(day) AS gap_end, COUNT(*) AS days
+FROM grouped
+GROUP BY grp
+ORDER BY gap_start;
