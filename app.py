@@ -272,4 +272,4 @@ def dashboard():
 
 if __name__ == "__main__":
     _init_db()
-    app.run(debug=DEBUG, port=9329)
+    app.run(debug=DEBUG, port=9329, host="0.0.0.0")
