@@ -5,14 +5,14 @@
   "options": {
     "env": {
       // Path to Python virtual environment relative to user home directory
-      "PYTHON_VENV": "/.envs/garmin/bin/activate"
+      "PYTHON_VENV": "/some/path/to/.envs/garmin/bin/activate"
     }
   },
   "tasks": [
     {
       "label": "DB Shell",
       "type": "shell",
-      "command": "source .envrc && ./db_sess.sh",
+      "command": "source .envrc && make db-session",
       "presentation": {
         "focus": true
       },
@@ -30,16 +30,7 @@
     {
       "label": "Run Server",
       "type": "shell",
-      "command": "source .envrc && source ${userHome}$PYTHON_VENV && make pull-and-post ARGS='--auto'",
-      "presentation": {
-        "focus": true
-      },
-      "problemMatcher": []
-    },
-    {
-      "label": "Monthly Post",
-      "type": "shell",
-      "command": "source .envrc && source ${userHome}$PYTHON_VENV && make monthly-post",
+      "command": "source .envrc && source ${userHome}$PYTHON_VENV && make run-server",
       "presentation": {
         "focus": true
       },
@@ -49,15 +40,6 @@
       "label": "Update Depedencies",
       "type": "shell",
       "command": "source ${userHome}$PYTHON_VENV && make update-dependencies",
-      "presentation": {
-        "focus": true
-      },
-      "problemMatcher": []
-    },
-    {
-      "label": "Daily Query",
-      "type": "shell",
-      "command": "source .envrc && source ${userHome}$PYTHON_VENV && make daily-query | pbcopy",
       "presentation": {
         "focus": true
       },
