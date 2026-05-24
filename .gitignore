@@ -5,3 +5,4 @@ __pycache__/
 .envrc
 dailysteps.json
 .venv
+.vscode/settings.json
