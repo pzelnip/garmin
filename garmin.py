@@ -19,11 +19,6 @@ from inputs import date_picker, number_picker, yes_no
 
 # temp hack until new version of garth is released
 # see: https://github.com/cyberjunky/python-garminconnect/issues/235
-import garth.http
-
-garth.http.USER_AGENT = {
-    "User-Agent": "GCM-iOS-5.7.2.1",
-}
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 

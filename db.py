@@ -6,7 +6,7 @@ import sys
 from datetime import date, datetime
 from typing import List, Optional
 
-from sqlalchemy import UniqueConstraint
+from sqlalchemy import UniqueConstraint, text
 from sqlalchemy.exc import OperationalError
 from sqlmodel import Column, Enum, Field, Session, SQLModel, create_engine, select
 
@@ -85,7 +85,7 @@ def _try_select_one(session):
         logging.info("Trying select 1")
         # Do a SELECT 1 to make sure the connection is alive because
         # sqlalchemy sucks at connection errors
-        session.exec("SELECT 1")
+        session.execute(text("SELECT 1"))
         return True
     except OperationalError as e:
         logging.warning(f"error connecting to db -- {e}")
