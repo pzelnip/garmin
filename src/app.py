@@ -32,7 +32,7 @@ if not DEBUG or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
     scheduler = BackgroundScheduler()
     scheduler.add_job(retrieve_steps_at_hour, CronTrigger.from_crontab("0 9-22 * * *"))
     scheduler.start()
-    atexit.register(lambda: scheduler.shutdown())
+    atexit.register(scheduler.shutdown)
 
 
 def none_to_null(iterable):
@@ -105,9 +105,7 @@ def _build_dashboard_data():
     for e in entries:
         dow_buckets[e.day.weekday()].append(e.step_count)
     dow_names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-    dow_avgs = [
-        round(mean(dow_buckets[i])) if dow_buckets[i] else 0 for i in range(7)
-    ]
+    dow_avgs = [round(mean(dow_buckets[i])) if dow_buckets[i] else 0 for i in range(7)]
     dow_best = dow_names[dow_avgs.index(max(dow_avgs))] if dow_avgs else "—"
 
     # Time series — last 365 days
@@ -164,7 +162,9 @@ def _build_dashboard_data():
         hist_labels, hist_values = [], []
 
     # Health/biometric trends — filter Nones
-    rhr_entries = [(e.day, e.resting_heart_rate) for e in entries if e.resting_heart_rate]
+    rhr_entries = [
+        (e.day, e.resting_heart_rate) for e in entries if e.resting_heart_rate
+    ]
     rhr_labels = [d.isoformat() for d, _ in rhr_entries]
     rhr_values = [v for _, v in rhr_entries]
 
@@ -229,8 +229,7 @@ def _build_dashboard_data():
             {"day": e.day.isoformat(), "steps": e.step_count} for e in top_step_days
         ],
         "bottom_step_days": [
-            {"day": e.day.isoformat(), "steps": e.step_count}
-            for e in bottom_step_days
+            {"day": e.day.isoformat(), "steps": e.step_count} for e in bottom_step_days
         ],
         "charts": {
             "dow": {"labels": dow_names, "values": dow_avgs},
