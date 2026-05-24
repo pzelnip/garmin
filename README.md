@@ -25,9 +25,10 @@ October 31st, 2022, StepBot was born:
 
 ![First Post to Slack](./img/firstpost.png)
 
-Since that time, this script has grown in scope.  Now it's a way for me to keep
-a copy of my daily step counts in a DB, and post some more interesting metrics
-like how long my current streak is.
+Since that time, this script has grown in scope.  The Slack-posting bits have
+been retired, and the project is now a personal store of my daily step counts
+in a DB, with a small Flask dashboard for browsing analytics like streaks and
+top/bottom step days.
 
 It's also been a playground for working with new tech I hadn't used before (ex:
 [SqlModel](https://sqlmodel.tiangolo.com/)).

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import contextlib
-import json
 import logging
 import os
 import sys
@@ -9,16 +8,13 @@ from datetime import date, datetime, timedelta
 from random import random
 from time import sleep
 
-import requests
 from garminconnect import Garmin
-from analytics import find_current_streak
 
 from db import DayStats, db_session, get_steps_per_day_from_db, Source
 from inputs import date_picker, number_picker, yes_no
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
-TARGET_STEP_GOAL = 11_000
 API = None
 
 
@@ -63,29 +59,6 @@ def get_from_garmin(day: date, session) -> DayStats:
     return daystats
 
 
-def summarize(start_date, end_date, data, days, current_streak):
-    total_steps = sum(x.step_count for x in data)
-    goal_days = sum(x.step_goal_met for x in data)
-    streak_data = {}
-    if current_streak:
-        streak_data = {
-            "days": current_streak.days,
-            "start": current_streak.start.strftime("%-d-%b-%Y"),
-            "end": current_streak.end.strftime("%-d-%b-%Y"),
-        }
-    return {
-        "start_date": f"{start_date:%-d-%b-%Y}",
-        "end_date": f"{end_date:%-d-%b-%Y}",
-        "step_total": f"{total_steps:,}",
-        "step_average": f"{total_steps // days:,}",
-        "num_days_goal_met": goal_days,
-        "days_in_period": days,
-        "percent_goal_met": f"{(goal_days/days* 100):.1f}%",
-        "username": "aparkin",
-        "streak": streak_data,
-    }
-
-
 def initialize_api():
     global API  # pylint: disable=global-statement
 
@@ -101,18 +74,6 @@ def initialize_api():
 def garmin_api():
     initialize_api()
     yield API
-
-
-def post_to_zap(data, url):
-    logging.info(f"Data: {data}")
-    if not yes_no("Post to Step Challenge channel?", 0):
-        return
-
-    headers = {"Content-type": "application/json"}
-    data = json.dumps(data)
-    logging.info(f"Posting to zap -- {url} - data {json.dumps(data)}")
-    result = requests.post(url, data=data, headers=headers, timeout=20)
-    logging.info(f"Response: {result.status_code} - {result.json()}")
 
 
 def process_range(start_date: date, days: int):
@@ -149,23 +110,17 @@ def get_range():
         start_date = date.fromisoformat(sys.argv[2])
         end_date = date.fromisoformat(sys.argv[3])
         days = (end_date - start_date).days + 1
-        return start_date, end_date, days
+        return start_date, days
     else:
         end_date = get_end_date() - timedelta(days=1)
         days = number_of_days_picker()
     start_date = end_date - timedelta(days=days - 1)
-    return start_date, end_date, days
+    return start_date, days
 
 
 def main():
-    start_date, end_date, days = get_range()
-    result = process_range(start_date, days)
-    current_streak = find_current_streak()
-
-    data = summarize(start_date, end_date, result, days, current_streak)
-
-    if len(sys.argv) == 1:
-        post_to_zap(data, os.getenv("ZAPIER_WEEKLY_ZAP_HOOK_URL", None))
+    start_date, days = get_range()
+    process_range(start_date, days)
 
 
 if __name__ == "__main__":
