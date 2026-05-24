@@ -6,3 +6,4 @@ __pycache__/
 dailysteps.json
 .venv
 .vscode/settings.json
+cron.log

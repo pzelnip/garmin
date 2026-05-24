@@ -56,16 +56,16 @@ The schema is created automatically on first run via SQLModel:
 
 ```shell
 source .envrc
-.venv/bin/python -c "from db import _init_db; _init_db()"
+.venv/bin/python -c "import sys; sys.path.insert(0, 'src'); from db import _init_db; _init_db()"
 ```
 
-Confirm with `./db_sess.sh` (opens a `psql` shell against `CONN_STR`) — you
-should see `daystats` and `stepstoday` tables.
+Confirm with `./scripts/db_sess.sh` (opens a `psql` shell against `CONN_STR`)
+— you should see `daystats` and `stepstoday` tables.
 
 ## 5. Smoke-test the script
 
 ```shell
-.venv/bin/python garmin.py --auto
+.venv/bin/python src/garmin.py --auto
 ```
 
 This pulls the last 7 days from Garmin and writes rows to `daystats`.
@@ -75,7 +75,7 @@ re-fetched.
 For backfilling a date range:
 
 ```shell
-.venv/bin/python garmin.py --backfill 2024-01-01 2024-01-31
+.venv/bin/python src/garmin.py --backfill 2024-01-01 2024-01-31
 ```
 
 ## 6. Set up healthchecks.io monitoring
@@ -90,10 +90,10 @@ For backfilling a date range:
 
 ## 7. Install the cron job
 
-`run-garmin.sh` (in the repo, executable) sources `.envrc`, runs
-`garmin.py --auto`, then pings `HEALTHCHECKS_URL` on success. If the script
-fails, the ping doesn't fire and healthchecks.io alerts after the grace
-period.
+`scripts/run-garmin.sh` (in the repo, executable) sources `.envrc`, runs
+`src/garmin.py --auto`, then pings `HEALTHCHECKS_URL` on success. If the
+script fails, the ping doesn't fire and healthchecks.io alerts after the
+grace period.
 
 Open the user's crontab:
 
@@ -104,7 +104,7 @@ crontab -e
 Add:
 
 ```shell
-0 5 * * * /home/pi/temp/sandbox/garmin/run-garmin.sh >> /home/pi/temp/sandbox/garmin/cron.log 2>&1
+0 5 * * * /home/pi/temp/sandbox/garmin/scripts/run-garmin.sh >> /home/pi/temp/sandbox/garmin/cron.log 2>&1
 ```
 
 This runs daily at 05:00 local time. Verify:
@@ -117,7 +117,7 @@ sudo systemctl status cron    # confirm the cron daemon is running
 Test the wrapper interactively before waiting for cron:
 
 ```shell
-/home/pi/temp/sandbox/garmin/run-garmin.sh
+/home/pi/temp/sandbox/garmin/scripts/run-garmin.sh
 ```
 
 Check that healthchecks.io shows a green ping immediately after.
@@ -128,7 +128,7 @@ The dashboard at `/dashboard` reads from the same DB and serves
 visualizations over LAN:
 
 ```shell
-.venv/bin/python app.py
+.venv/bin/python src/app.py
 ```
 
 The server listens on `0.0.0.0:9329`. Browse to

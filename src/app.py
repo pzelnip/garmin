@@ -62,7 +62,7 @@ def get_hourly_steps():
 @app.route("/")
 def step_progress():
     env = Environment(
-        loader=FileSystemLoader("."),
+        loader=FileSystemLoader(os.path.dirname(os.path.abspath(__file__))),
         autoescape=select_autoescape(["html", "xml"]),
     )
     env.filters["none_to_null"] = none_to_null
@@ -261,7 +261,7 @@ def _build_dashboard_data():
 def dashboard():
     data = _build_dashboard_data()
     env = Environment(
-        loader=FileSystemLoader("."),
+        loader=FileSystemLoader(os.path.dirname(os.path.abspath(__file__))),
         autoescape=select_autoescape(["html", "xml"]),
     )
     return env.get_template("dashboard.jinja2").render(

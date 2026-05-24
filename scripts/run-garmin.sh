@@ -6,6 +6,6 @@ set -a
 source ./.envrc
 set +a
 
-./.venv/bin/python garmin.py --auto
+./.venv/bin/python src/garmin.py --auto
 
 curl -fsS -m 10 --retry 3 "$HEALTHCHECKS_URL"
