@@ -9,3 +9,6 @@ export CONN_STR=""
 
 # example of postgresql database connection string:
 # export CONN_STR="postgresql://user:password@host:port/database"
+
+# healthchecks.io url, ex: https://hc-ping.com/<some uuid>
+export HEALTHCHECKS_URL=""
