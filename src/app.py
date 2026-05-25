@@ -200,6 +200,63 @@ def _build_dashboard_data():
         heatmap.append({"date": key, "weekday": d.weekday(), "level": level})
         d += timedelta(days=1)
 
+    # Hydration — only entries where both consumed and goal are present
+    hyd_entries = [
+        e for e in entries
+        if e.water_consumed_ml is not None and e.water_goal_ml is not None
+    ]
+    hyd_total_days = len(hyd_entries)
+    hyd_total_ml = sum(e.water_consumed_ml for e in hyd_entries)
+    hyd_avg_ml = round(hyd_total_ml / hyd_total_days) if hyd_total_days else 0
+    hyd_goal_days = sum(1 for e in hyd_entries if e.water_goal_met)
+    hyd_goal_pct = (hyd_goal_days / hyd_total_days * 100) if hyd_total_days else 0
+
+    # Hydration timeline — last 90 days (hydration is a newer metric, shorter window)
+    hyd_cutoff = today - timedelta(days=90)
+    hyd_recent = [e for e in hyd_entries if e.day >= hyd_cutoff]
+    hyd_timeline_labels = [e.day.isoformat() for e in hyd_recent]
+    hyd_timeline_consumed = [e.water_consumed_ml for e in hyd_recent]
+    hyd_timeline_goals = [e.water_goal_ml for e in hyd_recent]
+
+    # Hydration by day-of-week
+    hyd_dow_buckets = defaultdict(list)
+    for e in hyd_entries:
+        hyd_dow_buckets[e.day.weekday()].append(e.water_consumed_ml)
+    hyd_dow_avgs = [
+        round(mean(hyd_dow_buckets[i])) if hyd_dow_buckets[i] else 0 for i in range(7)
+    ]
+
+    # Hydration heatmap — last 365 days, level by % of goal
+    hyd_by_day = {e.day.isoformat(): e for e in hyd_entries}
+    hyd_heatmap = []
+    d = start
+    while d <= today:
+        key = d.isoformat()
+        if key in hyd_by_day:
+            e = hyd_by_day[key]
+            pct = e.water_consumed_ml / e.water_goal_ml if e.water_goal_ml else 0
+            if pct >= 1.0:
+                level = 4
+            elif pct >= 0.75:
+                level = 3
+            elif pct >= 0.5:
+                level = 2
+            elif pct > 0:
+                level = 1
+            else:
+                level = 0
+        else:
+            level = -1
+        hyd_heatmap.append({"date": key, "weekday": d.weekday(), "level": level})
+        d += timedelta(days=1)
+
+    # Steps vs water scatter — only days with both data points (cap at recent 365 days)
+    hyd_scatter = [
+        {"x": e.step_count, "y": e.water_consumed_ml}
+        for e in hyd_entries
+        if e.day >= cutoff
+    ]
+
     return {
         "stats": {
             "total_days": total_days,
@@ -211,6 +268,11 @@ def _build_dashboard_data():
             "total_distance_km": round(total_distance_km, 1),
             "dow_best": dow_best,
             "num_streaks": len(streaks),
+            "hyd_total_days": hyd_total_days,
+            "hyd_avg_ml": hyd_avg_ml,
+            "hyd_goal_days": hyd_goal_days,
+            "hyd_goal_pct": hyd_goal_pct,
+            "hyd_total_liters": round(hyd_total_ml / 1000, 1),
         },
         "current_streak": (
             {
@@ -252,6 +314,14 @@ def _build_dashboard_data():
             "weight": {"labels": weight_labels, "values": weight_values},
             "floors": {"labels": floors_labels, "values": floors_values},
             "heatmap": heatmap,
+            "hyd_timeline": {
+                "labels": hyd_timeline_labels,
+                "consumed": hyd_timeline_consumed,
+                "goals": hyd_timeline_goals,
+            },
+            "hyd_dow": {"labels": dow_names, "values": hyd_dow_avgs},
+            "hyd_heatmap": hyd_heatmap,
+            "hyd_scatter": hyd_scatter,
         },
     }
 
