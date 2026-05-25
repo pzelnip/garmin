@@ -22,6 +22,10 @@ def number_of_days_picker():
     return number_picker("How many days in period?", 7)
 
 
+def _round_or_none(v):
+    return round(v) if v is not None else None
+
+
 def get_from_garmin(day: date, session) -> DayStats:
     orig_day = day
     day = day.isoformat()
@@ -31,6 +35,13 @@ def get_from_garmin(day: date, session) -> DayStats:
     sleep(random())
 
     entry = API.get_stats_and_body(day)
+
+    try:
+        hydration = API.get_hydration_data(day) or {}
+    except Exception as ex:  # pylint: disable=broad-except
+        logging.warning(f"Could not fetch hydration for {day}: {ex}")
+        hydration = {}
+
     daystats = DayStats(
         day=orig_day,
         step_count=entry["totalSteps"],
@@ -50,6 +61,8 @@ def get_from_garmin(day: date, session) -> DayStats:
         max_stress=entry["maxStressLevel"],
         resting_heart_rate=entry["restingHeartRate"],
         stress=entry["averageStressLevel"],
+        water_consumed_ml=_round_or_none(hydration.get("valueInML")),
+        water_goal_ml=_round_or_none(hydration.get("goalInML")),
         source=Source.garmin,
     )
 

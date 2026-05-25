@@ -49,13 +49,15 @@ class Source(enum.Enum):
 
 
 class DayStats(SQLModel, table=True):
-    """Daily summary of activity, body, and health metrics for one day.
+    """Daily summary of activity, body, hydration, and health metrics for one day.
 
     One row per calendar day (the `day` column is unique). Populated by
-    `garmin.py` from the Garmin Connect `get_stats_and_body` endpoint;
-    step_count and daily_step_goal are required, all other biometric fields
-    are optional since they depend on which features the user's device
-    captures (e.g. weight requires a connected scale).
+    `garmin.py` from the Garmin Connect `get_stats_and_body` and
+    `get_hydration_data` endpoints; step_count and daily_step_goal are
+    required, all other biometric and hydration fields are optional since
+    they depend on which features the user's device and apps capture
+    (e.g. weight requires a connected scale; hydration requires manual
+    intake logging in the Garmin Connect app).
     """
 
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -81,6 +83,9 @@ class DayStats(SQLModel, table=True):
     resting_heart_rate: Optional[int]  # restingHeartRate
     stress: Optional[int]  # averageStressLevel
 
+    water_consumed_ml: Optional[int]  # valueInML (rounded)
+    water_goal_ml: Optional[int]  # goalInML (rounded)
+
     source: Source = Field(sa_column=Column(Enum(Source)))  # where the data came from
 
     @property
@@ -94,6 +99,12 @@ class DayStats(SQLModel, table=True):
     @property
     def weight_pounds(self):
         return self.weight_grams * 0.00220462
+
+    @property
+    def water_goal_met(self):
+        if self.water_consumed_ml is None or self.water_goal_ml is None:
+            return False
+        return self.water_consumed_ml >= self.water_goal_ml
 
 
 def _init_db():
