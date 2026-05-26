@@ -20,6 +20,7 @@
             --warn: #fbbf24;
             --danger: #f87171;
             --hyd: #38bdf8;
+            --sleep: #a78bfa;
             --grid: #2a3147;
         }
         * { box-sizing: border-box; }
@@ -75,6 +76,7 @@
         .accent-2 { color: var(--accent-2); }
         .warn { color: var(--warn); }
         .hyd { color: var(--hyd); }
+        .sleep { color: var(--sleep); }
         /* Hydration heatmap palette */
         .hm-cell.hyd-l0 { background: #2d3748; }
         .hm-cell.hyd-l1 { background: #075985; }
@@ -215,6 +217,18 @@
             <div class="stat-sub">lifetime</div>
         </div>
         {% endif %}
+        {% if data.stats.sleep_total_days %}
+        <div class="panel">
+            <div class="stat-label">Avg Sleep / Night</div>
+            <div class="stat-value sleep">{{ data.stats.sleep_avg_hours_str }}</div>
+            <div class="stat-sub">{{ data.stats.sleep_total_days }} nights tracked</div>
+        </div>
+        <div class="panel">
+            <div class="stat-label">Avg Sleep Score</div>
+            <div class="stat-value sleep">{{ data.stats.sleep_avg_score }}</div>
+            <div class="stat-sub">across {{ data.stats.sleep_scored_days }} scored nights</div>
+        </div>
+        {% endif %}
         {% if data.current_streak %}
         <div class="panel" style="grid-column: span 2;">
             <div class="stat-label">Current Streak</div>
@@ -326,6 +340,28 @@
         <div class="chart-panel">
             <h2>Steps vs Water (last 365 days)</h2>
             <div class="chart-wrap"><canvas id="hydScatterChart"></canvas></div>
+        </div>
+        {% endif %}
+
+        {% if data.stats.sleep_total_days %}
+        <div class="chart-panel wide">
+            <h2>Sleep Duration & Score — Last 90 Days</h2>
+            <div class="chart-wrap tall"><canvas id="sleepTimelineChart"></canvas></div>
+        </div>
+
+        <div class="chart-panel wide">
+            <h2>Sleep Stage Breakdown — Last 90 Days</h2>
+            <div class="chart-wrap tall"><canvas id="sleepStagesChart"></canvas></div>
+        </div>
+
+        <div class="chart-panel">
+            <h2>Average Sleep by Day of Week (hours)</h2>
+            <div class="chart-wrap"><canvas id="sleepDowChart"></canvas></div>
+        </div>
+
+        <div class="chart-panel">
+            <h2>Sleep Duration vs Score (last 365 days)</h2>
+            <div class="chart-wrap"><canvas id="sleepScatterChart"></canvas></div>
         </div>
         {% endif %}
     </div>
@@ -716,6 +752,169 @@
                     hydHeatmapEl.appendChild(cell);
                 });
             }
+        }
+
+        // Sleep charts (only render if sleep data exists)
+        const sleepTimelineEl = document.getElementById('sleepTimelineChart');
+        if (sleepTimelineEl) {
+            const sleepColor = '#a78bfa';
+            // Convert seconds to hours for the duration display
+            const sleepHours = charts.sleep_timeline.totals.map(
+                v => v == null ? null : +(v / 3600).toFixed(2)
+            );
+            new Chart(sleepTimelineEl, {
+                type: 'bar',
+                data: {
+                    labels: charts.sleep_timeline.labels,
+                    datasets: [
+                        {
+                            label: 'Sleep (hours)',
+                            data: sleepHours,
+                            backgroundColor: 'rgba(167, 139, 250, 0.6)',
+                            borderColor: sleepColor,
+                            borderWidth: 1,
+                            yAxisID: 'y',
+                        },
+                        {
+                            label: 'Sleep score',
+                            data: charts.sleep_timeline.scores,
+                            type: 'line',
+                            borderColor: warn,
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            pointRadius: 2,
+                            pointBackgroundColor: warn,
+                            yAxisID: 'y1',
+                            tension: 0.3,
+                            spanGaps: true,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: { legend: { labels: { color: '#e6e8ec' } } },
+                    scales: {
+                        x: { grid: { color: grid }, ticks: { color: '#8a92a6', maxTicksLimit: 12 } },
+                        y: {
+                            grid: { color: grid },
+                            ticks: { color: '#8a92a6' },
+                            title: { display: true, text: 'Hours', color: '#8a92a6' },
+                            beginAtZero: true,
+                        },
+                        y1: {
+                            position: 'right',
+                            grid: { display: false },
+                            ticks: { color: '#fbbf24' },
+                            min: 0,
+                            max: 100,
+                            title: { display: true, text: 'Score', color: '#fbbf24' },
+                        }
+                    }
+                }
+            });
+
+            // Stacked sleep stages — convert seconds → minutes for readability
+            const toMinutes = arr => arr.map(v => Math.round(v / 60));
+            new Chart(document.getElementById('sleepStagesChart'), {
+                type: 'bar',
+                data: {
+                    labels: charts.sleep_timeline.labels,
+                    datasets: [
+                        {
+                            label: 'Deep',
+                            data: toMinutes(charts.sleep_timeline.deep),
+                            backgroundColor: '#4c1d95',
+                        },
+                        {
+                            label: 'REM',
+                            data: toMinutes(charts.sleep_timeline.rem),
+                            backgroundColor: '#7c3aed',
+                        },
+                        {
+                            label: 'Light',
+                            data: toMinutes(charts.sleep_timeline.light),
+                            backgroundColor: '#a78bfa',
+                        },
+                        {
+                            label: 'Awake',
+                            data: toMinutes(charts.sleep_timeline.awake),
+                            backgroundColor: '#fbbf24',
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#e6e8ec' } } },
+                    scales: {
+                        x: {
+                            stacked: true,
+                            grid: { color: grid },
+                            ticks: { color: '#8a92a6', maxTicksLimit: 12 }
+                        },
+                        y: {
+                            stacked: true,
+                            grid: { color: grid },
+                            ticks: { color: '#8a92a6' },
+                            title: { display: true, text: 'Minutes', color: '#8a92a6' },
+                        }
+                    }
+                }
+            });
+
+            // Sleep by day-of-week (hours)
+            new Chart(document.getElementById('sleepDowChart'), {
+                type: 'bar',
+                data: {
+                    labels: charts.sleep_dow.labels,
+                    datasets: [{
+                        label: 'Avg hours',
+                        data: charts.sleep_dow.values,
+                        backgroundColor: sleepColor,
+                        borderRadius: 6,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: gridOpts()
+                }
+            });
+
+            // Sleep duration vs score scatter
+            new Chart(document.getElementById('sleepScatterChart'), {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Night',
+                        data: charts.sleep_scatter,
+                        backgroundColor: 'rgba(167, 139, 250, 0.6)',
+                        borderColor: sleepColor,
+                        pointRadius: 4,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: {
+                            grid: { color: grid },
+                            ticks: { color: '#8a92a6' },
+                            title: { display: true, text: 'Hours slept', color: '#8a92a6' },
+                        },
+                        y: {
+                            grid: { color: grid },
+                            ticks: { color: '#8a92a6' },
+                            min: 0, max: 100,
+                            title: { display: true, text: 'Sleep score', color: '#8a92a6' },
+                        }
+                    }
+                }
+            });
         }
     </script>
 </body>

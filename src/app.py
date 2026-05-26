@@ -257,6 +257,46 @@ def _build_dashboard_data():
         if e.day >= cutoff
     ]
 
+    # Sleep — entries where total sleep is recorded
+    sleep_entries = [e for e in entries if e.sleep_total_seconds is not None]
+    sleep_total_days = len(sleep_entries)
+    sleep_avg_seconds = (
+        round(sum(e.sleep_total_seconds for e in sleep_entries) / sleep_total_days)
+        if sleep_total_days else 0
+    )
+    sleep_scored = [e for e in sleep_entries if e.sleep_score is not None]
+    sleep_avg_score = (
+        round(mean(e.sleep_score for e in sleep_scored)) if sleep_scored else 0
+    )
+
+    # Sleep timeline — last 90 days
+    sleep_cutoff = today - timedelta(days=90)
+    sleep_recent = [e for e in sleep_entries if e.day >= sleep_cutoff]
+    sleep_timeline_labels = [e.day.isoformat() for e in sleep_recent]
+    sleep_timeline_totals = [e.sleep_total_seconds for e in sleep_recent]
+    sleep_timeline_scores = [e.sleep_score for e in sleep_recent]
+    # Stage breakdown — separate datasets so they can stack
+    sleep_stages_deep = [e.sleep_deep_seconds or 0 for e in sleep_recent]
+    sleep_stages_light = [e.sleep_light_seconds or 0 for e in sleep_recent]
+    sleep_stages_rem = [e.sleep_rem_seconds or 0 for e in sleep_recent]
+    sleep_stages_awake = [e.sleep_awake_seconds or 0 for e in sleep_recent]
+
+    # Sleep by day-of-week (avg hours)
+    sleep_dow_buckets = defaultdict(list)
+    for e in sleep_entries:
+        sleep_dow_buckets[e.day.weekday()].append(e.sleep_total_seconds)
+    sleep_dow_avgs = [
+        round(mean(sleep_dow_buckets[i]) / 3600, 2) if sleep_dow_buckets[i] else 0
+        for i in range(7)
+    ]
+
+    # Sleep score vs sleep duration scatter — last 365 days, only days with both
+    sleep_scatter = [
+        {"x": round(e.sleep_total_seconds / 3600, 2), "y": e.sleep_score}
+        for e in sleep_entries
+        if e.day >= cutoff and e.sleep_score is not None
+    ]
+
     return {
         "stats": {
             "total_days": total_days,
@@ -273,6 +313,13 @@ def _build_dashboard_data():
             "hyd_goal_days": hyd_goal_days,
             "hyd_goal_pct": hyd_goal_pct,
             "hyd_total_liters": round(hyd_total_ml / 1000, 1),
+            "sleep_total_days": sleep_total_days,
+            "sleep_avg_hours_str": (
+                f"{sleep_avg_seconds // 3600}h {(sleep_avg_seconds % 3600) // 60:02d}m"
+                if sleep_total_days else "—"
+            ),
+            "sleep_avg_score": sleep_avg_score,
+            "sleep_scored_days": len(sleep_scored),
         },
         "current_streak": (
             {
@@ -322,6 +369,17 @@ def _build_dashboard_data():
             "hyd_dow": {"labels": dow_names, "values": hyd_dow_avgs},
             "hyd_heatmap": hyd_heatmap,
             "hyd_scatter": hyd_scatter,
+            "sleep_timeline": {
+                "labels": sleep_timeline_labels,
+                "totals": sleep_timeline_totals,
+                "scores": sleep_timeline_scores,
+                "deep": sleep_stages_deep,
+                "light": sleep_stages_light,
+                "rem": sleep_stages_rem,
+                "awake": sleep_stages_awake,
+            },
+            "sleep_dow": {"labels": dow_names, "values": sleep_dow_avgs},
+            "sleep_scatter": sleep_scatter,
         },
     }
 
