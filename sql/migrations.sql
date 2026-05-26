@@ -7,3 +7,11 @@
 -- 2026-05: add hydration columns (water_consumed_ml, water_goal_ml).
 ALTER TABLE daystats ADD COLUMN water_consumed_ml INTEGER;
 ALTER TABLE daystats ADD COLUMN water_goal_ml INTEGER;
+
+-- 2026-05: add sleep columns (total + 4 stages + score).
+ALTER TABLE daystats ADD COLUMN sleep_total_seconds INTEGER;
+ALTER TABLE daystats ADD COLUMN sleep_deep_seconds INTEGER;
+ALTER TABLE daystats ADD COLUMN sleep_light_seconds INTEGER;
+ALTER TABLE daystats ADD COLUMN sleep_rem_seconds INTEGER;
+ALTER TABLE daystats ADD COLUMN sleep_awake_seconds INTEGER;
+ALTER TABLE daystats ADD COLUMN sleep_score INTEGER;

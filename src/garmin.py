@@ -42,6 +42,17 @@ def get_from_garmin(day: date, session) -> DayStats:
         logging.warning(f"Could not fetch hydration for {day}: {ex}")
         hydration = {}
 
+    try:
+        sleep_data = API.get_sleep_data(day) or {}
+    except Exception as ex:  # pylint: disable=broad-except
+        logging.warning(f"Could not fetch sleep for {day}: {ex}")
+        sleep_data = {}
+
+    sleep_dto = sleep_data.get("dailySleepDTO") or {}
+    sleep_score = (
+        (sleep_dto.get("sleepScores") or {}).get("overall") or {}
+    ).get("value")
+
     daystats = DayStats(
         day=orig_day,
         step_count=entry["totalSteps"],
@@ -63,6 +74,12 @@ def get_from_garmin(day: date, session) -> DayStats:
         stress=entry["averageStressLevel"],
         water_consumed_ml=_round_or_none(hydration.get("valueInML")),
         water_goal_ml=_round_or_none(hydration.get("goalInML")),
+        sleep_total_seconds=sleep_dto.get("sleepTimeSeconds"),
+        sleep_deep_seconds=sleep_dto.get("deepSleepSeconds"),
+        sleep_light_seconds=sleep_dto.get("lightSleepSeconds"),
+        sleep_rem_seconds=sleep_dto.get("remSleepSeconds"),
+        sleep_awake_seconds=sleep_dto.get("awakeSleepSeconds"),
+        sleep_score=sleep_score,
         source=Source.garmin,
     )
 

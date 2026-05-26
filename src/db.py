@@ -49,15 +49,16 @@ class Source(enum.Enum):
 
 
 class DayStats(SQLModel, table=True):
-    """Daily summary of activity, body, hydration, and health metrics for one day.
+    """Daily summary of activity, body, hydration, sleep, and health metrics for one day.
 
     One row per calendar day (the `day` column is unique). Populated by
-    `garmin.py` from the Garmin Connect `get_stats_and_body` and
-    `get_hydration_data` endpoints; step_count and daily_step_goal are
-    required, all other biometric and hydration fields are optional since
-    they depend on which features the user's device and apps capture
-    (e.g. weight requires a connected scale; hydration requires manual
-    intake logging in the Garmin Connect app).
+    `garmin.py` from the Garmin Connect `get_stats_and_body`,
+    `get_hydration_data`, and `get_sleep_data` endpoints; step_count and
+    daily_step_goal are required, all other biometric, hydration, and
+    sleep fields are optional since they depend on which features the
+    user's device and apps capture (e.g. weight requires a connected
+    scale; hydration requires manual intake logging in the Garmin Connect
+    app; sleep requires the device to be worn at night).
     """
 
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -85,6 +86,13 @@ class DayStats(SQLModel, table=True):
 
     water_consumed_ml: Optional[int]  # valueInML (rounded)
     water_goal_ml: Optional[int]  # goalInML (rounded)
+
+    sleep_total_seconds: Optional[int]  # dailySleepDTO.sleepTimeSeconds
+    sleep_deep_seconds: Optional[int]  # dailySleepDTO.deepSleepSeconds
+    sleep_light_seconds: Optional[int]  # dailySleepDTO.lightSleepSeconds
+    sleep_rem_seconds: Optional[int]  # dailySleepDTO.remSleepSeconds
+    sleep_awake_seconds: Optional[int]  # dailySleepDTO.awakeSleepSeconds
+    sleep_score: Optional[int]  # dailySleepDTO.sleepScores.overall.value
 
     source: Source = Field(sa_column=Column(Enum(Source)))  # where the data came from
 
