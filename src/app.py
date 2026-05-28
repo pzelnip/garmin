@@ -385,6 +385,24 @@ def _build_dashboard_data():
     }
 
 
+def _git_sha():
+    repo_root = os.path.abspath(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+    )
+    try:
+        out = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=repo_root,
+            capture_output=True,
+            text=True,
+            timeout=2,
+            check=True,
+        )
+        return out.stdout.strip()
+    except Exception:  # pylint: disable=broad-except
+        return None
+
+
 @app.route("/dashboard")
 def dashboard():
     data = _build_dashboard_data()
@@ -395,6 +413,7 @@ def dashboard():
     return env.get_template("dashboard.jinja2").render(
         data=data,
         charts_json=json.dumps(data["charts"]),
+        git_sha=_git_sha(),
     )
 
 

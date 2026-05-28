@@ -318,6 +318,15 @@
         #debug-status.show { display: block; }
         #debug-status.ok { background: rgba(94, 234, 212, 0.12); color: var(--accent); }
         #debug-status.err { background: rgba(248, 113, 113, 0.12); color: var(--danger); }
+        .version-footer {
+            margin-top: 48px;
+            padding-top: 16px;
+            border-top: 1px solid var(--grid);
+            color: var(--text-dim);
+            font-size: 11px;
+            text-align: center;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        }
     </style>
 </head>
 <body>
@@ -626,6 +635,10 @@
     {% endif %}
     </div>
     <!-- /SLEEP TAB -->
+
+    {% if git_sha %}
+    <div class="version-footer">{{ git_sha }}</div>
+    {% endif %}
 
     <script>
         const charts = {{ charts_json | safe }};
