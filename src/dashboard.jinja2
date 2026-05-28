@@ -10,6 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
     <style>
         :root {
             --bg: #0f1419;
@@ -681,7 +682,69 @@
             }
         });
 
-        // Cumulative
+        // Cumulative — compute 5M-step milestone crossings, then turn each
+        // into a labeled annotation overlay (reference line + point + box).
+        const MILESTONE_STEP = 5_000_000;
+        const milestones = [];
+        let nextMilestone = MILESTONE_STEP;
+        for (let i = 0; i < charts.cumulative.values.length; i++) {
+            while (charts.cumulative.values[i] >= nextMilestone) {
+                milestones.push({
+                    value: nextMilestone,
+                    label: charts.cumulative.labels[i],
+                });
+                nextMilestone += MILESTONE_STEP;
+            }
+        }
+
+        // A small palette so each milestone gets a distinct hue (cycles if many).
+        const milestonePalette = [
+            '#ec4899', '#a78bfa', '#38bdf8', '#5eead4',
+            '#fbbf24', '#f87171', '#818cf8', '#34d399',
+        ];
+
+        const annotations = {};
+        milestones.forEach((m, i) => {
+            const color = milestonePalette[i % milestonePalette.length];
+            const mLabel = `${(m.value / 1_000_000).toFixed(0)}M`;
+            // Horizontal reference line at the milestone's y value
+            annotations['ref' + i] = {
+                type: 'line',
+                yMin: m.value,
+                yMax: m.value,
+                borderColor: color,
+                borderWidth: 1,
+                borderDash: [4, 4],
+            };
+            // Point at the crossing
+            annotations['pt' + i] = {
+                type: 'point',
+                xValue: m.label,
+                yValue: m.value,
+                backgroundColor: color,
+                borderColor: '#0f1419',
+                borderWidth: 2,
+                radius: 5,
+            };
+            // Label box anchored just above-left of the crossing point
+            annotations['lbl' + i] = {
+                type: 'label',
+                xValue: m.label,
+                yValue: m.value,
+                xAdjust: -40,
+                yAdjust: -22,
+                backgroundColor: 'rgba(15, 20, 25, 0.85)',
+                borderColor: color,
+                borderWidth: 1,
+                borderRadius: 4,
+                color: color,
+                font: { size: 11, weight: '600' },
+                padding: { top: 3, bottom: 3, left: 6, right: 6 },
+                content: [`crossed ${mLabel}`, m.label],
+                textAlign: 'left',
+            };
+        });
+
         new Chart(document.getElementById('cumulativeChart'), {
             type: 'line',
             data: {
@@ -694,13 +757,21 @@
                     borderWidth: 2,
                     fill: true,
                     pointRadius: 0,
-                    tension: 0.2
+                    tension: 0.2,
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
+                plugins: {
+                    legend: { display: false },
+                    annotation: { annotations: annotations },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => `${ctx.parsed.y.toLocaleString()} steps`,
+                        }
+                    }
+                },
                 scales: gridOpts()
             }
         });
