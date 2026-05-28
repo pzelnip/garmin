@@ -8,6 +8,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
     <style>
         :root {
             --bg: #0f1419;
@@ -201,6 +203,38 @@
             padding: 60px 20px;
             font-size: 15px;
         }
+        /* Range controls (per-chart time window selector) */
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .panel-header h2 { margin: 0; }
+        .range-controls {
+            display: inline-flex;
+            background: var(--panel-2);
+            border-radius: 6px;
+            padding: 2px;
+        }
+        .range-btn {
+            background: transparent;
+            color: var(--text-dim);
+            border: none;
+            padding: 4px 10px;
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 500;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+        .range-btn:hover { color: var(--text); }
+        .range-btn.active {
+            background: var(--panel);
+            color: var(--text);
+        }
     </style>
 </head>
 <body>
@@ -298,21 +332,40 @@
 
         {% if data.charts.rhr.values %}
         <div class="chart-panel">
-            <h2>Resting Heart Rate</h2>
+            <div class="panel-header">
+                <h2>Resting Heart Rate</h2>
+                <div class="range-controls" data-canvas="rhrChart">
+                    <button class="range-btn" data-days="90">90d</button>
+                    <button class="range-btn" data-days="365">365d</button>
+                    <button class="range-btn active" data-days="all">All</button>
+                </div>
+            </div>
             <div class="chart-wrap"><canvas id="rhrChart"></canvas></div>
         </div>
         {% endif %}
 
         {% if data.charts.stress.values %}
         <div class="chart-panel">
-            <h2>Average Stress Level</h2>
+            <div class="panel-header">
+                <h2>Average Stress Level</h2>
+                <div class="range-controls" data-canvas="stressChart">
+                    <button class="range-btn" data-days="90">90d</button>
+                    <button class="range-btn" data-days="365">365d</button>
+                    <button class="range-btn active" data-days="all">All</button>
+                </div>
+            </div>
             <div class="chart-wrap"><canvas id="stressChart"></canvas></div>
         </div>
         {% endif %}
 
         {% if data.charts.weight.values %}
         <div class="chart-panel">
-            <h2>Weight (lbs)</h2>
+            <div class="panel-header">
+                <h2>Weight (lbs)</h2>
+                <div class="range-controls">
+                    <button class="range-btn" id="weightZoomReset" title="Reset zoom">Reset zoom</button>
+                </div>
+            </div>
             <div class="chart-wrap"><canvas id="weightChart"></canvas></div>
         </div>
         {% endif %}
@@ -654,8 +707,8 @@
 
         function simpleLine(canvasId, labels, values, color) {
             const el = document.getElementById(canvasId);
-            if (!el) return;
-            new Chart(el, {
+            if (!el) return null;
+            return new Chart(el, {
                 type: 'line',
                 data: {
                     labels: labels,
@@ -677,9 +730,94 @@
             });
         }
 
-        simpleLine('rhrChart', charts.rhr.labels, charts.rhr.values, danger);
-        simpleLine('stressChart', charts.stress.labels, charts.stress.values, warn);
-        simpleLine('weightChart', charts.weight.labels, charts.weight.values, accent2);
+        // Build range-filterable charts. Keep the full series alongside the chart
+        // instance so a range-button click can re-slice without re-fetching.
+        const rangeable = {};
+        function registerRangeable(canvasId, labels, values, color) {
+            const chart = simpleLine(canvasId, labels, values, color);
+            if (chart) rangeable[canvasId] = { chart, labels, values };
+        }
+        registerRangeable('rhrChart', charts.rhr.labels, charts.rhr.values, danger);
+        registerRangeable('stressChart', charts.stress.labels, charts.stress.values, warn);
+
+        const weightEl = document.getElementById('weightChart');
+        let weightChart = null;
+        if (weightEl) {
+            weightChart = new Chart(weightEl, {
+                type: 'line',
+                data: {
+                    labels: charts.weight.labels,
+                    datasets: [{
+                        data: charts.weight.values,
+                        borderColor: accent2,
+                        backgroundColor: 'transparent',
+                        borderWidth: 1.5,
+                        pointRadius: 0,
+                        tension: 0.2,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        zoom: {
+                            zoom: {
+                                drag: {
+                                    enabled: true,
+                                    backgroundColor: 'rgba(129, 140, 248, 0.2)',
+                                    borderColor: accent2,
+                                    borderWidth: 1,
+                                },
+                                mode: 'x',
+                            },
+                            // Disable wheel/pinch so only the drag gesture zooms
+                            pan: { enabled: false },
+                        }
+                    },
+                    scales: gridOpts()
+                }
+            });
+
+            const resetBtn = document.getElementById('weightZoomReset');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', () => weightChart.resetZoom());
+            }
+        }
+
+        function applyRange(canvasId, days) {
+            const entry = rangeable[canvasId];
+            if (!entry) return;
+            if (days === 'all' || !days) {
+                entry.chart.data.labels = entry.labels;
+                entry.chart.data.datasets[0].data = entry.values;
+            } else {
+                const cutoff = new Date();
+                cutoff.setDate(cutoff.getDate() - Number(days));
+                const cutoffIso = cutoff.toISOString().slice(0, 10);
+                // Labels are ISO YYYY-MM-DD strings, so lexical compare works.
+                const startIdx = entry.labels.findIndex(d => d >= cutoffIso);
+                if (startIdx === -1) {
+                    entry.chart.data.labels = [];
+                    entry.chart.data.datasets[0].data = [];
+                } else {
+                    entry.chart.data.labels = entry.labels.slice(startIdx);
+                    entry.chart.data.datasets[0].data = entry.values.slice(startIdx);
+                }
+            }
+            entry.chart.update();
+        }
+
+        document.querySelectorAll('.range-controls').forEach(group => {
+            const canvasId = group.dataset.canvas;
+            group.querySelectorAll('.range-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    group.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    applyRange(canvasId, btn.dataset.days);
+                });
+            });
+        });
 
         if (charts.floors.values.length) {
             new Chart(document.getElementById('floorsChart'), {
