@@ -3,6 +3,7 @@ set -euo pipefail
 
 cd /home/pi/temp/sandbox/garmin
 git pull origin main
+sudo systemctl restart garmin.service
 
 set -a
 source ./.envrc
