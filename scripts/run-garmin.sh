@@ -2,6 +2,8 @@
 set -euo pipefail
 
 cd /home/pi/temp/sandbox/garmin
+git pull origin main
+
 set -a
 source ./.envrc
 set +a
