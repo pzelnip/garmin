@@ -167,12 +167,55 @@
             border-radius: 10px;
             font-weight: 600;
         }
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            border-bottom: 1px solid var(--grid);
+            margin: 0 0 24px;
+        }
+        .tab-btn {
+            background: transparent;
+            color: var(--text-dim);
+            border: none;
+            border-bottom: 2px solid transparent;
+            padding: 10px 18px;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: color 0.15s, border-color 0.15s;
+        }
+        .tab-btn:hover { color: var(--text); }
+        .tab-btn.active {
+            color: var(--text);
+            border-bottom-color: var(--accent);
+        }
+        .tab-btn[data-tab="water"].active { border-bottom-color: var(--hyd); }
+        .tab-btn[data-tab="sleep"].active { border-bottom-color: var(--sleep); }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+        .empty-state {
+            text-align: center;
+            color: var(--text-dim);
+            padding: 60px 20px;
+            font-size: 15px;
+        }
     </style>
 </head>
 <body>
-    <h1>Steps Dashboard</h1>
+    <h1>Health Dashboard</h1>
     <div class="subtitle">{{ data.stats.total_days }} days tracked · {{ "{:,}".format(data.stats.total_steps) }} total steps</div>
 
+    <!-- Tabs -->
+    <div class="tabs" role="tablist">
+        <button class="tab-btn active" data-tab="steps" role="tab">Steps</button>
+        <button class="tab-btn" data-tab="water" role="tab">Water</button>
+        <button class="tab-btn" data-tab="sleep" role="tab">Sleep</button>
+    </div>
+
+    <!-- ============================ STEPS TAB ============================ -->
+    <div class="tab-panel active" data-tab="steps">
     <!-- Top-line stats -->
     <div class="grid">
         <div class="panel">
@@ -200,35 +243,6 @@
             <div class="stat-value warn">{{ "{:,}".format(data.stats.total_floors) }}</div>
             <div class="stat-sub">lifetime</div>
         </div>
-        {% if data.stats.hyd_total_days %}
-        <div class="panel">
-            <div class="stat-label">Avg Water / Day</div>
-            <div class="stat-value hyd">{{ "{:,}".format(data.stats.hyd_avg_ml) }} ml</div>
-            <div class="stat-sub">{{ data.stats.hyd_total_days }} days tracked</div>
-        </div>
-        <div class="panel">
-            <div class="stat-label">Hydration Goal Met</div>
-            <div class="stat-value hyd">{{ data.stats.hyd_goal_days }}</div>
-            <div class="stat-sub">{{ "%.1f"|format(data.stats.hyd_goal_pct) }}% of tracked days</div>
-        </div>
-        <div class="panel">
-            <div class="stat-label">Total Water</div>
-            <div class="stat-value hyd">{{ "{:,}".format(data.stats.hyd_total_liters) }} L</div>
-            <div class="stat-sub">lifetime</div>
-        </div>
-        {% endif %}
-        {% if data.stats.sleep_total_days %}
-        <div class="panel">
-            <div class="stat-label">Avg Sleep / Night</div>
-            <div class="stat-value sleep">{{ data.stats.sleep_avg_hours_str }}</div>
-            <div class="stat-sub">{{ data.stats.sleep_total_days }} nights tracked</div>
-        </div>
-        <div class="panel">
-            <div class="stat-label">Avg Sleep Score</div>
-            <div class="stat-value sleep">{{ data.stats.sleep_avg_score }}</div>
-            <div class="stat-sub">across {{ data.stats.sleep_scored_days }} scored nights</div>
-        </div>
-        {% endif %}
         {% if data.current_streak %}
         <div class="panel" style="grid-column: span 2;">
             <div class="stat-label">Current Streak</div>
@@ -254,22 +268,6 @@
             <span>More (goal met)</span>
         </div>
     </div>
-
-    {% if data.stats.hyd_total_days %}
-    <div class="chart-panel" style="margin-bottom: 24px;">
-        <h2>Hydration Heatmap — Last 365 Days</h2>
-        <div class="heatmap" id="hydHeatmap"></div>
-        <div class="legend">
-            <span>Less</span>
-            <span class="legend-cell hyd-l0"></span>
-            <span class="legend-cell hyd-l1"></span>
-            <span class="legend-cell hyd-l2"></span>
-            <span class="legend-cell hyd-l3"></span>
-            <span class="legend-cell hyd-l4"></span>
-            <span>More (goal met)</span>
-        </div>
-    </div>
-    {% endif %}
 
     <!-- Charts -->
     <div class="chart-grid">
@@ -326,44 +324,6 @@
         </div>
         {% endif %}
 
-        {% if data.stats.hyd_total_days %}
-        <div class="chart-panel wide">
-            <h2>Daily Hydration vs Goal — Last 90 Days</h2>
-            <div class="chart-wrap tall"><canvas id="hydTimelineChart"></canvas></div>
-        </div>
-
-        <div class="chart-panel">
-            <h2>Average Water by Day of Week</h2>
-            <div class="chart-wrap"><canvas id="hydDowChart"></canvas></div>
-        </div>
-
-        <div class="chart-panel">
-            <h2>Steps vs Water (last 365 days)</h2>
-            <div class="chart-wrap"><canvas id="hydScatterChart"></canvas></div>
-        </div>
-        {% endif %}
-
-        {% if data.stats.sleep_total_days %}
-        <div class="chart-panel wide">
-            <h2>Sleep Duration & Score — Last 90 Days</h2>
-            <div class="chart-wrap tall"><canvas id="sleepTimelineChart"></canvas></div>
-        </div>
-
-        <div class="chart-panel wide">
-            <h2>Sleep Stage Breakdown — Last 90 Days</h2>
-            <div class="chart-wrap tall"><canvas id="sleepStagesChart"></canvas></div>
-        </div>
-
-        <div class="chart-panel">
-            <h2>Average Sleep by Day of Week (hours)</h2>
-            <div class="chart-wrap"><canvas id="sleepDowChart"></canvas></div>
-        </div>
-
-        <div class="chart-panel">
-            <h2>Sleep Duration vs Score (last 365 days)</h2>
-            <div class="chart-wrap"><canvas id="sleepScatterChart"></canvas></div>
-        </div>
-        {% endif %}
     </div>
 
     <!-- Tables -->
@@ -417,6 +377,103 @@
             </table>
         </div>
     </div>
+    </div>
+    <!-- /STEPS TAB -->
+
+    <!-- ============================ WATER TAB ============================ -->
+    <div class="tab-panel" data-tab="water">
+    {% if data.stats.hyd_total_days %}
+    <div class="grid">
+        <div class="panel">
+            <div class="stat-label">Avg Water / Day</div>
+            <div class="stat-value hyd">{{ "{:,}".format(data.stats.hyd_avg_ml) }} ml</div>
+            <div class="stat-sub">{{ data.stats.hyd_total_days }} days tracked</div>
+        </div>
+        <div class="panel">
+            <div class="stat-label">Hydration Goal Met</div>
+            <div class="stat-value hyd">{{ data.stats.hyd_goal_days }}</div>
+            <div class="stat-sub">{{ "%.1f"|format(data.stats.hyd_goal_pct) }}% of tracked days</div>
+        </div>
+        <div class="panel">
+            <div class="stat-label">Total Water</div>
+            <div class="stat-value hyd">{{ "{:,}".format(data.stats.hyd_total_liters) }} L</div>
+            <div class="stat-sub">lifetime</div>
+        </div>
+    </div>
+
+    <div class="chart-panel" style="margin-bottom: 24px;">
+        <h2>Hydration Heatmap — Last 365 Days</h2>
+        <div class="heatmap" id="hydHeatmap"></div>
+        <div class="legend">
+            <span>Less</span>
+            <span class="legend-cell hyd-l0"></span>
+            <span class="legend-cell hyd-l1"></span>
+            <span class="legend-cell hyd-l2"></span>
+            <span class="legend-cell hyd-l3"></span>
+            <span class="legend-cell hyd-l4"></span>
+            <span>More (goal met)</span>
+        </div>
+    </div>
+
+    <div class="chart-grid">
+        <div class="chart-panel wide">
+            <h2>Daily Hydration vs Goal — Last 90 Days</h2>
+            <div class="chart-wrap tall"><canvas id="hydTimelineChart"></canvas></div>
+        </div>
+        <div class="chart-panel">
+            <h2>Average Water by Day of Week</h2>
+            <div class="chart-wrap"><canvas id="hydDowChart"></canvas></div>
+        </div>
+        <div class="chart-panel">
+            <h2>Steps vs Water (last 365 days)</h2>
+            <div class="chart-wrap"><canvas id="hydScatterChart"></canvas></div>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">No hydration data yet. Once Garmin Connect logs water intake for a day, it will show up here.</div>
+    {% endif %}
+    </div>
+    <!-- /WATER TAB -->
+
+    <!-- ============================ SLEEP TAB ============================ -->
+    <div class="tab-panel" data-tab="sleep">
+    {% if data.stats.sleep_total_days %}
+    <div class="grid">
+        <div class="panel">
+            <div class="stat-label">Avg Sleep / Night</div>
+            <div class="stat-value sleep">{{ data.stats.sleep_avg_hours_str }}</div>
+            <div class="stat-sub">{{ data.stats.sleep_total_days }} nights tracked</div>
+        </div>
+        <div class="panel">
+            <div class="stat-label">Avg Sleep Score</div>
+            <div class="stat-value sleep">{{ data.stats.sleep_avg_score }}</div>
+            <div class="stat-sub">across {{ data.stats.sleep_scored_days }} scored nights</div>
+        </div>
+    </div>
+
+    <div class="chart-grid">
+        <div class="chart-panel wide">
+            <h2>Sleep Duration & Score — Last 90 Days</h2>
+            <div class="chart-wrap tall"><canvas id="sleepTimelineChart"></canvas></div>
+        </div>
+        <div class="chart-panel wide">
+            <h2>Sleep Stage Breakdown — Last 90 Days</h2>
+            <div class="chart-wrap tall"><canvas id="sleepStagesChart"></canvas></div>
+        </div>
+        <div class="chart-panel">
+            <h2>Average Sleep by Day of Week (hours)</h2>
+            <div class="chart-wrap"><canvas id="sleepDowChart"></canvas></div>
+        </div>
+        <div class="chart-panel">
+            <h2>Sleep Duration vs Score (last 365 days)</h2>
+            <div class="chart-wrap"><canvas id="sleepScatterChart"></canvas></div>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">No sleep data yet. Sleep data populates from the next Garmin sync once the device has been worn at night.</div>
+    {% endif %}
+    </div>
+    <!-- /SLEEP TAB -->
 
     <script>
         const charts = {{ charts_json | safe }};
@@ -916,6 +973,41 @@
                 }
             });
         }
+
+        // -------- Tab switching --------
+        const TAB_STORAGE_KEY = 'dashboard.activeTab';
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        const tabPanels = document.querySelectorAll('.tab-panel');
+
+        function activateTab(name) {
+            tabButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tab === name);
+            });
+            tabPanels.forEach(panel => {
+                const isActive = panel.dataset.tab === name;
+                panel.classList.toggle('active', isActive);
+                if (isActive) {
+                    // Resize any Chart.js instances inside the now-visible panel
+                    panel.querySelectorAll('canvas').forEach(canvas => {
+                        const chart = Chart.getChart(canvas);
+                        if (chart) chart.resize();
+                    });
+                }
+            });
+            try { localStorage.setItem(TAB_STORAGE_KEY, name); } catch (_) {}
+        }
+
+        tabButtons.forEach(btn => {
+            btn.addEventListener('click', () => activateTab(btn.dataset.tab));
+        });
+
+        // Restore last-selected tab if it still exists
+        try {
+            const saved = localStorage.getItem(TAB_STORAGE_KEY);
+            if (saved && document.querySelector(`.tab-panel[data-tab="${saved}"]`)) {
+                activateTab(saved);
+            }
+        } catch (_) {}
     </script>
 </body>
 </html>
