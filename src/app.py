@@ -1,13 +1,14 @@
 import atexit
 import json
 import os
+import subprocess
 from collections import defaultdict
 from datetime import datetime, timedelta
 from statistics import mean
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
-from flask import Flask
+from flask import Flask, jsonify
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from sqlmodel import select
@@ -395,6 +396,31 @@ def dashboard():
         data=data,
         charts_json=json.dumps(data["charts"]),
     )
+
+
+# Triggered by the dashboard's debug-panel "Force update" button. Spawns
+# scripts/force-update.sh detached so it survives the systemctl restart
+# that kills this process.
+FORCE_UPDATE_SCRIPT = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "scripts", "force-update.sh"
+)
+
+
+@app.route("/api/force-update", methods=["POST"])
+def force_update():
+    script = os.path.abspath(FORCE_UPDATE_SCRIPT)
+    if not os.path.isfile(script):
+        return jsonify({"error": f"script not found at {script}"}), 500
+    try:
+        subprocess.Popen(
+            ["/usr/bin/env", "bash", script],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+        return jsonify({"started": True})
+    except Exception as ex:  # pylint: disable=broad-except
+        return jsonify({"error": str(ex)}), 500
 
 
 if __name__ == "__main__":
