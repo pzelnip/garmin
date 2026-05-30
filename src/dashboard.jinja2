@@ -170,6 +170,15 @@
             border-radius: 10px;
             font-weight: 600;
         }
+        .streak-none {
+            background: var(--panel-2);
+            color: var(--text-dim);
+            padding: 16px;
+            border-radius: 10px;
+            font-weight: 500;
+            font-style: italic;
+            border: 1px dashed var(--grid);
+        }
         /* Tabs */
         .tabs {
             display: flex;
@@ -385,15 +394,19 @@
             <div class="stat-value warn">{{ "{:,}".format(data.stats.total_floors) }}</div>
             <div class="stat-sub">lifetime</div>
         </div>
-        {% if data.current_streak %}
         <div class="panel" style="grid-column: span 2;">
             <div class="stat-label">Current Streak</div>
+            {% if data.current_streak %}
             <div class="streak-current">
                 {{ data.current_streak.days }} day{{ '' if data.current_streak.days == 1 else 's' }} —
                 {{ data.current_streak.start }} → {{ data.current_streak.end }}
             </div>
+            {% else %}
+            <div class="streak-none">
+                No streak in progress — get moving!
+            </div>
+            {% endif %}
         </div>
-        {% endif %}
     </div>
 
     <!-- Heatmap -->
