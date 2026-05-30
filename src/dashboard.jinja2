@@ -280,6 +280,27 @@
             border-color: var(--sleep);
             box-shadow: 0 0 0 1px var(--sleep);
         }
+        .tab-btn[data-tooltip] { position: relative; }
+        .tab-btn[data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            background: rgba(0, 0, 0, 0.92);
+            color: #fff;
+            border-radius: 4px;
+            padding: 6px 10px;
+            font-size: 12px;
+            line-height: 1.4;
+            font-weight: normal;
+            width: max-content;
+            max-width: 280px;
+            white-space: normal;
+            text-align: left;
+            pointer-events: none;
+            z-index: 200;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        }
         .tab-panel { display: none; }
         .tab-panel.active { display: block; }
         .empty-state {
@@ -603,13 +624,16 @@
 
     <!-- Tabs -->
     <div class="tabs" role="tablist">
-        <button class="tab-btn active" data-tab="steps" role="tab">
+        <button class="tab-btn active" data-tab="steps" role="tab"
+                data-tooltip="Daily step counts, goal-met streaks, day-of-week patterns, monthly totals, and the cumulative-steps milestone chart.">
             <span class="tab-icon" aria-hidden="true">👟</span> Steps
         </button>
-        <button class="tab-btn" data-tab="water" role="tab">
+        <button class="tab-btn" data-tab="water" role="tab"
+                data-tooltip="Daily water intake vs goal — totals, % of goal met, heatmap, and a steps-vs-hydration scatter.">
             <span class="tab-icon" aria-hidden="true">💧</span> Water
         </button>
-        <button class="tab-btn" data-tab="sleep" role="tab">
+        <button class="tab-btn" data-tab="sleep" role="tab"
+                data-tooltip="Nightly sleep duration and quality score — sleep-stage breakdown, day-of-week patterns, and a duration-vs-score scatter.">
             <span class="tab-icon" aria-hidden="true">🌙</span> Sleep
         </button>
     </div>
