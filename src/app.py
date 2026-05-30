@@ -114,6 +114,7 @@ def _build_dashboard_data():
     recent = [e for e in entries if e.day >= cutoff]
     recent_labels = [e.day.isoformat() for e in recent]
     recent_steps = [e.step_count for e in recent]
+    recent_goals = [e.daily_step_goal for e in recent]
     rolling_7 = _rolling_avg(recent_steps, 7)
     rolling_30 = _rolling_avg(recent_steps, 30)
 
@@ -447,6 +448,7 @@ def _build_dashboard_data():
             "recent": {
                 "labels": recent_labels,
                 "steps": recent_steps,
+                "goals": recent_goals,
                 "rolling_7": rolling_7,
                 "rolling_30": rolling_30,
             },
