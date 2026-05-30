@@ -57,6 +57,38 @@
             border-radius: 12px;
             padding: 20px;
         }
+        .panel[data-tooltip] { cursor: help; position: relative; }
+        .panel[data-tooltip]::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #0f1419;
+            color: var(--text);
+            border: 1px solid var(--grid);
+            border-radius: 6px;
+            padding: 8px 10px;
+            font-size: 12px;
+            line-height: 1.4;
+            font-weight: normal;
+            letter-spacing: normal;
+            text-transform: none;
+            width: max-content;
+            max-width: 280px;
+            white-space: normal;
+            text-align: left;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.15s ease, visibility 0.15s ease;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+        .panel[data-tooltip]:hover::after {
+            opacity: 1;
+            visibility: visible;
+        }
         .stat-label {
             color: var(--text-dim);
             font-size: 11px;
@@ -563,32 +595,32 @@
     <div class="tab-panel active" data-tab="steps">
     <!-- Top-line stats -->
     <div class="grid">
-        <div class="panel">
+        <div class="panel" data-tooltip="Number of distinct days with a step count recorded. The sub-line counts how many separate goal-met streaks have been logged over that history.">
             <div class="stat-label">Days Recorded</div>
             <div class="stat-value">{{ "{:,}".format(data.stats.total_days) }}</div>
             <div class="stat-sub">{{ data.stats.num_streaks }} streaks logged</div>
         </div>
-        <div class="panel">
+        <div class="panel" data-tooltip="Sum total of all steps recorded across all days. Distance is approximated from Garmin's stride length and totaled the same way.">
             <div class="stat-label">Total Steps</div>
             <div class="stat-value accent">{{ "{:,}".format(data.stats.total_steps) }}</div>
             <div class="stat-sub">{{ "{:,}".format(data.stats.total_distance_km) }} km traveled</div>
         </div>
-        <div class="panel">
+        <div class="panel" data-tooltip="Total steps divided by days recorded — your all-time daily average. Best day shows the weekday with the highest average step count.">
             <div class="stat-label">Avg Steps / Day</div>
             <div class="stat-value">{{ "{:,}".format(data.stats.avg_steps) }}</div>
             <div class="stat-sub">Best day: {{ data.stats.dow_best }}</div>
         </div>
-        <div class="panel">
+        <div class="panel" data-tooltip="Count of days where the step count met or exceeded that day's daily goal. The percentage is goal-met days over total days recorded.">
             <div class="stat-label">Goal Met</div>
-            <div class="stat-value accent-2">{{ data.stats.goal_days }}</div>
+            <div class="stat-value accent-2">{{ "{:,}".format(data.stats.goal_days) }}</div>
             <div class="stat-sub">{{ "%.1f"|format(data.stats.goal_pct) }}% of days</div>
         </div>
-        <div class="panel">
+        <div class="panel" data-tooltip="Lifetime total of floors climbed recorded (roughly 10 vertical feet per floor).">
             <div class="stat-label">Floors Climbed</div>
             <div class="stat-value warn">{{ "{:,}".format(data.stats.total_floors) }}</div>
             <div class="stat-sub">lifetime</div>
         </div>
-        <div class="panel" style="grid-column: span 2;">
+        <div class="panel" data-tooltip="Active run of consecutive days where the daily step goal has been met, ending today. Resets to zero on the first day the goal isn't met." style="grid-column: span 2;">
             <div class="stat-label">Current Streak</div>
             {% if data.current_streak %}
             <div class="streak-current">
