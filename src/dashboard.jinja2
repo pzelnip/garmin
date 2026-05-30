@@ -706,7 +706,16 @@
         {{ weekly_comparison_panel(data.stats.weekly_comparison, 'this-week') }}
 
         <div class="chart-panel wide">
-            <h2>Daily Steps with 7-Day & 30-Day Rolling Average</h2>
+            <div class="panel-header">
+                <h2>Daily Steps with 7-Day &amp; 30-Day Rolling Average</h2>
+                <div class="range-controls" id="recent-range">
+                    <button class="range-btn" data-days="7">7d</button>
+                    <button class="range-btn" data-days="30">30d</button>
+                    <button class="range-btn active" data-days="90">90d</button>
+                    <button class="range-btn" data-days="365">365d</button>
+                    <button class="range-btn" data-days="all">All</button>
+                </div>
+            </div>
             <div class="chart-wrap tall"><canvas id="recentChart"></canvas></div>
         </div>
 
@@ -987,7 +996,7 @@
         }
 
         // Recent steps with rolling averages
-        new Chart(document.getElementById('recentChart'), {
+        const recentChart = new Chart(document.getElementById('recentChart'), {
             type: 'line',
             data: {
                 labels: charts.recent.labels,
@@ -1039,6 +1048,36 @@
                 scales: gridOpts()
             }
         });
+
+        // Range selector for recentChart — slices all 4 datasets (bars,
+        // 7-day, 30-day, daily-goal) in sync so they stay aligned.
+        const recentFull = {
+            labels: charts.recent.labels.slice(),
+            steps: charts.recent.steps.slice(),
+            rolling_7: charts.recent.rolling_7.slice(),
+            rolling_30: charts.recent.rolling_30.slice(),
+            goals: charts.recent.goals.slice(),
+        };
+        function applyRecentRange(days) {
+            let startIdx = 0;
+            if (days !== 'all') {
+                startIdx = Math.max(0, recentFull.labels.length - Number(days));
+            }
+            recentChart.data.labels = recentFull.labels.slice(startIdx);
+            recentChart.data.datasets[0].data = recentFull.steps.slice(startIdx);
+            recentChart.data.datasets[1].data = recentFull.rolling_7.slice(startIdx);
+            recentChart.data.datasets[2].data = recentFull.rolling_30.slice(startIdx);
+            recentChart.data.datasets[3].data = recentFull.goals.slice(startIdx);
+            recentChart.update();
+        }
+        document.querySelectorAll('#recent-range .range-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('#recent-range .range-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                applyRecentRange(btn.dataset.days);
+            });
+        });
+        applyRecentRange('90');
 
         // Day-of-week bar chart
         new Chart(document.getElementById('dowChart'), {

@@ -109,12 +109,14 @@ def _build_dashboard_data():
     dow_avgs = [round(mean(dow_buckets[i])) if dow_buckets[i] else 0 for i in range(7)]
     dow_best = dow_names[dow_avgs.index(max(dow_avgs))] if dow_avgs else "—"
 
-    # Time series — last 365 days
+    # Time series — last 365 days (used for floors + activity heatmap)
     cutoff = datetime.now().date() - timedelta(days=365)
     recent = [e for e in entries if e.day >= cutoff]
-    recent_labels = [e.day.isoformat() for e in recent]
-    recent_steps = [e.step_count for e in recent]
-    recent_goals = [e.daily_step_goal for e in recent]
+    # Daily-steps chart shows full history; the panel has a range selector
+    # (7d / 30d / 90d / 365d / All) so the front-end slices as needed.
+    recent_labels = [e.day.isoformat() for e in entries]
+    recent_steps = [e.step_count for e in entries]
+    recent_goals = [e.daily_step_goal for e in entries]
     rolling_7 = _rolling_avg(recent_steps, 7)
     rolling_30 = _rolling_avg(recent_steps, 30)
 
