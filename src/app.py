@@ -283,7 +283,8 @@ def _build_dashboard_data():
     floors_labels = [d.isoformat() for d, _ in floors_entries]
     floors_values = [v for _, v in floors_entries]
 
-    # Calendar heatmap — last 365 days, value = 1 if goal met, 0.5 if some steps, 0 if no data
+    # Calendar heatmap — last 365 days, bucketed by absolute step count:
+    # -1=no data, 0=0–2.5k, 1=2.5k–5k, 2=5k–7.5k, 3=7.5k–10k, 4=10k+
     heatmap_by_day = {e.day.isoformat(): e for e in recent}
     heatmap = []
     today = datetime.now().date()
@@ -292,8 +293,8 @@ def _build_dashboard_data():
     while d <= today:
         key = d.isoformat()
         if key in heatmap_by_day:
-            e = heatmap_by_day[key]
-            level = 4 if e.step_goal_met else min(3, e.step_count // 3000)
+            steps = heatmap_by_day[key].step_count
+            level = min(4, steps // 2500)
         else:
             level = -1
         heatmap.append({"date": key, "weekday": d.weekday(), "level": level})

@@ -81,11 +81,12 @@
         .hyd { color: var(--hyd); }
         .sleep { color: var(--sleep); }
         /* Hydration heatmap palette */
-        .hm-cell.hyd-l0 { background: #2d3748; }
-        .hm-cell.hyd-l1 { background: #075985; }
-        .hm-cell.hyd-l2 { background: #0369a1; }
-        .hm-cell.hyd-l3 { background: #0284c7; }
+        .hm-cell.hyd-l0, .legend-cell.hyd-l0 { background: #2d3748; }
+        .hm-cell.hyd-l1, .legend-cell.hyd-l1 { background: #075985; }
+        .hm-cell.hyd-l2, .legend-cell.hyd-l2 { background: #0369a1; }
+        .hm-cell.hyd-l3, .legend-cell.hyd-l3 { background: #0284c7; }
         .hm-cell.hyd-l4 { background: #38bdf8; box-shadow: 0 0 4px rgba(56,189,248,0.6); }
+        .legend-cell.hyd-l4 { background: #38bdf8; }
         .chart-grid {
             display: grid;
             gap: 16px;
@@ -137,6 +138,20 @@
             gap: 16px;
         }
         /* Calendar heatmap */
+        .heatmap-wrap {
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+        }
+        .heatmap-dow {
+            display: grid;
+            grid-template-rows: repeat(7, 12px);
+            gap: 3px;
+            font-size: 11px;
+            color: var(--text-dim);
+            padding-bottom: 8px;
+        }
+        .heatmap-dow span { line-height: 12px; }
         .heatmap {
             display: grid;
             grid-auto-flow: column;
@@ -144,6 +159,7 @@
             gap: 3px;
             overflow-x: auto;
             padding-bottom: 8px;
+            flex: 1;
         }
         .hm-cell {
             width: 12px;
@@ -151,20 +167,23 @@
             border-radius: 2px;
             background: var(--panel-2);
         }
-        .hm-cell.l-1 { background: var(--panel-2); }
-        .hm-cell.l0 { background: #2d3748; }
-        .hm-cell.l1 { background: #1e6f5c; }
-        .hm-cell.l2 { background: #2da58e; }
-        .hm-cell.l3 { background: #4fd1c5; }
-        .hm-cell.l4 { background: #5eead4; box-shadow: 0 0 4px rgba(94,234,212,0.6); }
+        .hm-cell.l-1, .legend-cell.l-1 { background: var(--panel-2); }
+        .hm-cell.l0,  .legend-cell.l0  { background: #2d3748; }
+        .hm-cell.l1,  .legend-cell.l1  { background: #1e6f5c; }
+        .hm-cell.l2,  .legend-cell.l2  { background: #2da58e; }
+        .hm-cell.l3,  .legend-cell.l3  { background: #4fd1c5; }
+        .hm-cell.l4               { background: #5eead4; box-shadow: 0 0 4px rgba(94,234,212,0.6); }
+        .legend-cell.l4           { background: #5eead4; }
         .legend {
             display: flex;
             align-items: center;
             gap: 6px;
+            flex-wrap: wrap;
             color: var(--text-dim);
             font-size: 12px;
             margin-top: 12px;
         }
+        .legend .legend-cell + span { margin-right: 10px; }
         .legend-cell {
             width: 12px;
             height: 12px;
@@ -586,16 +605,20 @@
 
     <!-- Heatmap -->
     <div class="chart-panel" style="margin-bottom: 24px;">
-        <h2>Activity Heatmap — Last 365 Days</h2>
-        <div class="heatmap" id="heatmap"></div>
+        <h2>Activity Heatmap (Steps)</h2>
+        <div class="heatmap-wrap">
+            <div class="heatmap-dow">
+                <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+            </div>
+            <div class="heatmap" id="heatmap"></div>
+        </div>
         <div class="legend">
-            <span>Less</span>
-            <span class="legend-cell l0"></span>
-            <span class="legend-cell l1"></span>
-            <span class="legend-cell l2"></span>
-            <span class="legend-cell l3"></span>
-            <span class="legend-cell l4"></span>
-            <span>More (goal met)</span>
+            <span class="legend-cell l-1"></span><span>No data</span>
+            <span class="legend-cell l0"></span><span>0 – 2.5k</span>
+            <span class="legend-cell l1"></span><span>2.5k – 5k</span>
+            <span class="legend-cell l2"></span><span>5k – 7.5k</span>
+            <span class="legend-cell l3"></span><span>7.5k – 10k</span>
+            <span class="legend-cell l4"></span><span>10k+</span>
         </div>
     </div>
 
@@ -776,16 +799,20 @@
     </div>
 
     <div class="chart-panel" style="margin-bottom: 24px;">
-        <h2>Hydration Heatmap — Last 365 Days</h2>
-        <div class="heatmap" id="hydHeatmap"></div>
+        <h2>Hydration Heatmap (% of goal)</h2>
+        <div class="heatmap-wrap">
+            <div class="heatmap-dow">
+                <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+            </div>
+            <div class="heatmap" id="hydHeatmap"></div>
+        </div>
         <div class="legend">
-            <span>Less</span>
-            <span class="legend-cell hyd-l0"></span>
-            <span class="legend-cell hyd-l1"></span>
-            <span class="legend-cell hyd-l2"></span>
-            <span class="legend-cell hyd-l3"></span>
-            <span class="legend-cell hyd-l4"></span>
-            <span>More (goal met)</span>
+            <span class="legend-cell l-1"></span><span>No data</span>
+            <span class="legend-cell hyd-l0"></span><span>None</span>
+            <span class="legend-cell hyd-l1"></span><span>&lt; 50%</span>
+            <span class="legend-cell hyd-l2"></span><span>50 – 75%</span>
+            <span class="legend-cell hyd-l3"></span><span>75 – 100%</span>
+            <span class="legend-cell hyd-l4"></span><span>Goal met</span>
         </div>
     </div>
 
@@ -1294,10 +1321,11 @@
 
         // Heatmap
         const heatmapEl = document.getElementById('heatmap');
+        const levelLabels = ['0 – 2.5k', '2.5k – 5k', '5k – 7.5k', '7.5k – 10k', '10k+'];
         charts.heatmap.forEach(d => {
             const cell = document.createElement('div');
-            cell.className = `hm-cell l${d.level}`;
-            cell.title = `${d.date} — ${d.level === -1 ? 'no data' : 'level ' + d.level}`;
+            cell.className = d.level === -1 ? 'hm-cell l-1' : `hm-cell l${d.level}`;
+            cell.title = `${d.date} — ${d.level === -1 ? 'no data' : levelLabels[d.level]}`;
             cell.style.gridRow = d.weekday + 1;
             heatmapEl.appendChild(cell);
         });
@@ -1392,10 +1420,11 @@
             // Hydration heatmap
             const hydHeatmapEl = document.getElementById('hydHeatmap');
             if (hydHeatmapEl) {
+                const hydLabels = ['None', '< 50%', '50 – 75%', '75 – 100%', 'Goal met'];
                 charts.hyd_heatmap.forEach(d => {
                     const cell = document.createElement('div');
                     cell.className = d.level === -1 ? 'hm-cell l-1' : `hm-cell hyd-l${d.level}`;
-                    cell.title = `${d.date} — ${d.level === -1 ? 'no data' : 'level ' + d.level}`;
+                    cell.title = `${d.date} — ${d.level === -1 ? 'no data' : hydLabels[d.level]}`;
                     cell.style.gridRow = d.weekday + 1;
                     hydHeatmapEl.appendChild(cell);
                 });
