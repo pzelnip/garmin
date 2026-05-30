@@ -162,6 +162,26 @@ def _build_dashboard_data():
     else:
         hist_labels, hist_values = [], []
 
+    # Step-count summary breakdown — three coarse buckets shown alongside the
+    # finer 2.5k-bucket histogram.
+    hist_under_5k = sum(1 for e in entries if e.step_count < 5000)
+    hist_5k_to_10k = sum(1 for e in entries if 5000 <= e.step_count < 10000)
+    hist_over_10k = sum(1 for e in entries if e.step_count >= 10000)
+    hist_summary = {
+        "under_5k": {
+            "count": hist_under_5k,
+            "pct": round(hist_under_5k / total_days * 100) if total_days else 0,
+        },
+        "five_to_ten": {
+            "count": hist_5k_to_10k,
+            "pct": round(hist_5k_to_10k / total_days * 100) if total_days else 0,
+        },
+        "over_10k": {
+            "count": hist_over_10k,
+            "pct": round(hist_over_10k / total_days * 100) if total_days else 0,
+        },
+    }
+
     # Health/biometric trends — filter Nones
     rhr_entries = [
         (e.day, e.resting_heart_rate) for e in entries if e.resting_heart_rate
@@ -321,6 +341,7 @@ def _build_dashboard_data():
             ),
             "sleep_avg_score": sleep_avg_score,
             "sleep_scored_days": len(sleep_scored),
+            "hist_summary": hist_summary,
         },
         "current_streak": (
             {
