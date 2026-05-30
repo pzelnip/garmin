@@ -97,13 +97,17 @@
             border: 1px solid var(--grid);
             border-radius: 12px;
             padding: 20px;
+            display: flex;
+            flex-direction: column;
         }
         .chart-panel.wide { grid-column: 1 / -1; }
         .chart-wrap {
             position: relative;
             height: 280px;
+            flex: 1 1 auto;
+            min-height: 280px;
         }
-        .chart-wrap.tall { height: 360px; }
+        .chart-wrap.tall { height: 360px; min-height: 360px; }
         table {
             width: 100%;
             border-collapse: collapse;
