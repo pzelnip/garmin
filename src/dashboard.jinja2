@@ -89,8 +89,11 @@
         .chart-grid {
             display: grid;
             gap: 16px;
-            grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
             margin-bottom: 24px;
+        }
+        @media (max-width: 900px) {
+            .chart-grid { grid-template-columns: 1fr; }
         }
         .chart-panel {
             background: var(--panel);
