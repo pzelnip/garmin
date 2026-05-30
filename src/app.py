@@ -143,6 +143,39 @@ def _build_dashboard_data():
         for k in monthly_labels
     ]
 
+    # Weekly comparison — this week / last week / 4-week average. Anchor on
+    # "yesterday" so today's partial data doesn't make the current week look
+    # artificially low.
+    steps_by_day = {e.day: e.step_count for e in entries}
+    yesterday = datetime.now().date() - timedelta(days=1)
+
+    def _sum_range(end_day, days):
+        return sum(
+            steps_by_day.get(end_day - timedelta(days=i), 0)
+            for i in range(days)
+        )
+
+    this_week_steps = _sum_range(yesterday, 7)
+    last_week_steps = _sum_range(yesterday - timedelta(days=7), 7)
+    four_week_avg = _sum_range(yesterday, 28) // 4 if any(
+        steps_by_day.get(yesterday - timedelta(days=i)) for i in range(28)
+    ) else 0
+
+    if last_week_steps:
+        wow_pct = round((this_week_steps - last_week_steps) / last_week_steps * 100)
+    else:
+        wow_pct = None
+
+    last_week_start = yesterday - timedelta(days=13)
+    last_week_end = yesterday - timedelta(days=7)
+    weekly_comparison = {
+        "this_week": this_week_steps,
+        "last_week": last_week_steps,
+        "four_week_avg": four_week_avg,
+        "wow_pct": wow_pct,
+        "last_week_range": f"{last_week_start:%b %-d} – {last_week_end:%b %-d}",
+    }
+
     # Step distribution histogram (buckets of 2.5k)
     bucket_size = 2500
     hist_buckets = defaultdict(int)
@@ -342,6 +375,7 @@ def _build_dashboard_data():
             "sleep_avg_score": sleep_avg_score,
             "sleep_scored_days": len(sleep_scored),
             "hist_summary": hist_summary,
+            "weekly_comparison": weekly_comparison,
         },
         "current_streak": (
             {
