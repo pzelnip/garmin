@@ -167,16 +167,22 @@ def _build_dashboard_data():
     else:
         wow_pct = None
 
+    this_week_start = yesterday - timedelta(days=6)
     last_week_start = yesterday - timedelta(days=13)
     last_week_end = yesterday - timedelta(days=7)
+    four_week_start = yesterday - timedelta(days=27)
+    this_week_range_str = f"{this_week_start:%b %-d} – {yesterday:%b %-d}"
     last_week_range_str = f"{last_week_start:%b %-d} – {last_week_end:%b %-d}"
+    four_week_range_str = f"{four_week_start:%b %-d} – {yesterday:%b %-d}"
 
     weekly_comparison = {
         "this_week": this_week_steps,
         "last_week": last_week_steps,
         "four_week_avg": four_week_avg,
         "wow_pct": wow_pct,
+        "this_week_range": this_week_range_str,
         "last_week_range": last_week_range_str,
+        "four_week_range": four_week_range_str,
     }
 
     # Same windows for hydration (ml) and sleep (seconds). Both use the same
@@ -215,7 +221,9 @@ def _build_dashboard_data():
             "wow_pct": (
                 round((this_w - last_w) / last_w * 100) if last_w else None
             ),
+            "this_week_range": this_week_range_str,
             "last_week_range": last_week_range_str,
+            "four_week_range": four_week_range_str,
         }
 
     hyd_weekly_comparison = _build_weekly(water_by_day, mode="sum")

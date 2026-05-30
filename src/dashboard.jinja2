@@ -418,6 +418,24 @@
             gap: 16px;
             padding: 12px 0;
         }
+        .weekly-row[data-tooltip] { position: relative; cursor: help; }
+        .weekly-row[data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: calc(100% - 4px);
+            left: 116px;
+            background: rgba(0, 0, 0, 0.92);
+            color: #fff;
+            border-radius: 4px;
+            padding: 6px 10px;
+            font-size: 12px;
+            line-height: 1.4;
+            font-weight: normal;
+            white-space: pre;
+            pointer-events: none;
+            z-index: 200;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        }
         .weekly-label {
             color: var(--text-dim);
             font-size: 13px;
@@ -524,29 +542,34 @@
        the CSS class controlling the bright bar color. #}
     {% macro weekly_comparison_panel(wc, accent_class='this-week', unit='') %}
         {% set wc_max = [wc.this_week, wc.last_week, wc.four_week_avg, 1] | max %}
+        {% set is_sleep = unit == 'hms' %}
+        {% set agg_word = 'avg per night' if is_sleep else 'total' %}
+        {% set metric_word = 'sleep' if is_sleep else ('water' if accent_class == 'water' else 'steps') %}
         <div class="chart-panel wide">
             <div class="panel-header">
                 <h2>Weekly Comparison</h2>
                 <span class="weekly-range">vs {{ wc.last_week_range }}</span>
             </div>
-            {% for label, value, is_active in [
-                ('This week', wc.this_week, true),
-                ('Last week', wc.last_week, false),
-                ('4-week avg', wc.four_week_avg, false),
+            {% for label, value, is_active, range_str, window_desc in [
+                ('This week', wc.this_week, true, wc.this_week_range, '7 days'),
+                ('Last week', wc.last_week, false, wc.last_week_range, '7 days'),
+                ('4-week avg', wc.four_week_avg, false, wc.four_week_range, '28 days'),
             ] %}
-            <div class="weekly-row">
+            {% set value_str %}
+                {%- if is_sleep -%}
+                    {{ value // 3600 }}h {{ (value % 3600) // 60 }}m
+                {%- else -%}
+                    {{ "{:,}".format(value) }}{% if unit %} {{ unit }}{% endif %}
+                {%- endif -%}
+            {% endset %}
+            {% set tip %}{{ label }} ({{ range_str }})&#10;{{ window_desc }} {{ agg_word }} {{ metric_word }}: {{ value_str | trim }}{% if label == 'Last week' and wc.wow_pct is not none %}&#10;This week vs last: {{ '+' if wc.wow_pct >= 0 else '' }}{{ wc.wow_pct }}%{% endif %}{% endset %}
+            <div class="weekly-row" data-tooltip="{{ tip }}">
                 <div class="weekly-label">{{ label }}</div>
                 <div class="weekly-bar-wrap">
                     <div class="weekly-bar {{ accent_class if is_active else 'dim' }}"
                          style="width: {{ (value / wc_max * 100) | round(1) }}%;"></div>
                 </div>
-                <div class="weekly-value">
-                    {% if unit == 'hms' %}
-                        {{ value // 3600 }}h {{ (value % 3600) // 60 }}m
-                    {% else %}
-                        {{ "{:,}".format(value) }}{% if unit %} {{ unit }}{% endif %}
-                    {% endif %}
-                </div>
+                <div class="weekly-value">{{ value_str | trim }}</div>
                 <div class="weekly-delta">
                     {% if label == 'Last week' and wc.wow_pct is not none %}
                     <span class="{{ 'delta-up' if wc.wow_pct >= 0 else 'delta-down' }}">
