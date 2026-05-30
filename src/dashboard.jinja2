@@ -379,6 +379,12 @@
         .weekly-bar.this-week {
             background: var(--accent);
         }
+        .weekly-bar.water {
+            background: var(--hyd);
+        }
+        .weekly-bar.sleep {
+            background: var(--sleep);
+        }
         .weekly-bar.dim {
             background: #3a4258;
             border: 1px solid #4a5570;
@@ -452,6 +458,49 @@
     </style>
 </head>
 <body>
+    {# Weekly comparison panel — reused across Steps / Water / Sleep tabs.
+       `wc` is one of stats.{weekly_comparison, hyd_weekly_comparison,
+       sleep_weekly_comparison}. `format_value` is a string template like
+       "{:,}" (steps), "{:,} ml" (water), or "{}" combined with a custom
+       seconds-to-h-m formatter via the `sleep` flag. `accent_class` is
+       the CSS class controlling the bright bar color. #}
+    {% macro weekly_comparison_panel(wc, accent_class='this-week', unit='') %}
+        {% set wc_max = [wc.this_week, wc.last_week, wc.four_week_avg, 1] | max %}
+        <div class="chart-panel wide">
+            <div class="panel-header">
+                <h2>Weekly Comparison</h2>
+                <span class="weekly-range">vs {{ wc.last_week_range }}</span>
+            </div>
+            {% for label, value, is_active in [
+                ('This week', wc.this_week, true),
+                ('Last week', wc.last_week, false),
+                ('4-week avg', wc.four_week_avg, false),
+            ] %}
+            <div class="weekly-row">
+                <div class="weekly-label">{{ label }}</div>
+                <div class="weekly-bar-wrap">
+                    <div class="weekly-bar {{ accent_class if is_active else 'dim' }}"
+                         style="width: {{ (value / wc_max * 100) | round(1) }}%;"></div>
+                </div>
+                <div class="weekly-value">
+                    {% if unit == 'hms' %}
+                        {{ value // 3600 }}h {{ (value % 3600) // 60 }}m
+                    {% else %}
+                        {{ "{:,}".format(value) }}{% if unit %} {{ unit }}{% endif %}
+                    {% endif %}
+                </div>
+                <div class="weekly-delta">
+                    {% if label == 'Last week' and wc.wow_pct is not none %}
+                    <span class="{{ 'delta-up' if wc.wow_pct >= 0 else 'delta-down' }}">
+                        {{ '+' if wc.wow_pct >= 0 else '' }}{{ wc.wow_pct }}%
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% endmacro %}
+
     <!-- Debug panel (toggled with the ? key) -->
     <div id="debug-backdrop"></div>
     <div id="debug-panel" role="dialog" aria-modal="true" aria-label="Debug">
@@ -545,44 +594,7 @@
 
     <!-- Charts -->
     <div class="chart-grid">
-        <div class="chart-panel wide">
-            <div class="panel-header">
-                <h2>Weekly Comparison</h2>
-                <span class="weekly-range">vs {{ data.stats.weekly_comparison.last_week_range }}</span>
-            </div>
-            {% set wc = data.stats.weekly_comparison %}
-            {% set wc_max = [wc.this_week, wc.last_week, wc.four_week_avg, 1] | max %}
-            <div class="weekly-row">
-                <div class="weekly-label">This week</div>
-                <div class="weekly-bar-wrap">
-                    <div class="weekly-bar this-week" style="width: {{ (wc.this_week / wc_max * 100) | round(1) }}%;"></div>
-                </div>
-                <div class="weekly-value">{{ "{:,}".format(wc.this_week) }}</div>
-                <div class="weekly-delta"></div>
-            </div>
-            <div class="weekly-row">
-                <div class="weekly-label">Last week</div>
-                <div class="weekly-bar-wrap">
-                    <div class="weekly-bar dim" style="width: {{ (wc.last_week / wc_max * 100) | round(1) }}%;"></div>
-                </div>
-                <div class="weekly-value">{{ "{:,}".format(wc.last_week) }}</div>
-                <div class="weekly-delta">
-                    {% if wc.wow_pct is not none %}
-                    <span class="{{ 'delta-up' if wc.wow_pct >= 0 else 'delta-down' }}">
-                        {{ '+' if wc.wow_pct >= 0 else '' }}{{ wc.wow_pct }}%
-                    </span>
-                    {% endif %}
-                </div>
-            </div>
-            <div class="weekly-row">
-                <div class="weekly-label">4-week avg</div>
-                <div class="weekly-bar-wrap">
-                    <div class="weekly-bar dim" style="width: {{ (wc.four_week_avg / wc_max * 100) | round(1) }}%;"></div>
-                </div>
-                <div class="weekly-value">{{ "{:,}".format(wc.four_week_avg) }}</div>
-                <div class="weekly-delta"></div>
-            </div>
-        </div>
+        {{ weekly_comparison_panel(data.stats.weekly_comparison, 'this-week') }}
 
         <div class="chart-panel wide">
             <h2>Daily Steps with 7-Day & 30-Day Rolling Average</h2>
@@ -771,6 +783,8 @@
     </div>
 
     <div class="chart-grid">
+        {{ weekly_comparison_panel(data.stats.hyd_weekly_comparison, 'water', 'ml') }}
+
         <div class="chart-panel wide">
             <h2>Daily Hydration vs Goal — Last 90 Days</h2>
             <div class="chart-wrap tall"><canvas id="hydTimelineChart"></canvas></div>
@@ -807,6 +821,8 @@
     </div>
 
     <div class="chart-grid">
+        {{ weekly_comparison_panel(data.stats.sleep_weekly_comparison, 'sleep', 'hms') }}
+
         <div class="chart-panel wide">
             <h2>Sleep Duration & Score — Last 90 Days</h2>
             <div class="chart-wrap tall"><canvas id="sleepTimelineChart"></canvas></div>

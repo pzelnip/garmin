@@ -168,13 +168,57 @@ def _build_dashboard_data():
 
     last_week_start = yesterday - timedelta(days=13)
     last_week_end = yesterday - timedelta(days=7)
+    last_week_range_str = f"{last_week_start:%b %-d} – {last_week_end:%b %-d}"
+
     weekly_comparison = {
         "this_week": this_week_steps,
         "last_week": last_week_steps,
         "four_week_avg": four_week_avg,
         "wow_pct": wow_pct,
-        "last_week_range": f"{last_week_start:%b %-d} – {last_week_end:%b %-d}",
+        "last_week_range": last_week_range_str,
     }
+
+    # Same windows for hydration (ml) and sleep (seconds). Both use the same
+    # "anchored on yesterday, ignore today" convention as steps. For sleep we
+    # average per-night rather than sum (a weekly-total in seconds isn't
+    # intuitive), so we expose avg-per-night while still letting the macro
+    # render it as h:mm.
+    water_by_day = {e.day: e.water_consumed_ml or 0 for e in entries}
+    sleep_by_day = {e.day: e.sleep_total_seconds or 0 for e in entries}
+
+    def _sum_lookup(lookup, end_day, days):
+        return sum(lookup.get(end_day - timedelta(days=i), 0) for i in range(days))
+
+    def _build_weekly(lookup, mode="sum"):
+        if mode == "avg":
+            # Average over days that actually have data (ignores nulls so a
+            # missed night doesn't drag down a week's average).
+            def _avg(end_day, days):
+                vals = [
+                    lookup[end_day - timedelta(days=i)]
+                    for i in range(days)
+                    if lookup.get(end_day - timedelta(days=i))
+                ]
+                return round(sum(vals) / len(vals)) if vals else 0
+            this_w = _avg(yesterday, 7)
+            last_w = _avg(yesterday - timedelta(days=7), 7)
+            four_avg = _avg(yesterday, 28)
+        else:
+            this_w = _sum_lookup(lookup, yesterday, 7)
+            last_w = _sum_lookup(lookup, yesterday - timedelta(days=7), 7)
+            four_avg = _sum_lookup(lookup, yesterday, 28) // 4
+        return {
+            "this_week": this_w,
+            "last_week": last_w,
+            "four_week_avg": four_avg,
+            "wow_pct": (
+                round((this_w - last_w) / last_w * 100) if last_w else None
+            ),
+            "last_week_range": last_week_range_str,
+        }
+
+    hyd_weekly_comparison = _build_weekly(water_by_day, mode="sum")
+    sleep_weekly_comparison = _build_weekly(sleep_by_day, mode="avg")
 
     # Step distribution histogram (buckets of 2.5k)
     bucket_size = 2500
@@ -376,6 +420,8 @@ def _build_dashboard_data():
             "sleep_scored_days": len(sleep_scored),
             "hist_summary": hist_summary,
             "weekly_comparison": weekly_comparison,
+            "hyd_weekly_comparison": hyd_weekly_comparison,
+            "sleep_weekly_comparison": sleep_weekly_comparison,
         },
         "current_streak": (
             {
