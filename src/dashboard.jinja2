@@ -1739,6 +1739,18 @@
             btn.addEventListener('click', () => activateTab(btn.dataset.tab));
         });
 
+        // Hotkeys: 1 = steps, 2 = water, 3 = sleep. Ignored if typing into a
+        // form field or while the debug panel is open.
+        const TAB_HOTKEYS = { '1': 'steps', '2': 'water', '3': 'sleep' };
+        document.addEventListener('keydown', (e) => {
+            if (!(e.key in TAB_HOTKEYS)) return;
+            if (e.ctrlKey || e.metaKey || e.altKey) return;
+            const tag = (document.activeElement?.tagName || '').toLowerCase();
+            if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+            if (document.getElementById('debug-backdrop')?.classList.contains('open')) return;
+            activateTab(TAB_HOTKEYS[e.key]);
+        });
+
         // Restore last-selected tab if it still exists
         try {
             const saved = localStorage.getItem(TAB_STORAGE_KEY);
