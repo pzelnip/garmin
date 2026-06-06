@@ -306,6 +306,30 @@
             display: block;
             animation: tabSlideIn 0.25s ease-out;
         }
+        .day-picker-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            color: var(--text-dim);
+            font-size: 14px;
+        }
+        #day-picker {
+            background: var(--panel);
+            color: var(--text);
+            border: 1px solid var(--grid);
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-family: inherit;
+            font-size: 14px;
+            color-scheme: dark;
+        }
+        .day-source {
+            color: var(--text-dim);
+            font-size: 12px;
+            font-style: italic;
+        }
+        .day-grid .panel .stat-sub.muted { color: #4a5570; }
         @keyframes tabSlideIn {
             from { opacity: 0; transform: translateY(8px); }
             to   { opacity: 1; transform: translateY(0); }
@@ -643,6 +667,10 @@
                 data-tooltip="Nightly sleep duration and quality score — sleep-stage breakdown, day-of-week patterns, and a duration-vs-score scatter.">
             <span class="tab-icon" aria-hidden="true">🌙</span> Sleep
         </button>
+        <button class="tab-btn" data-tab="day" role="tab"
+                data-tooltip="All recorded metrics for a single selected day — pick any date with the picker.">
+            <span class="tab-icon" aria-hidden="true">📅</span> Day
+        </button>
     </div>
 
     <!-- ============================ STEPS TAB ============================ -->
@@ -974,6 +1002,20 @@
     {% endif %}
     </div>
     <!-- /SLEEP TAB -->
+
+    <!-- ============================ DAY TAB ============================ -->
+    <div class="tab-panel" data-tab="day">
+        <div class="day-picker-row">
+            <label for="day-picker">Day:</label>
+            <input type="date" id="day-picker" />
+            <span id="day-source" class="day-source"></span>
+        </div>
+        <div id="day-empty" class="empty-state" style="display: none;">
+            No data recorded for this day.
+        </div>
+        <div id="day-grid" class="grid day-grid"></div>
+    </div>
+    <!-- /DAY TAB -->
 
     {% if git_sha %}
     <div class="version-footer">
@@ -1745,15 +1787,16 @@
                 }
             });
             try { localStorage.setItem(TAB_STORAGE_KEY, name); } catch (_) {}
+            if (name === 'day') ensureDayLoaded();
         }
 
         tabButtons.forEach(btn => {
             btn.addEventListener('click', () => activateTab(btn.dataset.tab));
         });
 
-        // Hotkeys: 1 = steps, 2 = water, 3 = sleep. Ignored if typing into a
-        // form field or while the debug panel is open.
-        const TAB_HOTKEYS = { '1': 'steps', '2': 'water', '3': 'sleep' };
+        // Hotkeys: 1 = steps, 2 = water, 3 = sleep, 4 = day. Ignored if typing
+        // into a form field or while the debug panel is open.
+        const TAB_HOTKEYS = { '1': 'steps', '2': 'water', '3': 'sleep', '4': 'day' };
         document.addEventListener('keydown', (e) => {
             if (!(e.key in TAB_HOTKEYS)) return;
             if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -1763,7 +1806,141 @@
             activateTab(TAB_HOTKEYS[e.key]);
         });
 
-        // Restore last-selected tab if it still exists
+        // -------- Day view --------
+        // Layout: { label, value, sub?, format?, accent? } describing each card.
+        // `format` is one of: 'number', 'duration_s', 'percent', 'raw'.
+        // `value` is the JSON key on the /api/day/<date> response.
+        const DAY_CARDS = [
+            { label: 'Steps', key: 'steps', sub: 'goal: {step_goal}', format: 'number', accent: 'accent' },
+            { label: 'Goal Met', key: 'step_goal_met', format: 'bool', accent: 'accent-2' },
+            { label: 'Distance', key: 'distance_km', sub: 'km', format: 'raw' },
+            { label: 'Floors Climbed', key: 'floors_climbed', sub: 'goal: {floors_goal}', format: 'number', accent: 'warn' },
+            { label: 'Floors Descended', key: 'floors_descended', format: 'number' },
+            { label: 'Resting Heart Rate', key: 'resting_heart_rate', sub: 'bpm', format: 'number' },
+            { label: 'Max Heart Rate', key: 'max_heart_rate', sub: 'bpm', format: 'number' },
+            { label: 'Min Heart Rate', key: 'min_heart_rate', sub: 'bpm', format: 'number' },
+            { label: 'Avg Stress', key: 'stress', format: 'number' },
+            { label: 'Max Stress', key: 'max_stress', format: 'number' },
+            { label: 'Weight', key: 'weight_pounds', sub: 'lb', format: 'raw' },
+            { label: 'BMI', key: 'bmi', format: 'raw' },
+            { label: 'Body Fat', key: 'body_fat', sub: '%', format: 'raw' },
+            { label: 'Body Water', key: 'body_water', sub: '%', format: 'raw' },
+            { label: 'Bone Mass', key: 'bone_mass', sub: 'g', format: 'number' },
+            { label: 'Muscle Mass', key: 'muscle_mass', sub: 'g', format: 'number' },
+            { label: 'Water Consumed', key: 'water_consumed_ml', sub: 'goal: {water_goal_ml} ml', format: 'number', accent: 'hyd' },
+            { label: 'Hydration Goal Met', key: 'water_goal_met', format: 'bool', accent: 'hyd' },
+            { label: 'Sleep', key: 'sleep_total_seconds', format: 'duration_s', accent: 'sleep' },
+            { label: 'Sleep Score', key: 'sleep_score', format: 'number', accent: 'sleep' },
+            { label: 'Deep Sleep', key: 'sleep_deep_seconds', format: 'duration_s' },
+            { label: 'Light Sleep', key: 'sleep_light_seconds', format: 'duration_s' },
+            { label: 'REM Sleep', key: 'sleep_rem_seconds', format: 'duration_s' },
+            { label: 'Awake', key: 'sleep_awake_seconds', format: 'duration_s' },
+        ];
+
+        function formatDuration(s) {
+            if (s == null) return null;
+            const h = Math.floor(s / 3600);
+            const m = Math.floor((s % 3600) / 60);
+            return `${h}h ${m}m`;
+        }
+
+        function formatCard(card, data) {
+            const raw = data[card.key];
+            if (raw == null) return { value: '—', sub: '', muted: true };
+
+            let value;
+            switch (card.format) {
+                case 'number': value = raw.toLocaleString(); break;
+                case 'duration_s': value = formatDuration(raw); break;
+                case 'percent': value = `${raw}%`; break;
+                case 'bool': value = raw ? 'Yes' : 'No'; break;
+                default: value = String(raw);
+            }
+            let sub = card.sub || '';
+            sub = sub.replace(/\{(\w+)\}/g, (_, k) => {
+                const v = data[k];
+                return v == null ? '—' : v.toLocaleString();
+            });
+            return { value, sub, muted: false };
+        }
+
+        function renderDay(data) {
+            const grid = document.getElementById('day-grid');
+            const empty = document.getElementById('day-empty');
+            const source = document.getElementById('day-source');
+
+            if (!data.found) {
+                grid.innerHTML = '';
+                grid.style.display = 'none';
+                empty.style.display = 'block';
+                source.textContent = '';
+                return;
+            }
+            empty.style.display = 'none';
+            grid.style.display = '';
+            source.textContent = data.source ? `source: ${data.source}` : '';
+
+            grid.innerHTML = DAY_CARDS.map(card => {
+                const f = formatCard(card, data);
+                const accentCls = (!f.muted && card.accent) ? ' ' + card.accent : '';
+                return `
+                    <div class="panel">
+                        <div class="stat-label">${card.label}</div>
+                        <div class="stat-value${accentCls}">${f.value}</div>
+                        <div class="stat-sub${f.muted ? ' muted' : ''}">${f.sub}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function loadDay(iso) {
+            try {
+                const res = await fetch(`/api/day/${iso}`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                renderDay(await res.json());
+            } catch (e) {
+                const empty = document.getElementById('day-empty');
+                document.getElementById('day-grid').innerHTML = '';
+                empty.textContent = `Failed to load: ${e.message}`;
+                empty.style.display = 'block';
+            }
+        }
+
+        const dayPicker = document.getElementById('day-picker');
+        // toISOString() serializes in UTC, which can roll past midnight relative
+        // to the user's local clock. Format off the local components instead so
+        // "yesterday" and "today" match what the user actually sees.
+        function localIso(d) {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        }
+        const _today = new Date();
+        const _yesterday = new Date(_today);
+        _yesterday.setDate(_yesterday.getDate() - 1);
+        dayPicker.value = localIso(_yesterday);
+        dayPicker.max = localIso(_today);
+        dayPicker.addEventListener('change', () => {
+            if (dayPicker.value) {
+                loadDay(dayPicker.value);
+                dayLoadedFor = dayPicker.value;
+            }
+        });
+
+        // Lazy-load on first tab activation; reuse cached render until the
+        // picker is changed.
+        let dayLoadedFor = null;
+        function ensureDayLoaded() {
+            if (dayLoadedFor !== dayPicker.value) {
+                loadDay(dayPicker.value);
+                dayLoadedFor = dayPicker.value;
+            }
+        }
+
+        // Restore last-selected tab if it still exists. Must come AFTER the
+        // day-view init so an `activateTab('day')` from restore can read
+        // dayLoadedFor / dayPicker without hitting the TDZ.
         try {
             const saved = localStorage.getItem(TAB_STORAGE_KEY);
             if (saved && document.querySelector(`.tab-panel[data-tab="${saved}"]`)) {

@@ -14,7 +14,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from sqlmodel import select
 
 from analytics import build_streaks, find_current_streak
-from db import StepsToday, _init_db, db_session, get_all_entries
+from db import DayStats, StepsToday, _init_db, db_session, get_all_entries
 from so_far_today import retrieve_steps_at_hour
 
 DEBUG = True
@@ -537,6 +537,61 @@ def dashboard():
 FORCE_UPDATE_SCRIPT = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "..", "scripts", "force-update.sh"
 )
+
+
+@app.route("/api/day/<iso_date>")
+def day_detail(iso_date):
+    """Return one day's DayStats fields as JSON for the Day-view tab."""
+    try:
+        target = datetime.strptime(iso_date, "%Y-%m-%d").date()
+    except ValueError:
+        return jsonify({"error": "expected YYYY-MM-DD"}), 400
+
+    with db_session() as session:
+        row = session.exec(select(DayStats).where(DayStats.day == target)).first()
+        if row is None:
+            return jsonify({"day": iso_date, "found": False})
+
+        sleep_total = row.sleep_total_seconds
+        return jsonify({
+            "day": row.day.isoformat(),
+            "found": True,
+            "source": row.source.name if row.source else None,
+            "steps": row.step_count,
+            "step_goal": row.daily_step_goal,
+            "step_goal_met": row.step_goal_met,
+            "distance_km": (
+                round(row.distance_traveled_metres / 1000, 2)
+                if row.distance_traveled_metres else None
+            ),
+            "floors_climbed": row.floors_climbed,
+            "floors_descended": row.floors_descended,
+            "floors_goal": row.floors_climbed_goal,
+            "resting_heart_rate": row.resting_heart_rate,
+            "max_heart_rate": row.max_heart_rate,
+            "min_heart_rate": row.min_heart_rate,
+            "stress": row.stress,
+            "max_stress": row.max_stress,
+            "weight_grams": row.weight_grams,
+            "weight_pounds": (
+                round(row.weight_pounds, 1) if row.weight_grams else None
+            ),
+            "bmi": row.bmi,
+            "body_fat": row.body_fat,
+            "body_water": row.body_water,
+            "bone_mass": row.bone_mass,
+            "muscle_mass": row.muscle_mass,
+            "water_consumed_ml": row.water_consumed_ml,
+            "water_goal_ml": row.water_goal_ml,
+            "water_goal_met": row.water_goal_met,
+            "sleep_total_seconds": sleep_total,
+            "sleep_total_h": round(sleep_total / 3600, 2) if sleep_total else None,
+            "sleep_deep_seconds": row.sleep_deep_seconds,
+            "sleep_light_seconds": row.sleep_light_seconds,
+            "sleep_rem_seconds": row.sleep_rem_seconds,
+            "sleep_awake_seconds": row.sleep_awake_seconds,
+            "sleep_score": row.sleep_score,
+        })
 
 
 @app.route("/api/force-update", methods=["POST"])
