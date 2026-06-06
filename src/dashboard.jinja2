@@ -302,7 +302,14 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.4);
         }
         .tab-panel { display: none; }
-        .tab-panel.active { display: block; }
+        .tab-panel.active {
+            display: block;
+            animation: tabSlideIn 0.25s ease-out;
+        }
+        @keyframes tabSlideIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
         .empty-state {
             text-align: center;
             color: var(--text-dim);
@@ -1725,10 +1732,15 @@
                 const isActive = panel.dataset.tab === name;
                 panel.classList.toggle('active', isActive);
                 if (isActive) {
-                    // Resize any Chart.js instances inside the now-visible panel
+                    // Resize + replay the entry animation on every Chart.js
+                    // instance inside the now-visible panel so charts slide
+                    // in fresh each time the tab is opened.
                     panel.querySelectorAll('canvas').forEach(canvas => {
                         const chart = Chart.getChart(canvas);
-                        if (chart) chart.resize();
+                        if (!chart) return;
+                        chart.resize();
+                        chart.reset();
+                        chart.update('show');
                     });
                 }
             });
