@@ -94,6 +94,11 @@ class DayStats(SQLModel, table=True):
     sleep_awake_seconds: Optional[int]  # dailySleepDTO.awakeSleepSeconds
     sleep_score: Optional[int]  # dailySleepDTO.sleepScores.overall.value
 
+    # Freeform per-day notes, edited from the Day tab in the dashboard.
+    # NOT NULL with empty-string default — new Garmin ingests omit the kwarg
+    # and rely on this default rather than passing it explicitly.
+    notes: str = Field(default="", sa_column_kwargs={"server_default": ""})
+
     source: Source = Field(sa_column=Column(Enum(Source)))  # where the data came from
 
     @property

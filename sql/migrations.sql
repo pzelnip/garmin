@@ -15,3 +15,6 @@ ALTER TABLE daystats ADD COLUMN sleep_light_seconds INTEGER;
 ALTER TABLE daystats ADD COLUMN sleep_rem_seconds INTEGER;
 ALTER TABLE daystats ADD COLUMN sleep_awake_seconds INTEGER;
 ALTER TABLE daystats ADD COLUMN sleep_score INTEGER;
+
+-- 2026-06: add freeform notes field for day annotations.
+ALTER TABLE daystats ADD COLUMN notes TEXT NOT NULL DEFAULT '';

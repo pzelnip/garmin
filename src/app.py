@@ -8,7 +8,7 @@ from statistics import mean
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from sqlmodel import select
@@ -591,7 +591,31 @@ def day_detail(iso_date):
             "sleep_rem_seconds": row.sleep_rem_seconds,
             "sleep_awake_seconds": row.sleep_awake_seconds,
             "sleep_score": row.sleep_score,
+            "notes": row.notes,
         })
+
+
+@app.route("/api/day/<iso_date>/notes", methods=["PUT"])
+def update_day_notes(iso_date):
+    """Replace the `notes` field on an existing DayStats row."""
+    try:
+        target = datetime.strptime(iso_date, "%Y-%m-%d").date()
+    except ValueError:
+        return jsonify({"error": "expected YYYY-MM-DD"}), 400
+
+    payload = request.get_json(silent=True) or {}
+    notes = payload.get("notes")
+    if not isinstance(notes, str):
+        return jsonify({"error": "notes must be a string"}), 400
+
+    with db_session() as session:
+        row = session.exec(select(DayStats).where(DayStats.day == target)).first()
+        if row is None:
+            return jsonify({"error": "no DayStats row for that day"}), 404
+        row.notes = notes
+        session.add(row)
+        session.commit()
+        return jsonify({"day": iso_date, "notes": notes, "saved": True})
 
 
 @app.route("/api/force-update", methods=["POST"])

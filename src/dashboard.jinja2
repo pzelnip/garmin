@@ -330,6 +330,52 @@
             font-style: italic;
         }
         .day-grid .panel .stat-sub.muted { color: #4a5570; }
+        .day-notes-panel {
+            background: var(--panel);
+            border: 1px solid var(--grid);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        .day-notes-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .day-notes-header label {
+            color: var(--text-dim);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-weight: 500;
+        }
+        .day-notes-status { font-size: 12px; color: var(--text-dim); }
+        .day-notes-status.saved { color: var(--accent); }
+        .day-notes-status.error { color: var(--danger); }
+        #day-notes {
+            width: 100%;
+            background: var(--bg);
+            color: var(--text);
+            border: 1px solid var(--grid);
+            border-radius: 6px;
+            padding: 10px;
+            font-family: inherit;
+            font-size: 14px;
+            resize: vertical;
+        }
+        .day-notes-actions { margin-top: 10px; text-align: right; }
+        .day-notes-save {
+            background: var(--accent);
+            color: #0f1419;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .day-notes-save:disabled { opacity: 0.5; cursor: not-allowed; }
         @keyframes tabSlideIn {
             from { opacity: 0; transform: translateY(8px); }
             to   { opacity: 1; transform: translateY(0); }
@@ -1012,6 +1058,16 @@
         </div>
         <div id="day-empty" class="empty-state" style="display: none;">
             No data recorded for this day.
+        </div>
+        <div id="day-notes-panel" class="day-notes-panel" style="display: none;">
+            <div class="day-notes-header">
+                <label for="day-notes">Notes</label>
+                <span id="day-notes-status" class="day-notes-status"></span>
+            </div>
+            <textarea id="day-notes" rows="4" placeholder="Notes for this day…"></textarea>
+            <div class="day-notes-actions">
+                <button type="button" id="day-notes-save" class="day-notes-save">Save</button>
+            </div>
         </div>
         <div id="day-grid" class="grid day-grid"></div>
     </div>
@@ -1868,17 +1924,28 @@
             const grid = document.getElementById('day-grid');
             const empty = document.getElementById('day-empty');
             const source = document.getElementById('day-source');
+            const notesPanel = document.getElementById('day-notes-panel');
+            const notesField = document.getElementById('day-notes');
+            const notesStatus = document.getElementById('day-notes-status');
+
+            // Clear any stale "Saved" / "Failed" indicator from a previous day.
+            notesStatus.textContent = '';
+            notesStatus.className = 'day-notes-status';
 
             if (!data.found) {
                 grid.innerHTML = '';
                 grid.style.display = 'none';
                 empty.style.display = 'block';
                 source.textContent = '';
+                notesPanel.style.display = 'none';
                 return;
             }
             empty.style.display = 'none';
             grid.style.display = '';
             source.textContent = data.source ? `source: ${data.source}` : '';
+
+            notesField.value = data.notes || '';
+            notesPanel.style.display = '';
 
             grid.innerHTML = DAY_CARDS.map(card => {
                 const f = formatCard(card, data);
@@ -1937,6 +2004,40 @@
                 dayLoadedFor = dayPicker.value;
             }
         }
+
+        // Save handler for the per-day notes textarea. PUTs the current
+        // textarea contents to /api/day/<date>/notes.
+        const notesSaveBtn = document.getElementById('day-notes-save');
+        const notesField = document.getElementById('day-notes');
+        const notesStatus = document.getElementById('day-notes-status');
+        let notesStatusTimer = null;
+        function setNotesStatus(text, cls) {
+            notesStatus.textContent = text;
+            notesStatus.className = 'day-notes-status' + (cls ? ' ' + cls : '');
+        }
+        notesSaveBtn.addEventListener('click', async () => {
+            if (notesStatusTimer) {
+                clearTimeout(notesStatusTimer);
+                notesStatusTimer = null;
+            }
+            notesSaveBtn.disabled = true;
+            setNotesStatus('Saving…', '');
+            try {
+                const res = await fetch(`/api/day/${dayPicker.value}/notes`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ notes: notesField.value }),
+                });
+                const body = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+                setNotesStatus('Saved', 'saved');
+                notesStatusTimer = setTimeout(() => setNotesStatus('', ''), 2000);
+            } catch (e) {
+                setNotesStatus(`Failed: ${e.message}`, 'error');
+            } finally {
+                notesSaveBtn.disabled = false;
+            }
+        });
 
         // Restore last-selected tab if it still exists. Must come AFTER the
         // day-view init so an `activateTab('day')` from restore can read
