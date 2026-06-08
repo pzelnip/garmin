@@ -530,7 +530,9 @@ def _git_commit_date():
             timeout=2,
             check=True,
         )
-        return out.stdout.strip()
+        raw = out.stdout.strip()
+        dt = datetime.strptime(raw, "%Y-%m-%d %H:%M:%S %z")
+        return dt.strftime("%Y-%m-%d %H:%M")
     except Exception:  # pylint: disable=broad-except
         return None
 
