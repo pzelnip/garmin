@@ -843,6 +843,11 @@
             <div class="chart-wrap"><canvas id="cumulativeChart"></canvas></div>
         </div>
 
+        <div class="chart-panel wide">
+            <h2>Time to Reach Each 5M-Step Milestone</h2>
+            <div class="chart-wrap"><canvas id="milestonePaceChart"></canvas></div>
+        </div>
+
         {% if data.charts.rhr.values %}
         <div class="chart-panel">
             <div class="panel-header">
@@ -1412,6 +1417,105 @@
                 },
             }
         });
+
+        // Milestone-pace bar chart: how many days each 5M-step milestone took.
+        // First bar is 0M → 5M, measured from the earliest recorded DayStats
+        // day; subsequent bars measure gaps between consecutive crossings.
+        // Reuses the `milestones` array above so the two charts stay in sync.
+        if (milestones.length >= 1) {
+            const paceLabels = [];
+            const paceDays = [];
+            const paceTooltipExtras = [];
+
+            // 0 → 5M from the first recorded day (charts.cumulative.labels[0]).
+            const firstDay = charts.cumulative.labels[0];
+            const first = milestones[0];
+            const firstM = (first.value / 1_000_000).toFixed(0);
+            const firstDays = Math.round(
+                (new Date(first.label) - new Date(firstDay)) / 86400000
+            );
+            paceLabels.push(`0M → ${firstM}M`);
+            paceDays.push(firstDays);
+            paceTooltipExtras.push(
+                `${firstDay} → ${first.label} (${(firstDays / 7).toFixed(1)} weeks)`
+            );
+
+            // Subsequent crossings.
+            for (let i = 1; i < milestones.length; i++) {
+                const prev = milestones[i - 1];
+                const curr = milestones[i];
+                const prevM = (prev.value / 1_000_000).toFixed(0);
+                const currM = (curr.value / 1_000_000).toFixed(0);
+                const days = Math.round(
+                    (new Date(curr.label) - new Date(prev.label)) / 86400000
+                );
+                paceLabels.push(`${prevM}M → ${currM}M`);
+                paceDays.push(days);
+                paceTooltipExtras.push(
+                    `${prev.label} → ${curr.label} (${(days / 7).toFixed(1)} weeks)`
+                );
+            }
+
+            // Distinct colour per milestone — cycles through a palette that
+            // covers up to ~12 milestones cleanly before repeating.
+            const PACE_PALETTE = [
+                '#a78bfa', // violet
+                '#60a5fa', // blue
+                '#5eead4', // teal
+                '#34d399', // green
+                '#fbbf24', // amber
+                '#fb923c', // orange
+                '#f87171', // red
+                '#f472b6', // pink
+                '#c084fc', // light violet
+                '#38bdf8', // sky
+                '#facc15', // yellow
+                '#a3e635', // lime
+            ];
+            const paceColors = paceDays.map(
+                (_, i) => PACE_PALETTE[i % PACE_PALETTE.length]
+            );
+
+            new Chart(document.getElementById('milestonePaceChart'), {
+                type: 'bar',
+                data: {
+                    labels: paceLabels,
+                    datasets: [{
+                        label: 'Days between milestones',
+                        data: paceDays,
+                        backgroundColor: paceColors,
+                        borderRadius: 2,
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => [
+                                    `${ctx.parsed.x} days`,
+                                    paceTooltipExtras[ctx.dataIndex],
+                                ],
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: grid },
+                            ticks: { color: '#8a92a6', callback: (v) => `${v}d` },
+                            title: { display: true, text: 'Days to add 5M steps', color: '#8a92a6' },
+                        },
+                        y: {
+                            grid: { color: grid },
+                            ticks: { color: '#8a92a6' },
+                        }
+                    }
+                }
+            });
+        }
 
         function simpleLine(canvasId, labels, values, color) {
             const el = document.getElementById(canvasId);
