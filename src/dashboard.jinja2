@@ -1072,7 +1072,7 @@
         <div id="day-grid" class="grid day-grid"></div>
         <div id="day-sleep-stages-panel" class="chart-panel wide" style="display: none; margin-top: 20px;">
             <h2>Sleep Stage Breakdown</h2>
-            <div class="chart-wrap" style="height: 80px;"><canvas id="daySleepStagesChart"></canvas></div>
+            <div class="chart-wrap" style="height: 50px;"><canvas id="daySleepStagesChart"></canvas></div>
         </div>
     </div>
     <!-- /DAY TAB -->
@@ -1992,10 +1992,10 @@
                 data: {
                     labels: [''],
                     datasets: [
-                        { label: 'Deep', data: [toMin(deep)], backgroundColor: '#4c1d95' },
-                        { label: 'REM', data: [toMin(rem)], backgroundColor: '#7c3aed' },
-                        { label: 'Light', data: [toMin(light)], backgroundColor: '#a78bfa' },
-                        { label: 'Awake', data: [toMin(awake)], backgroundColor: '#fbbf24' },
+                        { label: 'Deep', data: [toMin(deep)], backgroundColor: '#4c1d95', barThickness: 16 },
+                        { label: 'REM', data: [toMin(rem)], backgroundColor: '#7c3aed', barThickness: 16 },
+                        { label: 'Light', data: [toMin(light)], backgroundColor: '#a78bfa', barThickness: 16 },
+                        { label: 'Awake', data: [toMin(awake)], backgroundColor: '#fbbf24', barThickness: 16 },
                     ]
                 },
                 options: {
