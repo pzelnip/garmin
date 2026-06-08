@@ -324,6 +324,30 @@
             font-size: 14px;
             color-scheme: dark;
         }
+        .day-nav-btn {
+            background: var(--panel);
+            color: var(--text);
+            border: 1px solid var(--grid);
+            border-radius: 6px;
+            width: 30px;
+            height: 30px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-family: inherit;
+            font-size: 18px;
+            line-height: 1;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .day-nav-btn:hover:not(:disabled) {
+            background: var(--panel-2);
+            border-color: var(--text-dim);
+        }
+        .day-nav-btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
         .day-source {
             color: var(--text-dim);
             font-size: 12px;
@@ -1058,7 +1082,9 @@
     <div class="tab-panel" data-tab="day">
         <div class="day-picker-row">
             <label for="day-picker">Day:</label>
+            <button type="button" id="day-prev" class="day-nav-btn" aria-label="Previous day" title="Previous day">‹</button>
             <input type="date" id="day-picker" />
+            <button type="button" id="day-next" class="day-nav-btn" aria-label="Next day" title="Next day">›</button>
             <span id="day-source" class="day-source"></span>
         </div>
         <div id="day-empty" class="empty-state" style="display: none;">
@@ -2155,12 +2181,34 @@
         _yesterday.setDate(_yesterday.getDate() - 1);
         dayPicker.value = localIso(_yesterday);
         dayPicker.max = localIso(_today);
+        function setDay(iso) {
+            dayPicker.value = iso;
+            loadDay(iso);
+            dayLoadedFor = iso;
+            updateDayNavButtons();
+        }
         dayPicker.addEventListener('change', () => {
-            if (dayPicker.value) {
-                loadDay(dayPicker.value);
-                dayLoadedFor = dayPicker.value;
-            }
+            if (dayPicker.value) setDay(dayPicker.value);
         });
+
+        // Prev/next buttons. Step the picker by one day; disable Next when
+        // we're already at dayPicker.max (today) so we never overshoot.
+        const dayPrevBtn = document.getElementById('day-prev');
+        const dayNextBtn = document.getElementById('day-next');
+        function shiftDay(deltaDays) {
+            if (!dayPicker.value) return;
+            const d = new Date(dayPicker.value + 'T00:00:00');  // local, not UTC
+            d.setDate(d.getDate() + deltaDays);
+            const iso = localIso(d);
+            if (dayPicker.max && iso > dayPicker.max) return;
+            setDay(iso);
+        }
+        function updateDayNavButtons() {
+            dayNextBtn.disabled = !!dayPicker.max && dayPicker.value >= dayPicker.max;
+        }
+        dayPrevBtn.addEventListener('click', () => shiftDay(-1));
+        dayNextBtn.addEventListener('click', () => shiftDay(1));
+        updateDayNavButtons();
 
         // Lazy-load on first tab activation; reuse cached render until the
         // picker is changed.
