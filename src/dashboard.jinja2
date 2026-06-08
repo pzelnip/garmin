@@ -1077,6 +1077,7 @@
     <div class="version-footer">
         <a href="https://github.com/pzelnip/garmin/commit/{{ git_sha }}"
            target="_blank" rel="noopener noreferrer">{{ git_sha }}</a>
+        {% if git_commit_date %} &middot; {{ git_commit_date }}{% endif %}
     </div>
     {% endif %}
 

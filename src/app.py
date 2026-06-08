@@ -517,6 +517,24 @@ def _git_sha():
         return None
 
 
+def _git_commit_date():
+    repo_root = os.path.abspath(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+    )
+    try:
+        out = subprocess.run(
+            ["git", "log", "-1", "--format=%ci", "HEAD"],
+            cwd=repo_root,
+            capture_output=True,
+            text=True,
+            timeout=2,
+            check=True,
+        )
+        return out.stdout.strip()
+    except Exception:  # pylint: disable=broad-except
+        return None
+
+
 @app.route("/dashboard")
 def dashboard():
     data = _build_dashboard_data()
@@ -528,6 +546,7 @@ def dashboard():
         data=data,
         charts_json=json.dumps(data["charts"]),
         git_sha=_git_sha(),
+        git_commit_date=_git_commit_date(),
     )
 
 
