@@ -1070,6 +1070,10 @@
             </div>
         </div>
         <div id="day-grid" class="grid day-grid"></div>
+        <div id="day-sleep-stages-panel" class="chart-panel wide" style="display: none; margin-top: 20px;">
+            <h2>Sleep Stage Breakdown</h2>
+            <div class="chart-wrap" style="height: 36px;"><canvas id="daySleepStagesChart"></canvas></div>
+        </div>
     </div>
     <!-- /DAY TAB -->
 
@@ -1937,6 +1941,8 @@
                 empty.style.display = 'block';
                 source.textContent = '';
                 notesPanel.style.display = 'none';
+                document.getElementById('day-sleep-stages-panel').style.display = 'none';
+                if (daySleepStagesChart) { daySleepStagesChart.destroy(); daySleepStagesChart = null; }
                 return;
             }
             empty.style.display = 'none';
@@ -1961,6 +1967,60 @@
                     </div>
                 `;
             }).join('');
+
+            // Sleep stage horizontal bar chart
+            renderDaySleepStages(data);
+        }
+
+        let daySleepStagesChart = null;
+        function renderDaySleepStages(data) {
+            const panel = document.getElementById('day-sleep-stages-panel');
+            const deep = data.sleep_deep_seconds || 0;
+            const rem = data.sleep_rem_seconds || 0;
+            const light = data.sleep_light_seconds || 0;
+            const awake = data.sleep_awake_seconds || 0;
+
+            if (!deep && !rem && !light && !awake) {
+                panel.style.display = 'none';
+                if (daySleepStagesChart) { daySleepStagesChart.destroy(); daySleepStagesChart = null; }
+                return;
+            }
+
+            panel.style.display = '';
+            if (daySleepStagesChart) { daySleepStagesChart.destroy(); daySleepStagesChart = null; }
+
+            const toMin = v => Math.round(v / 60);
+            daySleepStagesChart = new Chart(document.getElementById('daySleepStagesChart'), {
+                type: 'bar',
+                data: {
+                    labels: [''],
+                    datasets: [
+                        { label: 'Deep', data: [toMin(deep)], backgroundColor: '#4c1d95', barThickness: 12 },
+                        { label: 'REM', data: [toMin(rem)], backgroundColor: '#7c3aed', barThickness: 12 },
+                        { label: 'Light', data: [toMin(light)], backgroundColor: '#a78bfa', barThickness: 12 },
+                        { label: 'Awake', data: [toMin(awake)], backgroundColor: '#fbbf24', barThickness: 12 },
+                    ]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: { padding: { top: 0, bottom: 0 } },
+                    plugins: { legend: { labels: { color: '#e6e8ec' } } },
+                    scales: {
+                        x: {
+                            stacked: true,
+                            grid: { color: '#2a3147' },
+                            ticks: { color: '#8a92a6' },
+                            title: { display: true, text: 'Minutes', color: '#8a92a6' },
+                        },
+                        y: {
+                            stacked: true,
+                            display: false,
+                        }
+                    }
+                }
+            });
         }
 
         async function loadDay(iso) {
