@@ -1867,8 +1867,7 @@
         // `format` is one of: 'number', 'duration_s', 'percent', 'raw'.
         // `value` is the JSON key on the /api/day/<date> response.
         const DAY_CARDS = [
-            { label: 'Steps', key: 'steps', sub: 'goal: {step_goal}', format: 'number', accent: 'accent' },
-            { label: 'Goal Met', key: 'step_goal_met', format: 'bool', accent: 'accent-2' },
+            { label: 'Steps', key: 'steps', sub: 'goal: {step_goal}', format: 'number', accent: 'accent', goalKey: 'step_goal_met' },
             { label: 'Distance', key: 'distance_km', sub: 'km', format: 'raw' },
             { label: 'Floors Climbed', key: 'floors_climbed', sub: 'goal: {floors_goal}', format: 'number', accent: 'warn' },
             { label: 'Floors Descended', key: 'floors_descended', format: 'number' },
@@ -1883,8 +1882,7 @@
             { label: 'Body Water', key: 'body_water', sub: '%', format: 'raw' },
             { label: 'Bone Mass', key: 'bone_mass', sub: 'g', format: 'number' },
             { label: 'Muscle Mass', key: 'muscle_mass', sub: 'g', format: 'number' },
-            { label: 'Water Consumed', key: 'water_consumed_ml', sub: 'goal: {water_goal_ml} ml', format: 'number', accent: 'hyd' },
-            { label: 'Hydration Goal Met', key: 'water_goal_met', format: 'bool', accent: 'hyd' },
+            { label: 'Water Consumed', key: 'water_consumed_ml', sub: 'goal: {water_goal_ml} ml', format: 'number', accent: 'hyd', goalKey: 'water_goal_met' },
             { label: 'Sleep', key: 'sleep_total_seconds', format: 'duration_s', accent: 'sleep' },
             { label: 'Sleep Score', key: 'sleep_score', format: 'number', accent: 'sleep' },
             { label: 'Deep Sleep', key: 'sleep_deep_seconds', format: 'duration_s' },
@@ -1950,10 +1948,14 @@
             grid.innerHTML = DAY_CARDS.map(card => {
                 const f = formatCard(card, data);
                 const accentCls = (!f.muted && card.accent) ? ' ' + card.accent : '';
+                let goalIndicator = '';
+                if (!f.muted && card.goalKey && data[card.goalKey] != null) {
+                    goalIndicator = data[card.goalKey] ? ' ✅' : ' ❌';
+                }
                 return `
                     <div class="panel">
                         <div class="stat-label">${card.label}</div>
-                        <div class="stat-value${accentCls}">${f.value}</div>
+                        <div class="stat-value${accentCls}">${f.value}${goalIndicator}</div>
                         <div class="stat-sub${f.muted ? ' muted' : ''}">${f.sub}</div>
                     </div>
                 `;
