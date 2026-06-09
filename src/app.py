@@ -440,6 +440,23 @@ def _build_dashboard_data():
                 "days": current_streak.days,
                 "start": current_streak.start.isoformat(),
                 "end": current_streak.end.isoformat(),
+                # Most recent prior streak that matched or beat the current
+                # one. None if this is the first time, or if it's the
+                # longest ever.
+                "last_match": next(
+                    (
+                        {
+                            "days": s.days,
+                            "start": s.start.isoformat(),
+                            "end": s.end.isoformat(),
+                        }
+                        for s in sorted(streaks, key=lambda x: x.end, reverse=True)
+                        if s is not current_streak
+                        and s.end < current_streak.start
+                        and s.days >= current_streak.days
+                    ),
+                    None,
+                ),
             }
             if current_streak
             else None

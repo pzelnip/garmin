@@ -237,6 +237,11 @@
             font-style: italic;
             border: 1px dashed var(--grid);
         }
+        .streak-context {
+            color: var(--text-dim);
+            font-size: 12px;
+            margin-top: 8px;
+        }
         /* Tabs */
         .tabs {
             display: flex;
@@ -778,6 +783,15 @@
             <div class="streak-current">
                 {{ data.current_streak.days }} day{{ '' if data.current_streak.days == 1 else 's' }} —
                 {{ data.current_streak.start }} → {{ data.current_streak.end }}
+            </div>
+            <div class="streak-context">
+                {% if data.current_streak.last_match %}
+                Last streak this long:
+                {{ data.current_streak.last_match.days }} day{{ '' if data.current_streak.last_match.days == 1 else 's' }}
+                ending {{ data.current_streak.last_match.end }}
+                {% else %}
+                Longest goal-met streak on record 🏆
+                {% endif %}
             </div>
             {% else %}
             <div class="streak-none">
