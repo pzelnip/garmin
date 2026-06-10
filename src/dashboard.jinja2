@@ -418,10 +418,40 @@
         }
         .day-notes-clear:hover:not(:disabled) { color: var(--text); border-color: var(--text-dim); }
         .day-notes-clear:disabled { opacity: 0.5; cursor: not-allowed; }
+        .mood-endpoints {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text);
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        .mood-endpoint {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            letter-spacing: 0.02em;
+        }
+        .mood-endpoint .emoji { font-size: 22px; line-height: 1; }
         .mood-scale {
             display: grid;
             grid-template-columns: repeat(10, 1fr);
             gap: 6px;
+        }
+        .mood-range-labels {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .mood-range-label {
+            text-align: center;
+            color: var(--text-dim);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            border-top: 1px solid var(--grid);
+            padding-top: 6px;
         }
         .mood-chip {
             color: var(--text);
@@ -436,8 +466,9 @@
         }
         .mood-chip:hover { filter: brightness(1.15); }
         .mood-chip.selected {
+            color: #0f1419;
             border-color: #fff;
-            box-shadow: 0 0 0 3px rgba(255,255,255,0.6);
+            box-shadow: 0 0 14px 2px var(--chip-glow, rgba(255,255,255,0.4));
             transform: scale(1.12);
         }
         @keyframes tabSlideIn {
@@ -1154,7 +1185,16 @@
                 <label>Mood Score</label>
                 <span id="day-mood-status" class="day-notes-status"></span>
             </div>
+            <div class="mood-endpoints">
+                <span class="mood-endpoint"><span class="emoji">😞</span> Poor</span>
+                <span class="mood-endpoint">Great <span class="emoji">😄</span></span>
+            </div>
             <div class="mood-scale" id="day-mood-scale"></div>
+            <div class="mood-range-labels">
+                <span class="mood-range-label" style="grid-column: span 3;">Bad day</span>
+                <span class="mood-range-label" style="grid-column: span 4;">Average day</span>
+                <span class="mood-range-label" style="grid-column: span 3;">Great day</span>
+            </div>
             <div class="day-notes-actions">
                 <button type="button" id="day-mood-clear" class="day-notes-clear">Clear</button>
                 <button type="button" id="day-mood-save" class="day-notes-save">Save</button>
@@ -2348,17 +2388,28 @@
         function renderMoodChips(score) {
             moodSelected = score ?? null;
             moodScale.innerHTML = '';
+            // Idle chips have a translucent tint; selected chip uses its full
+            // colour at near-solid alpha plus a soft glow in the same hue so
+            // the selection feels native to the chip's colour.
+            function applyChipColor(chip, score, isSelected) {
+                const hex = MOOD_COLORS[score - 1];
+                chip.style.background = hexToRgba(hex, isSelected ? 0.95 : 0.25);
+                chip.style.borderColor = hex;
+                chip.style.setProperty('--chip-glow', hexToRgba(hex, 0.6));
+            }
             for (let i = 1; i <= 10; i++) {
                 const chip = document.createElement('button');
                 chip.type = 'button';
                 chip.className = 'mood-chip' + (i === moodSelected ? ' selected' : '');
                 chip.textContent = i;
-                chip.style.background = hexToRgba(MOOD_COLORS[i - 1], 0.25);
-                chip.style.borderColor = MOOD_COLORS[i - 1];
+                applyChipColor(chip, i, i === moodSelected);
                 chip.addEventListener('click', () => {
                     moodSelected = i;
                     moodScale.querySelectorAll('.mood-chip').forEach((c, idx) => {
-                        c.classList.toggle('selected', idx + 1 === moodSelected);
+                        const score = idx + 1;
+                        const sel = score === moodSelected;
+                        c.classList.toggle('selected', sel);
+                        applyChipColor(c, score, sel);
                     });
                 });
                 moodScale.appendChild(chip);
@@ -2380,8 +2431,11 @@
                 });
                 const body = await res.json().catch(() => ({}));
                 if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
-                setMoodStatus('Saved', 'saved');
-                moodStatusTimer = setTimeout(() => setMoodStatus('', ''), 2000);
+                const savedMsg = score == null
+                    ? 'Cleared — mood score removed'
+                    : `Mood score: ${score}/10 — thanks for tracking!`;
+                setMoodStatus(savedMsg, 'saved');
+                moodStatusTimer = setTimeout(() => setMoodStatus('', ''), 3000);
             } catch (e) {
                 setMoodStatus(`Failed: ${e.message}`, 'error');
             } finally {
