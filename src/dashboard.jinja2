@@ -424,22 +424,20 @@
             gap: 6px;
         }
         .mood-chip {
-            background: var(--panel-2);
-            color: var(--text);
-            border: 1px solid var(--grid);
+            border: 2px solid transparent;
             border-radius: 6px;
             padding: 10px 0;
             font-family: inherit;
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            transition: background 0.15s, border-color 0.15s, transform 0.05s;
+            transition: border-color 0.15s, transform 0.05s, box-shadow 0.15s;
         }
-        .mood-chip:hover { border-color: var(--accent); }
+        .mood-chip:hover { border-color: #fff; }
         .mood-chip.selected {
-            background: linear-gradient(135deg, var(--accent), var(--accent-2));
-            color: #0f1419;
-            border-color: transparent;
+            border-color: #fff;
+            box-shadow: 0 0 0 3px var(--accent, #1d9bf0);
+            transform: scale(1.08);
         }
         @keyframes tabSlideIn {
             from { opacity: 0; transform: translateY(8px); }
@@ -2335,6 +2333,16 @@
             moodStatus.textContent = text;
             moodStatus.className = 'day-notes-status' + (cls ? ' ' + cls : '');
         }
+        // Mood chip colours: deep red (1) → light green (10).
+        const MOOD_COLORS = [
+            '#c0392b', '#d35400', '#e67e22', '#f39c12', '#f1c40f',
+            '#d4ac0d', '#7dcea0', '#52be80', '#27ae60', '#1e8449'
+        ];
+        // Use dark text on lighter backgrounds for readability.
+        const MOOD_TEXT_COLORS = [
+            '#fff', '#fff', '#fff', '#222', '#222',
+            '#222', '#222', '#fff', '#fff', '#fff'
+        ];
         function renderMoodChips(score) {
             moodSelected = score ?? null;
             moodScale.innerHTML = '';
@@ -2343,6 +2351,8 @@
                 chip.type = 'button';
                 chip.className = 'mood-chip' + (i === moodSelected ? ' selected' : '');
                 chip.textContent = i;
+                chip.style.background = MOOD_COLORS[i - 1];
+                chip.style.color = MOOD_TEXT_COLORS[i - 1];
                 chip.addEventListener('click', () => {
                     moodSelected = i;
                     moodScale.querySelectorAll('.mood-chip').forEach((c, idx) => {
