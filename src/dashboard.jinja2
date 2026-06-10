@@ -2353,7 +2353,7 @@
                 chip.type = 'button';
                 chip.className = 'mood-chip' + (i === moodSelected ? ' selected' : '');
                 chip.textContent = i;
-                chip.style.background = hexToRgba(MOOD_COLORS[i - 1], 0.35);
+                chip.style.background = hexToRgba(MOOD_COLORS[i - 1], 0.25);
                 chip.style.borderColor = MOOD_COLORS[i - 1];
                 chip.addEventListener('click', () => {
                     moodSelected = i;
