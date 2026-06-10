@@ -424,21 +424,21 @@
             gap: 6px;
         }
         .mood-chip {
-            background: var(--panel-2);
             color: var(--text);
-            border: 2.5px solid var(--grid);
+            border: 2px solid transparent;
             border-radius: 6px;
             padding: 10px 0;
             font-family: inherit;
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            transition: border-color 0.15s, transform 0.05s, box-shadow 0.15s;
+            transition: transform 0.05s, box-shadow 0.15s, border-color 0.15s;
         }
-        .mood-chip:hover { opacity: 0.85; }
+        .mood-chip:hover { filter: brightness(1.15); }
         .mood-chip.selected {
-            box-shadow: 0 0 0 2px var(--accent, #1d9bf0);
-            transform: scale(1.08);
+            border-color: #fff;
+            box-shadow: 0 0 0 3px rgba(255,255,255,0.6);
+            transform: scale(1.12);
         }
         @keyframes tabSlideIn {
             from { opacity: 0; transform: translateY(8px); }
@@ -2334,11 +2334,17 @@
             moodStatus.textContent = text;
             moodStatus.className = 'day-notes-status' + (cls ? ' ' + cls : '');
         }
-        // Mood chip colours: deep red (1) → light green (10), applied as border.
+        // Mood chip colours: deep red (1) → light green (10), applied as translucent fill.
         const MOOD_COLORS = [
             '#c0392b', '#d35400', '#e67e22', '#f39c12', '#f1c40f',
             '#d4ac0d', '#7dcea0', '#52be80', '#27ae60', '#1e8449'
         ];
+        function hexToRgba(hex, alpha) {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r},${g},${b},${alpha})`;
+        }
         function renderMoodChips(score) {
             moodSelected = score ?? null;
             moodScale.innerHTML = '';
@@ -2347,6 +2353,7 @@
                 chip.type = 'button';
                 chip.className = 'mood-chip' + (i === moodSelected ? ' selected' : '');
                 chip.textContent = i;
+                chip.style.background = hexToRgba(MOOD_COLORS[i - 1], 0.35);
                 chip.style.borderColor = MOOD_COLORS[i - 1];
                 chip.addEventListener('click', () => {
                     moodSelected = i;
