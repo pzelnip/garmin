@@ -99,6 +99,10 @@ class DayStats(SQLModel, table=True):
     # and rely on this default rather than passing it explicitly.
     notes: str = Field(default="", sa_column_kwargs={"server_default": ""})
 
+    # 1-10 self-rated mood score, edited from the Day tab in the dashboard.
+    # Nullable since most existing rows won't have one and it's a manual entry.
+    mood_score: Optional[int] = None
+
     source: Source = Field(sa_column=Column(Enum(Source)))  # where the data came from
 
     @property

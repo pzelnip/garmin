@@ -18,3 +18,7 @@ ALTER TABLE daystats ADD COLUMN sleep_score INTEGER;
 
 -- 2026-06: add freeform notes field for day annotations.
 ALTER TABLE daystats ADD COLUMN notes TEXT NOT NULL DEFAULT '';
+
+-- 2026-06: add 1-10 self-rated mood score per day. Nullable since it's a
+-- manual entry and most existing rows won't have one.
+ALTER TABLE daystats ADD COLUMN mood_score INTEGER;

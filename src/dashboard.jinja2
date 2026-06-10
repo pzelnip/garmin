@@ -405,6 +405,42 @@
             cursor: pointer;
         }
         .day-notes-save:disabled { opacity: 0.5; cursor: not-allowed; }
+        .day-notes-clear {
+            background: transparent;
+            color: var(--text-dim);
+            border: 1px solid var(--grid);
+            border-radius: 6px;
+            padding: 8px 14px;
+            font-family: inherit;
+            font-weight: 500;
+            cursor: pointer;
+            margin-right: 8px;
+        }
+        .day-notes-clear:hover:not(:disabled) { color: var(--text); border-color: var(--text-dim); }
+        .day-notes-clear:disabled { opacity: 0.5; cursor: not-allowed; }
+        .mood-scale {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 6px;
+        }
+        .mood-chip {
+            background: var(--panel-2);
+            color: var(--text);
+            border: 1px solid var(--grid);
+            border-radius: 6px;
+            padding: 10px 0;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s, transform 0.05s;
+        }
+        .mood-chip:hover { border-color: var(--accent); }
+        .mood-chip.selected {
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            color: #0f1419;
+            border-color: transparent;
+        }
         @keyframes tabSlideIn {
             from { opacity: 0; transform: translateY(8px); }
             to   { opacity: 1; transform: translateY(0); }
@@ -1112,6 +1148,17 @@
             <textarea id="day-notes" rows="4" placeholder="Notes for this day…"></textarea>
             <div class="day-notes-actions">
                 <button type="button" id="day-notes-save" class="day-notes-save">Save</button>
+            </div>
+        </div>
+        <div id="day-mood-panel" class="day-notes-panel" style="display: none;">
+            <div class="day-notes-header">
+                <label>Mood Score</label>
+                <span id="day-mood-status" class="day-notes-status"></span>
+            </div>
+            <div class="mood-scale" id="day-mood-scale"></div>
+            <div class="day-notes-actions">
+                <button type="button" id="day-mood-clear" class="day-notes-clear">Clear</button>
+                <button type="button" id="day-mood-save" class="day-notes-save">Save</button>
             </div>
         </div>
         <div id="day-grid" class="grid day-grid"></div>
@@ -2074,10 +2121,14 @@
             const notesPanel = document.getElementById('day-notes-panel');
             const notesField = document.getElementById('day-notes');
             const notesStatus = document.getElementById('day-notes-status');
+            const moodPanel = document.getElementById('day-mood-panel');
+            const moodStatus = document.getElementById('day-mood-status');
 
             // Clear any stale "Saved" / "Failed" indicator from a previous day.
             notesStatus.textContent = '';
             notesStatus.className = 'day-notes-status';
+            moodStatus.textContent = '';
+            moodStatus.className = 'day-notes-status';
 
             if (!data.found) {
                 grid.innerHTML = '';
@@ -2085,6 +2136,7 @@
                 empty.style.display = 'block';
                 source.textContent = '';
                 notesPanel.style.display = 'none';
+                moodPanel.style.display = 'none';
                 document.getElementById('day-sleep-stages-panel').style.display = 'none';
                 if (daySleepStagesChart) { daySleepStagesChart.destroy(); daySleepStagesChart = null; }
                 return;
@@ -2095,6 +2147,9 @@
 
             notesField.value = data.notes || '';
             notesPanel.style.display = '';
+
+            renderMoodChips(data.mood_score);
+            moodPanel.style.display = '';
 
             grid.innerHTML = DAY_CARDS.map(card => {
                 const f = formatCard(card, data);
@@ -2266,6 +2321,72 @@
             } finally {
                 notesSaveBtn.disabled = false;
             }
+        });
+
+        // Mood score panel: 1–10 chips with save + clear handlers.
+        const moodScale = document.getElementById('day-mood-scale');
+        const moodSaveBtn = document.getElementById('day-mood-save');
+        const moodClearBtn = document.getElementById('day-mood-clear');
+        const moodStatus = document.getElementById('day-mood-status');
+        let moodStatusTimer = null;
+        let moodSelected = null;  // currently-selected score, or null
+
+        function setMoodStatus(text, cls) {
+            moodStatus.textContent = text;
+            moodStatus.className = 'day-notes-status' + (cls ? ' ' + cls : '');
+        }
+        function renderMoodChips(score) {
+            moodSelected = score ?? null;
+            moodScale.innerHTML = '';
+            for (let i = 1; i <= 10; i++) {
+                const chip = document.createElement('button');
+                chip.type = 'button';
+                chip.className = 'mood-chip' + (i === moodSelected ? ' selected' : '');
+                chip.textContent = i;
+                chip.addEventListener('click', () => {
+                    moodSelected = i;
+                    moodScale.querySelectorAll('.mood-chip').forEach((c, idx) => {
+                        c.classList.toggle('selected', idx + 1 === moodSelected);
+                    });
+                });
+                moodScale.appendChild(chip);
+            }
+        }
+        async function saveMood(score) {
+            if (moodStatusTimer) {
+                clearTimeout(moodStatusTimer);
+                moodStatusTimer = null;
+            }
+            moodSaveBtn.disabled = true;
+            moodClearBtn.disabled = true;
+            setMoodStatus(score == null ? 'Clearing…' : 'Saving…', '');
+            try {
+                const res = await fetch(`/api/day/${dayPicker.value}/mood`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mood_score: score }),
+                });
+                const body = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+                setMoodStatus('Saved', 'saved');
+                moodStatusTimer = setTimeout(() => setMoodStatus('', ''), 2000);
+            } catch (e) {
+                setMoodStatus(`Failed: ${e.message}`, 'error');
+            } finally {
+                moodSaveBtn.disabled = false;
+                moodClearBtn.disabled = false;
+            }
+        }
+        moodSaveBtn.addEventListener('click', () => {
+            if (moodSelected == null) {
+                setMoodStatus('Pick a score (1–10) first', 'error');
+                return;
+            }
+            saveMood(moodSelected);
+        });
+        moodClearBtn.addEventListener('click', () => {
+            renderMoodChips(null);
+            saveMood(null);
         });
 
         // Restore last-selected tab if it still exists. Must come AFTER the

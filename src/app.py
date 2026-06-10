@@ -630,6 +630,7 @@ def day_detail(iso_date):
             "sleep_awake_seconds": row.sleep_awake_seconds,
             "sleep_score": row.sleep_score,
             "notes": row.notes,
+            "mood_score": row.mood_score,
         })
 
 
@@ -654,6 +655,35 @@ def update_day_notes(iso_date):
         session.add(row)
         session.commit()
         return jsonify({"day": iso_date, "notes": notes, "saved": True})
+
+
+@app.route("/api/day/<iso_date>/mood", methods=["PUT"])
+def update_day_mood(iso_date):
+    """Set or clear the `mood_score` field on an existing DayStats row.
+
+    Accepts {"mood_score": 1..10} or {"mood_score": null} (to clear).
+    """
+    try:
+        target = datetime.strptime(iso_date, "%Y-%m-%d").date()
+    except ValueError:
+        return jsonify({"error": "expected YYYY-MM-DD"}), 400
+
+    payload = request.get_json(silent=True) or {}
+    score = payload.get("mood_score")
+    if score is not None:
+        if not isinstance(score, int) or isinstance(score, bool):
+            return jsonify({"error": "mood_score must be an int or null"}), 400
+        if not 1 <= score <= 10:
+            return jsonify({"error": "mood_score must be between 1 and 10"}), 400
+
+    with db_session() as session:
+        row = session.exec(select(DayStats).where(DayStats.day == target)).first()
+        if row is None:
+            return jsonify({"error": "no DayStats row for that day"}), 404
+        row.mood_score = score
+        session.add(row)
+        session.commit()
+        return jsonify({"day": iso_date, "mood_score": score, "saved": True})
 
 
 @app.route("/api/force-update", methods=["POST"])
