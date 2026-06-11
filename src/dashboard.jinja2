@@ -1949,8 +1949,8 @@
                 }
             });
 
-            // Stacked sleep stages — convert seconds → minutes for readability
-            const toMinutes = arr => arr.map(v => Math.round(v / 60));
+            // Stacked sleep stages — convert seconds → hours for readability
+            const toHours = arr => arr.map(v => +(v / 3600).toFixed(2));
             new Chart(document.getElementById('sleepStagesChart'), {
                 type: 'bar',
                 data: {
@@ -1958,22 +1958,22 @@
                     datasets: [
                         {
                             label: 'Deep',
-                            data: toMinutes(charts.sleep_timeline.deep),
+                            data: toHours(charts.sleep_timeline.deep),
                             backgroundColor: '#4c1d95',
                         },
                         {
                             label: 'REM',
-                            data: toMinutes(charts.sleep_timeline.rem),
+                            data: toHours(charts.sleep_timeline.rem),
                             backgroundColor: '#7c3aed',
                         },
                         {
                             label: 'Light',
-                            data: toMinutes(charts.sleep_timeline.light),
+                            data: toHours(charts.sleep_timeline.light),
                             backgroundColor: '#a78bfa',
                         },
                         {
                             label: 'Awake',
-                            data: toMinutes(charts.sleep_timeline.awake),
+                            data: toHours(charts.sleep_timeline.awake),
                             backgroundColor: '#fbbf24',
                         }
                     ]
@@ -1981,7 +1981,18 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { labels: { color: '#e6e8ec' } } },
+                    plugins: {
+                        legend: { labels: { color: '#e6e8ec' } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const hours = context.raw;
+                                    const minutes = Math.round(hours * 60);
+                                    return `${context.dataset.label}: ${minutes} minutes / ${hours.toFixed(1)} hours`;
+                                }
+                            }
+                        }
+                    },
                     scales: {
                         x: {
                             stacked: true,
@@ -1992,7 +2003,7 @@
                             stacked: true,
                             grid: { color: grid },
                             ticks: { color: '#8a92a6' },
-                            title: { display: true, text: 'Minutes', color: '#8a92a6' },
+                            title: { display: true, text: 'Hours', color: '#8a92a6' },
                         }
                     }
                 }
