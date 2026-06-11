@@ -11,6 +11,8 @@
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
     <style>
         :root {
             --bg: #0f1419;
@@ -414,6 +416,60 @@
             font-family: inherit;
             font-size: 14px;
             resize: vertical;
+        }
+        .day-notes-modes { display: flex; gap: 4px; margin-bottom: 8px; }
+        .day-notes-mode {
+            background: transparent;
+            color: var(--text-dim);
+            border: 1px solid var(--grid);
+            border-radius: 6px;
+            padding: 4px 12px;
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .day-notes-mode.active {
+            color: var(--text);
+            border-color: var(--accent);
+        }
+        .day-notes-preview {
+            min-height: calc(4 * 1.4em + 20px);
+            background: var(--bg);
+            color: var(--text);
+            border: 1px solid var(--grid);
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 14px;
+            line-height: 1.5;
+            overflow-wrap: anywhere;
+        }
+        .day-notes-preview:empty::before {
+            content: 'Nothing to preview.';
+            color: var(--text-dim);
+            font-style: italic;
+        }
+        .day-notes-preview > :first-child { margin-top: 0; }
+        .day-notes-preview > :last-child { margin-bottom: 0; }
+        .day-notes-preview a { color: var(--accent); }
+        .day-notes-preview code {
+            background: var(--panel-2);
+            border-radius: 4px;
+            padding: 1px 5px;
+            font-size: 13px;
+        }
+        .day-notes-preview pre {
+            background: var(--panel-2);
+            border-radius: 6px;
+            padding: 10px;
+            overflow-x: auto;
+        }
+        .day-notes-preview pre code { background: none; padding: 0; }
+        .day-notes-preview blockquote {
+            border-left: 3px solid var(--grid);
+            margin: 8px 0;
+            padding-left: 12px;
+            color: var(--text-dim);
         }
         .day-notes-actions { margin-top: 10px; text-align: right; }
         .day-notes-save {
@@ -1231,7 +1287,12 @@
                 <label for="day-notes">Notes</label>
                 <span id="day-notes-status" class="day-notes-status"></span>
             </div>
-            <textarea id="day-notes" rows="4" placeholder="Notes for this day…"></textarea>
+            <div class="day-notes-modes">
+                <button type="button" id="day-notes-write-tab" class="day-notes-mode active">Write</button>
+                <button type="button" id="day-notes-preview-tab" class="day-notes-mode">Preview</button>
+            </div>
+            <textarea id="day-notes" rows="4" placeholder="Notes for this day… (Markdown supported)"></textarea>
+            <div id="day-notes-preview" class="day-notes-preview" style="display: none;"></div>
             <div class="day-notes-actions">
                 <button type="button" id="day-notes-save" class="day-notes-save">Save</button>
             </div>
@@ -2265,6 +2326,9 @@
             moodStatus.textContent = '';
             moodStatus.className = 'day-notes-status';
 
+            // Reset to Write mode so a stale preview from a prior day isn't shown.
+            showNotesWrite();
+
             // Today is always rendered as the "notes + mood only" view
             // regardless of whether a stub row exists yet, because the
             // Garmin sync only runs after the day has passed — any
@@ -2492,6 +2556,28 @@
                 notesSaveBtn.disabled = false;
             }
         });
+
+        // Write/Preview toggle for the notes field. Preview renders the
+        // current textarea contents as Markdown; output is sanitized with
+        // DOMPurify since notes are free-form text rendered as HTML.
+        const notesWriteTab = document.getElementById('day-notes-write-tab');
+        const notesPreviewTab = document.getElementById('day-notes-preview-tab');
+        const notesPreview = document.getElementById('day-notes-preview');
+        function showNotesWrite() {
+            notesField.style.display = '';
+            notesPreview.style.display = 'none';
+            notesWriteTab.classList.add('active');
+            notesPreviewTab.classList.remove('active');
+        }
+        function showNotesPreview() {
+            notesPreview.innerHTML = DOMPurify.sanitize(marked.parse(notesField.value || ''));
+            notesField.style.display = 'none';
+            notesPreview.style.display = '';
+            notesPreviewTab.classList.add('active');
+            notesWriteTab.classList.remove('active');
+        }
+        notesWriteTab.addEventListener('click', showNotesWrite);
+        notesPreviewTab.addEventListener('click', showNotesPreview);
 
         // Mood score panel: 1–10 chips with save + clear handlers.
         const moodScale = document.getElementById('day-mood-scale');
