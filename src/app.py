@@ -14,7 +14,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from sqlmodel import select
 
 from analytics import build_streaks, find_current_streak
-from db import DayStats, StepsToday, _init_db, db_session, get_all_entries
+from db import DayStats, Source, StepsToday, _init_db, db_session, get_all_entries
 from so_far_today import retrieve_steps_at_hour
 
 DEBUG = True
@@ -585,15 +585,20 @@ def day_detail(iso_date):
     except ValueError:
         return jsonify({"error": "expected YYYY-MM-DD"}), 400
 
+    is_today = target == datetime.now().date()
     with db_session() as session:
         row = session.exec(select(DayStats).where(DayStats.day == target)).first()
         if row is None:
-            return jsonify({"day": iso_date, "found": False})
+            # Today is special: the Garmin sync hasn't necessarily run yet,
+            # but the user may still want to record notes / mood — surface
+            # is_today so the front-end can render those panels.
+            return jsonify({"day": iso_date, "found": False, "is_today": is_today})
 
         sleep_total = row.sleep_total_seconds
         return jsonify({
             "day": row.day.isoformat(),
             "found": True,
+            "is_today": is_today,
             "source": row.source.name if row.source else None,
             "steps": row.step_count,
             "step_goal": row.daily_step_goal,
@@ -634,9 +639,42 @@ def day_detail(iso_date):
         })
 
 
+def _get_or_create_day(session, target, *, allow_create):
+    """Fetch the DayStats row for `target`, optionally creating an empty stub
+    if it doesn't exist. Returns the row, or None if it's missing and
+    `allow_create=False`.
+
+    The stub uses step_count=0 / daily_step_goal=0 / source=manual_entry as
+    placeholders; the morning Garmin sync will UPSERT real values onto it.
+    The newly-created row is attached to the session before being returned,
+    so a subsequent `session.commit()` persists it without the caller needing
+    to know whether the row was fetched or created.
+
+    `allow_create` is taken as a parameter rather than recomputed inside the
+    helper so the caller's notion of "is this today" stays the single source
+    of truth — avoids midnight races where the GET endpoint says is_today
+    but a moment later this helper disagrees.
+    """
+    row = session.exec(select(DayStats).where(DayStats.day == target)).first()
+    if row is not None:
+        return row
+    if not allow_create:
+        return None
+    row = DayStats(
+        day=target,
+        step_count=0,
+        daily_step_goal=0,
+        source=Source.manual_entry,
+    )
+    session.add(row)
+    return row
+
+
 @app.route("/api/day/<iso_date>/notes", methods=["PUT"])
 def update_day_notes(iso_date):
-    """Replace the `notes` field on an existing DayStats row."""
+    """Replace the `notes` field on a DayStats row. Creates a stub row for
+    today if none exists yet (so the user can record notes before the Garmin
+    sync has run)."""
     try:
         target = datetime.strptime(iso_date, "%Y-%m-%d").date()
     except ValueError:
@@ -647,19 +685,21 @@ def update_day_notes(iso_date):
     if not isinstance(notes, str):
         return jsonify({"error": "notes must be a string"}), 400
 
+    is_today = target == datetime.now().date()
     with db_session() as session:
-        row = session.exec(select(DayStats).where(DayStats.day == target)).first()
+        row = _get_or_create_day(session, target, allow_create=is_today)
         if row is None:
             return jsonify({"error": "no DayStats row for that day"}), 404
         row.notes = notes
-        session.add(row)
         session.commit()
         return jsonify({"day": iso_date, "notes": notes, "saved": True})
 
 
 @app.route("/api/day/<iso_date>/mood", methods=["PUT"])
 def update_day_mood(iso_date):
-    """Set or clear the `mood_score` field on an existing DayStats row.
+    """Set or clear the `mood_score` field on a DayStats row. Creates a stub
+    row for today if none exists yet (so the user can record their mood
+    before the Garmin sync has run).
 
     Accepts {"mood_score": 1..10} or {"mood_score": null} (to clear).
     """
@@ -676,12 +716,12 @@ def update_day_mood(iso_date):
         if not 1 <= score <= 10:
             return jsonify({"error": "mood_score must be between 1 and 10"}), 400
 
+    is_today = target == datetime.now().date()
     with db_session() as session:
-        row = session.exec(select(DayStats).where(DayStats.day == target)).first()
+        row = _get_or_create_day(session, target, allow_create=is_today)
         if row is None:
             return jsonify({"error": "no DayStats row for that day"}), 404
         row.mood_score = score
-        session.add(row)
         session.commit()
         return jsonify({"day": iso_date, "mood_score": score, "saved": True})
 
