@@ -571,6 +571,35 @@ def _git_commit_date():
         return None
 
 
+# Server-start timestamp captured at module load so it doesn't drift on every
+# /dashboard render. Reset whenever the systemd service restarts.
+SERVER_STARTED = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
+def _diagnostics():
+    """Collect runtime version/environment info for the debug panel."""
+    import platform  # pylint: disable=import-outside-toplevel
+    from importlib.metadata import PackageNotFoundError, version  # pylint: disable=import-outside-toplevel
+
+    def _pkg(name):
+        try:
+            return version(name)
+        except PackageNotFoundError:
+            return "not installed"
+
+    return {
+        "Python": platform.python_version(),
+        "Platform": f"{platform.system()} {platform.release()} ({platform.machine()})",
+        "Flask": _pkg("flask"),
+        "SQLModel": _pkg("sqlmodel"),
+        "SQLAlchemy": _pkg("sqlalchemy"),
+        "garminconnect": _pkg("garminconnect"),
+        "APScheduler": _pkg("apscheduler"),
+        "DEBUG mode": "on" if DEBUG else "off",
+        "Server started": SERVER_STARTED,
+    }
+
+
 @app.route("/dashboard")
 def dashboard():
     data = _build_dashboard_data()
@@ -583,6 +612,7 @@ def dashboard():
         charts_json=json.dumps(data["charts"]),
         git_sha=_git_sha(),
         git_commit_date=_git_commit_date(),
+        diagnostics=_diagnostics(),
     )
 
 

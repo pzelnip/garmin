@@ -616,6 +616,30 @@
         #debug-status.show { display: block; }
         #debug-status.ok { background: rgba(94, 234, 212, 0.12); color: var(--accent); }
         #debug-status.err { background: rgba(248, 113, 113, 0.12); color: var(--danger); }
+        .debug-section-h {
+            margin: 24px 0 8px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-dim);
+            border-bottom: 1px solid var(--grid);
+            padding-bottom: 6px;
+        }
+        .debug-diag {
+            display: grid;
+            grid-template-columns: max-content 1fr;
+            gap: 4px 16px;
+            font-size: 12px;
+            margin: 0;
+        }
+        .debug-diag dt { color: var(--text-dim); }
+        .debug-diag dd {
+            margin: 0;
+            color: var(--text);
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            word-break: break-all;
+        }
         /* Weekly comparison */
         .weekly-range {
             color: var(--text-dim);
@@ -810,6 +834,15 @@
             </dd>
         </dl>
         <div id="debug-status"></div>
+        {% if diagnostics %}
+        <h3 class="debug-section-h">Diagnostics</h3>
+        <dl class="debug-diag">
+            {% for label, value in diagnostics.items() %}
+            <dt>{{ label }}</dt>
+            <dd>{{ value }}</dd>
+            {% endfor %}
+        </dl>
+        {% endif %}
     </div>
 
     <h1>Health Dashboard</h1>
