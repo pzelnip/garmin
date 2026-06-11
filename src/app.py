@@ -405,6 +405,16 @@ def _build_dashboard_data():
         for i in range(7)
     ]
 
+    # Sleep score by day-of-week (avg). Bucket from sleep_scored so days
+    # without a score don't drag the average down to 0.
+    sleep_score_dow_buckets = defaultdict(list)
+    for e in sleep_scored:
+        sleep_score_dow_buckets[e.day.weekday()].append(e.sleep_score)
+    sleep_score_dow_avgs = [
+        round(mean(sleep_score_dow_buckets[i]), 1) if sleep_score_dow_buckets[i] else 0
+        for i in range(7)
+    ]
+
     # Sleep score vs sleep duration scatter — last 365 days, only days with both
     sleep_scatter = [
         {"x": round(e.sleep_total_seconds / 3600, 2), "y": e.sleep_score}
@@ -517,6 +527,7 @@ def _build_dashboard_data():
                 "awake": sleep_stages_awake,
             },
             "sleep_dow": {"labels": dow_names, "values": sleep_dow_avgs},
+            "sleep_score_dow": {"labels": dow_names, "values": sleep_score_dow_avgs},
             "sleep_scatter": sleep_scatter,
         },
     }

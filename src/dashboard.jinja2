@@ -1143,7 +1143,7 @@
             <div class="chart-wrap tall"><canvas id="sleepStagesChart"></canvas></div>
         </div>
         <div class="chart-panel">
-            <h2>Average Sleep by Day of Week (hours)</h2>
+            <h2>Sleep by Day of Week — Hours &amp; Score</h2>
             <div class="chart-wrap"><canvas id="sleepDowChart"></canvas></div>
         </div>
         <div class="chart-panel">
@@ -2009,23 +2009,52 @@
                 }
             });
 
-            // Sleep by day-of-week (hours)
+            // Sleep by day-of-week — hours (left axis) + score (right axis)
+            // as side-by-side bars per weekday.
             new Chart(document.getElementById('sleepDowChart'), {
                 type: 'bar',
                 data: {
                     labels: charts.sleep_dow.labels,
-                    datasets: [{
-                        label: 'Avg hours',
-                        data: charts.sleep_dow.values,
-                        backgroundColor: sleepColor,
-                        borderRadius: 6,
-                    }]
+                    datasets: [
+                        {
+                            label: 'Avg hours',
+                            data: charts.sleep_dow.values,
+                            backgroundColor: sleepColor,
+                            borderRadius: 6,
+                            yAxisID: 'yHours',
+                        },
+                        {
+                            label: 'Avg score',
+                            data: charts.sleep_score_dow.values,
+                            backgroundColor: accent,
+                            borderRadius: 6,
+                            yAxisID: 'yScore',
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: gridOpts()
+                    plugins: { legend: { labels: { color: '#e6e8ec' } } },
+                    scales: {
+                        x: { grid: { color: grid }, ticks: { color: '#8a92a6' } },
+                        yHours: {
+                            type: 'linear',
+                            position: 'left',
+                            grid: { color: grid },
+                            ticks: { color: sleepColor },
+                            title: { display: true, text: 'Hours', color: sleepColor },
+                            min: 0,
+                        },
+                        yScore: {
+                            type: 'linear',
+                            position: 'right',
+                            grid: { drawOnChartArea: false },
+                            ticks: { color: accent },
+                            title: { display: true, text: 'Score', color: accent },
+                            min: 0, max: 100,
+                        }
+                    }
                 }
             });
 
