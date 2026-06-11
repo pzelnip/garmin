@@ -2168,15 +2168,36 @@
             moodStatus.textContent = '';
             moodStatus.className = 'day-notes-status';
 
+            // Today is always rendered as the "notes + mood only" view
+            // regardless of whether a stub row exists yet, because the
+            // Garmin sync only runs after the day has passed — any
+            // step/sleep/etc. data for today is necessarily incomplete
+            // and would be misleading to show.
+            if (data.is_today) {
+                grid.innerHTML = '';
+                grid.style.display = 'none';
+                source.textContent = '';
+                document.getElementById('day-sleep-stages-panel').style.display = 'none';
+                if (daySleepStagesChart) { daySleepStagesChart.destroy(); daySleepStagesChart = null; }
+                empty.textContent = 'Waiting on today’s Garmin sync. You can still record notes and mood below.';
+                empty.style.display = 'block';
+                notesField.value = data.notes || '';
+                notesPanel.style.display = '';
+                renderMoodChips(data.mood_score ?? null);
+                moodPanel.style.display = '';
+                return;
+            }
+
             if (!data.found) {
                 grid.innerHTML = '';
                 grid.style.display = 'none';
-                empty.style.display = 'block';
                 source.textContent = '';
-                notesPanel.style.display = 'none';
-                moodPanel.style.display = 'none';
                 document.getElementById('day-sleep-stages-panel').style.display = 'none';
                 if (daySleepStagesChart) { daySleepStagesChart.destroy(); daySleepStagesChart = null; }
+                empty.textContent = 'No data recorded for this day.';
+                empty.style.display = 'block';
+                notesPanel.style.display = 'none';
+                moodPanel.style.display = 'none';
                 return;
             }
             empty.style.display = 'none';
