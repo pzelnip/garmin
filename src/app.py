@@ -17,7 +17,10 @@ from analytics import build_streaks, find_current_streak
 from db import DayStats, Source, StepsToday, _init_db, db_session, get_all_entries
 from so_far_today import retrieve_steps_at_hour
 
-DEBUG = True
+# Set GARMIN_DASHBOARD_DEBUG=1 (or any truthy 1/true/yes) to enable Flask's
+# reloader / debugger locally. Defaults to False so the Pi runs in
+# production mode without needing the var.
+DEBUG = os.getenv("GARMIN_DASHBOARD_DEBUG", "").lower() in ("1", "true", "yes")
 
 app = Flask(__name__)
 
@@ -154,15 +157,16 @@ def _build_dashboard_data():
 
     def _sum_range(end_day, days):
         return sum(
-            steps_by_day.get(end_day - timedelta(days=i), 0)
-            for i in range(days)
+            steps_by_day.get(end_day - timedelta(days=i), 0) for i in range(days)
         )
 
     this_week_steps = _sum_range(yesterday, 7)
     last_week_steps = _sum_range(yesterday - timedelta(days=7), 7)
-    four_week_avg = _sum_range(yesterday, 28) // 4 if any(
-        steps_by_day.get(yesterday - timedelta(days=i)) for i in range(28)
-    ) else 0
+    four_week_avg = (
+        _sum_range(yesterday, 28) // 4
+        if any(steps_by_day.get(yesterday - timedelta(days=i)) for i in range(28))
+        else 0
+    )
 
     if last_week_steps:
         wow_pct = round((this_week_steps - last_week_steps) / last_week_steps * 100)
@@ -209,6 +213,7 @@ def _build_dashboard_data():
                     if lookup.get(end_day - timedelta(days=i))
                 ]
                 return round(sum(vals) / len(vals)) if vals else 0
+
             this_w = _avg(yesterday, 7)
             last_w = _avg(yesterday - timedelta(days=7), 7)
             four_avg = _avg(yesterday, 28)
@@ -220,9 +225,7 @@ def _build_dashboard_data():
             "this_week": this_w,
             "last_week": last_w,
             "four_week_avg": four_avg,
-            "wow_pct": (
-                round((this_w - last_w) / last_w * 100) if last_w else None
-            ),
+            "wow_pct": (round((this_w - last_w) / last_w * 100) if last_w else None),
             "this_week_range": this_week_range_str,
             "last_week_range": last_week_range_str,
             "four_week_range": four_week_range_str,
@@ -312,7 +315,8 @@ def _build_dashboard_data():
 
     # Hydration — only entries where both consumed and goal are present
     hyd_entries = [
-        e for e in entries
+        e
+        for e in entries
         if e.water_consumed_ml is not None and e.water_goal_ml is not None
     ]
     hyd_total_days = len(hyd_entries)
@@ -372,7 +376,8 @@ def _build_dashboard_data():
     sleep_total_days = len(sleep_entries)
     sleep_avg_seconds = (
         round(sum(e.sleep_total_seconds for e in sleep_entries) / sleep_total_days)
-        if sleep_total_days else 0
+        if sleep_total_days
+        else 0
     )
     sleep_scored = [e for e in sleep_entries if e.sleep_score is not None]
     sleep_avg_score = (
@@ -426,7 +431,8 @@ def _build_dashboard_data():
             "sleep_total_days": sleep_total_days,
             "sleep_avg_hours_str": (
                 f"{sleep_avg_seconds // 3600}h {(sleep_avg_seconds % 3600) // 60:02d}m"
-                if sleep_total_days else "—"
+                if sleep_total_days
+                else "—"
             ),
             "sleep_avg_score": sleep_avg_score,
             "sleep_scored_days": len(sleep_scored),
@@ -595,79 +601,73 @@ def day_detail(iso_date):
             return jsonify({"day": iso_date, "found": False, "is_today": is_today})
 
         sleep_total = row.sleep_total_seconds
-        return jsonify({
-            "day": row.day.isoformat(),
-            "found": True,
-            "is_today": is_today,
-            "source": row.source.name if row.source else None,
-            "steps": row.step_count,
-            "step_goal": row.daily_step_goal,
-            "step_goal_met": row.step_goal_met,
-            "distance_km": (
-                round(row.distance_traveled_metres / 1000, 2)
-                if row.distance_traveled_metres else None
-            ),
-            "floors_climbed": row.floors_climbed,
-            "floors_descended": row.floors_descended,
-            "floors_goal": row.floors_climbed_goal,
-            "resting_heart_rate": row.resting_heart_rate,
-            "max_heart_rate": row.max_heart_rate,
-            "min_heart_rate": row.min_heart_rate,
-            "stress": row.stress,
-            "max_stress": row.max_stress,
-            "weight_grams": row.weight_grams,
-            "weight_pounds": (
-                round(row.weight_pounds, 1) if row.weight_grams else None
-            ),
-            "bmi": row.bmi,
-            "body_fat": row.body_fat,
-            "body_water": row.body_water,
-            "bone_mass": row.bone_mass,
-            "muscle_mass": row.muscle_mass,
-            "water_consumed_ml": row.water_consumed_ml,
-            "water_goal_ml": row.water_goal_ml,
-            "water_goal_met": row.water_goal_met,
-            "sleep_total_seconds": sleep_total,
-            "sleep_total_h": round(sleep_total / 3600, 2) if sleep_total else None,
-            "sleep_deep_seconds": row.sleep_deep_seconds,
-            "sleep_light_seconds": row.sleep_light_seconds,
-            "sleep_rem_seconds": row.sleep_rem_seconds,
-            "sleep_awake_seconds": row.sleep_awake_seconds,
-            "sleep_score": row.sleep_score,
-            "notes": row.notes,
-            "mood_score": row.mood_score,
-        })
+        return jsonify(
+            {
+                "day": row.day.isoformat(),
+                "found": True,
+                "is_today": is_today,
+                "source": row.source.name if row.source else None,
+                "steps": row.step_count,
+                "step_goal": row.daily_step_goal,
+                "step_goal_met": row.step_goal_met,
+                "distance_km": (
+                    round(row.distance_traveled_metres / 1000, 2)
+                    if row.distance_traveled_metres
+                    else None
+                ),
+                "floors_climbed": row.floors_climbed,
+                "floors_descended": row.floors_descended,
+                "floors_goal": row.floors_climbed_goal,
+                "resting_heart_rate": row.resting_heart_rate,
+                "max_heart_rate": row.max_heart_rate,
+                "min_heart_rate": row.min_heart_rate,
+                "stress": row.stress,
+                "max_stress": row.max_stress,
+                "weight_grams": row.weight_grams,
+                "weight_pounds": (
+                    round(row.weight_pounds, 1) if row.weight_grams else None
+                ),
+                "bmi": row.bmi,
+                "body_fat": row.body_fat,
+                "body_water": row.body_water,
+                "bone_mass": row.bone_mass,
+                "muscle_mass": row.muscle_mass,
+                "water_consumed_ml": row.water_consumed_ml,
+                "water_goal_ml": row.water_goal_ml,
+                "water_goal_met": row.water_goal_met,
+                "sleep_total_seconds": sleep_total,
+                "sleep_total_h": round(sleep_total / 3600, 2) if sleep_total else None,
+                "sleep_deep_seconds": row.sleep_deep_seconds,
+                "sleep_light_seconds": row.sleep_light_seconds,
+                "sleep_rem_seconds": row.sleep_rem_seconds,
+                "sleep_awake_seconds": row.sleep_awake_seconds,
+                "sleep_score": row.sleep_score,
+                "notes": row.notes,
+                "mood_score": row.mood_score,
+            }
+        )
 
 
-def _get_or_create_day(session, target, *, allow_create):
-    """Fetch the DayStats row for `target`, optionally creating an empty stub
-    if it doesn't exist. Returns the row, or None if it's missing and
-    `allow_create=False`.
+def _get_or_create_day(session, target):
+    """Fetch the DayStats row for `target`, creating an empty stub if it
+    doesn't exist *and* the target is today. Returns (row, created) — or
+    (None, False) if the day doesn't exist and isn't today.
 
     The stub uses step_count=0 / daily_step_goal=0 / source=manual_entry as
     placeholders; the morning Garmin sync will UPSERT real values onto it.
-    The newly-created row is attached to the session before being returned,
-    so a subsequent `session.commit()` persists it without the caller needing
-    to know whether the row was fetched or created.
-
-    `allow_create` is taken as a parameter rather than recomputed inside the
-    helper so the caller's notion of "is this today" stays the single source
-    of truth — avoids midnight races where the GET endpoint says is_today
-    but a moment later this helper disagrees.
     """
     row = session.exec(select(DayStats).where(DayStats.day == target)).first()
     if row is not None:
-        return row
-    if not allow_create:
-        return None
+        return row, False
+    if target != datetime.now().date():
+        return None, False
     row = DayStats(
         day=target,
         step_count=0,
         daily_step_goal=0,
         source=Source.manual_entry,
     )
-    session.add(row)
-    return row
+    return row, True
 
 
 @app.route("/api/day/<iso_date>/notes", methods=["PUT"])
@@ -685,12 +685,12 @@ def update_day_notes(iso_date):
     if not isinstance(notes, str):
         return jsonify({"error": "notes must be a string"}), 400
 
-    is_today = target == datetime.now().date()
     with db_session() as session:
-        row = _get_or_create_day(session, target, allow_create=is_today)
+        row, _ = _get_or_create_day(session, target)
         if row is None:
             return jsonify({"error": "no DayStats row for that day"}), 404
         row.notes = notes
+        session.add(row)
         session.commit()
         return jsonify({"day": iso_date, "notes": notes, "saved": True})
 
@@ -716,12 +716,12 @@ def update_day_mood(iso_date):
         if not 1 <= score <= 10:
             return jsonify({"error": "mood_score must be between 1 and 10"}), 400
 
-    is_today = target == datetime.now().date()
     with db_session() as session:
-        row = _get_or_create_day(session, target, allow_create=is_today)
+        row, _ = _get_or_create_day(session, target)
         if row is None:
             return jsonify({"error": "no DayStats row for that day"}), 404
         row.mood_score = score
+        session.add(row)
         session.commit()
         return jsonify({"day": iso_date, "mood_score": score, "saved": True})
 

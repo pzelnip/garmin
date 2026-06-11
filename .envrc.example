@@ -12,3 +12,7 @@ export CONN_STR=""
 
 # healthchecks.io url, ex: https://hc-ping.com/<some uuid>
 export HEALTHCHECKS_URL=""
+
+# Set to 1, true, or yes to enable Flask's reloader / debugger locally.
+# Leave unset (or set to anything else) for production mode on the Pi.
+export GARMIN_DASHBOARD_DEBUG=1
