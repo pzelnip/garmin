@@ -1,34 +1,42 @@
-# Garmin
+# Garmin Health Dashboard
 
-So at Zapier we have a `#fun-daily-steps-challenge` Slack channel.  In that
-channel folks post their daily step totals, with the goal of motivating peeps to
-meet their daily goals.
+A personal health-tracking dashboard built around Garmin Connect data.
+Runs on a Raspberry Pi (production) and works locally on a Mac for development.
 
-When that channel started I thought "Hey, why don't we have a Zap to post my
-step count into the Slack channel?", and upon looking discovered that Garmin was
-one of the few apps that aren't in the Zapier marketplace, as Garmin does not
-offer an open API (there's a dev API, but you
-[have to apply to gain access to it](https://www.garmin.com/en-US/forms/GarminConnectDeveloperAccess/)
-and it sounds like unless you're a big partner like Strava or Nike, you won't
-get approved).  Boo!
+## What it does
 
-BUT, looking on [Pypi](https://www.pypi.org), I found
-[garminconnect](https://pypi.org/project/garminconnect/) which provides a Python
-API over some of the public endpoints that garmin.com uses.  Perfect.
+- **Daily ingest** (`src/garmin.py`) — pulls per-day stats from the Garmin
+  Connect API and writes one row per calendar day to a Postgres database.
+  Captured metrics include: steps, distance, floors climbed, heart rate,
+  stress, sleep (total / deep / light / REM / awake, plus sleep score),
+  hydration, and body composition (weight, BMI, body fat, muscle mass, etc.).
+- **Flask dashboard** (`src/app.py`) — served at `/dashboard`. Reads from the
+  same DB and renders a single-page UI with multiple tabs:
+  - **Steps** — streaks, totals, goal-met days, heatmaps, charts
+  - **Water** — hydration trends and goal tracking
+  - **Sleep** — sleep duration and score charts
+  - **Day** — per-day detail view with editable notes and mood score
 
-So I built out a Zap which uses a
-[Zapier webhook](https://zapier.com/features/webhooks)
-and upon getting a new entry would post a message to Slack.  I then wrote a
-small Python script to pull my step data from Garmin using `garminconnect` and
-then POST to that webhook to trigger the Slack message. It worked, and on
-October 31st, 2022, StepBot was born:
+## Tech stack
 
-![First Post to Slack](./docs/img/firstpost.png)
+- Python 3.14+, [Flask](https://flask.palletsprojects.com/),
+  [SQLModel](https://sqlmodel.tiangolo.com/) / SQLAlchemy
+- Postgres (Neon in production); any SQLAlchemy-compatible DB works
+- [garminconnect](https://pypi.org/project/garminconnect/) for Garmin API access
+- [Chart.js](https://www.chartjs.org/) (CDN) for charts; no build step
+- [uv](https://github.com/astral-sh/uv) for dependency management
 
-Since that time, this script has grown in scope.  The Slack-posting bits have
-been retired, and the project is now a personal store of my daily step counts
-in a DB, with a small Flask dashboard for browsing analytics like streaks and
-top/bottom step days.
+## Project layout
 
-It's also been a playground for working with new tech I hadn't used before (ex:
-[SqlModel](https://sqlmodel.tiangolo.com/)).
+```shell
+src/               # Flask app, ingestion script, models, analytics
+sql/migrations.sql # hand-written schema migrations (applied manually)
+scripts/           # systemd / cron wrapper scripts (Pi-only)
+misc_scripts/      # one-off backfill / probe scripts
+docs/              # deployment and setup notes
+```
+
+## Running locally
+
+See [docs/SETUP.md](docs/SETUP.md) for full setup instructions (dependencies,
+environment variables, DB initialisation, cron job, and systemd service).
