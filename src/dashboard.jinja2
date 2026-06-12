@@ -2326,8 +2326,8 @@
             moodStatus.textContent = '';
             moodStatus.className = 'day-notes-status';
 
-            // Reset to Write mode so a stale preview from a prior day isn't shown.
-            showNotesWrite();
+            // Default mode is decided below once notesField.value is set:
+            // Preview if the day has saved notes, Write otherwise.
 
             // Today is always rendered as the "notes + mood only" view
             // regardless of whether a stub row exists yet, because the
@@ -2343,6 +2343,7 @@
                 empty.textContent = 'Waiting on today’s Garmin sync. You can still record notes and mood below.';
                 empty.style.display = 'block';
                 notesField.value = data.notes || '';
+                if (notesField.value) { showNotesPreview(); } else { showNotesWrite(); }
                 notesPanel.style.display = '';
                 renderMoodChips(data.mood_score ?? null);
                 moodPanel.style.display = '';
@@ -2366,6 +2367,7 @@
             source.textContent = data.source ? `source: ${data.source}` : '';
 
             notesField.value = data.notes || '';
+            if (notesField.value) { showNotesPreview(); } else { showNotesWrite(); }
             notesPanel.style.display = '';
 
             renderMoodChips(data.mood_score);
