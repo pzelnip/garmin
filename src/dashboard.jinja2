@@ -979,8 +979,8 @@
         }
         .ki-viz {
             margin-top: 14px;
-            height: 36px;
-            flex: 1;            /* fill remaining vertical space in the card */
+            height: 48px;
+            flex: 0 0 48px;     /* fixed height so card heights match siblings without a mini-viz */
             display: flex;
             align-items: flex-end;
         }
@@ -995,6 +995,8 @@
             max-width: 18px;
             border-radius: 50%;
         }
+        .ki-dot.pass { background: #7cdda5; }
+        .ki-dot.fail { background: #3a4258; }
         .ki-icon {
             width: 44px;
             height: 44px;
@@ -1149,6 +1151,16 @@
        "{:,}" (steps), "{:,} ml" (water), or "{}" combined with a custom
        seconds-to-h-m formatter via the `sleep` flag. `accent_class` is
        the CSS class controlling the bright bar color. #}
+    {# Insight-card pass/fail dot strip: one circle per day, green for True,
+       dim for False. Used by goal-met streak panels. #}
+    {% macro pass_fail_strip(bools) %}
+        <div class="ki-viz ki-dots">
+            {% for hit in bools %}
+                <span class="ki-dot {{ 'pass' if hit else 'fail' }}"></span>
+            {% endfor %}
+        </div>
+    {% endmacro %}
+
     {# DoW chart "best day" footer. `best` is the dict produced by
        _build_dow_best (or None to skip the footer). `delta_str` is a
        caller-formatted string already including units, e.g.
@@ -1265,54 +1277,84 @@
 
     <!-- ============================ STEPS TAB ============================ -->
     <div class="tab-panel active" data-tab="steps">
-    <!-- Top-line stats -->
+    <!-- Headline + insight cards -->
     <div class="grid">
-        <div class="panel" data-tooltip="Number of distinct days with a step count recorded. The sub-line counts how many separate goal-met streaks have been logged over that history.">
-            <div class="stat-label">Days Recorded</div>
-            <div class="stat-value">{{ "{:,}".format(data.stats.total_days) }}</div>
-            <div class="stat-sub">{{ data.stats.num_streaks }} streaks logged</div>
-        </div>
-        <div class="panel" data-tooltip="Sum total of all steps recorded across all days. Distance is approximated from Garmin's stride length and totaled the same way.">
-            <div class="stat-label">Total Steps</div>
-            <div class="stat-value accent">{{ "{:,}".format(data.stats.total_steps) }}</div>
-            <div class="stat-sub">{{ "{:,}".format(data.stats.total_distance_km) }} km traveled</div>
-        </div>
-        <div class="panel" data-tooltip="Total steps divided by days recorded — your all-time daily average. Best day shows the weekday with the highest average step count.">
-            <div class="stat-label">Avg Steps / Day</div>
-            <div class="stat-value">{{ "{:,}".format(data.stats.avg_steps) }}</div>
-            <div class="stat-sub">Best day: {{ data.stats.dow_best }}</div>
-        </div>
-        <div class="panel" data-tooltip="Count of days where the step count met or exceeded that day's daily goal. The percentage is goal-met days over total days recorded.">
-            <div class="stat-label">Goal Met</div>
-            <div class="stat-value accent-2">{{ "{:,}".format(data.stats.goal_days) }}</div>
-            <div class="stat-sub">{{ "%.1f"|format(data.stats.goal_pct) }}% of days</div>
-        </div>
-        <div class="panel" data-tooltip="Lifetime total of floors climbed recorded (roughly 10 vertical feet per floor).">
-            <div class="stat-label">Floors Climbed</div>
-            <div class="stat-value warn">{{ "{:,}".format(data.stats.total_floors) }}</div>
-            <div class="stat-sub">lifetime</div>
-        </div>
-        <div class="panel" data-tooltip="Active run of consecutive days where the daily step goal has been met, ending today. Resets to zero on the first day the goal isn't met." style="grid-column: span 2;">
-            <div class="stat-label">Current Streak</div>
-            {% if data.current_streak %}
-            <div class="streak-current">
-                {{ data.current_streak.days }} day{{ '' if data.current_streak.days == 1 else 's' }} —
-                {{ data.current_streak.start }} → {{ data.current_streak.end }}
-            </div>
-            <div class="streak-context">
-                {% if data.current_streak.last_match %}
-                Last streak this long:
-                {{ data.current_streak.last_match.days }} day{{ '' if data.current_streak.last_match.days == 1 else 's' }}
-                ending {{ data.current_streak.last_match.end }}
-                {% else %}
-                Longest goal-met streak on record 🏆
+        <div class="panel mood-avg-panel"
+             data-tooltip="All-time daily step average across {{ data.stats.total_days }} recorded days. Sparkline shows the last 30 days; delta compares them against your overall baseline.">
+            <div class="stat-label">Avg Steps / Day (All-Time)</div>
+            <div class="mood-avg-row">
+                <div class="stat-value accent">{{ "{:,}".format(data.stats.avg_steps) }}</div>
+                {% if data.stats.steps_30d_delta is not none %}
+                    {% set d = data.stats.steps_30d_delta %}
+                    <div class="mood-avg-delta {{ 'delta-up' if d > 0 else ('delta-down' if d < 0 else 'delta-flat') }}">
+                        {% if d > 0 %}▲{% elif d < 0 %}▼{% else %}■{% endif %}
+                        {{ "{:,}".format(d|abs) }} over previous 30 days
+                    </div>
                 {% endif %}
             </div>
-            {% else %}
-            <div class="streak-none">
-                No streak in progress — get moving!
+            <div class="ki-viz"><canvas id="stepsAvgSparkline"></canvas></div>
+        </div>
+
+        {% if data.stats.steps_dow_best %}
+        <div class="panel ki-panel"
+             data-tooltip="The weekday with the highest all-time average step count. Mini-bars show every weekday's average.">
+            <div class="stat-label">Most Active Day (All-Time)</div>
+            <div class="ki-row">
+                <div class="ki-icon ki-icon-great">👟</div>
+                <div class="ki-body">
+                    <div class="ki-title">{{ data.stats.steps_dow_best.name_full }}s are your most active days</div>
+                    <div class="ki-sub">{{ "{:,}".format(data.stats.steps_dow_best.delta|int) }} steps above weekly average</div>
+                </div>
             </div>
-            {% endif %}
+            <div class="ki-viz"><canvas id="stepsDowMini"></canvas></div>
+        </div>
+        {% endif %}
+
+        <div class="panel ki-panel"
+             data-tooltip="Share of the last 30 logged days where the daily step goal was met. Each dot below is one day — green = goal hit, dim = missed.">
+            <div class="stat-label">Goal-Met Rate (30d)</div>
+            <div class="ki-row">
+                {% set pct = data.stats.steps_recent_30_goal_pct %}
+                {% set klass = 'ki-icon-great' if pct >= 70 else ('ki-icon-rough' if pct < 40 else 'ki-icon-neutral') %}
+                <div class="ki-icon {{ klass }}">🎯</div>
+                <div class="ki-body">
+                    <div class="ki-title">{{ pct }}% of days hit goal</div>
+                    <div class="ki-sub">
+                        {% if pct >= 70 %}Strong consistency over the last 30 days
+                        {% elif pct < 40 %}Most of the last 30 days fell short
+                        {% else %}Hit roughly half the time over the last 30 days
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {{ pass_fail_strip(data.stats.steps_recent_30_goal_strip) }}
+        </div>
+
+        <div class="panel ki-panel"
+             data-tooltip="Active run of consecutive days where the daily step goal has been met. Dots below show the last 14 days — green = hit, dim = missed.">
+            <div class="stat-label">Current Streak</div>
+            <div class="ki-row">
+                {% if data.current_streak %}
+                <div class="ki-icon ki-icon-great">🔥</div>
+                <div class="ki-body">
+                    <div class="ki-title">{{ data.current_streak.days }} day{{ '' if data.current_streak.days == 1 else 's' }} active</div>
+                    <div class="ki-sub">
+                        {% if data.current_streak.last_match %}
+                        Last streak this long: {{ data.current_streak.last_match.days }}d ending {{ data.current_streak.last_match.end }}
+                        {% else %}
+                        Longest goal-met streak on record 🏆
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="ki-icon ki-icon-rough">😴</div>
+                <div class="ki-body">
+                    <div class="ki-title">No active streak</div>
+                    <div class="ki-sub">{{ data.stats.num_streaks }} streaks logged all-time</div>
+                </div>
+                {% endif %}
+            </div>
+            {{ pass_fail_strip(data.stats.steps_recent_30_goal_strip[-14:]) }}
         </div>
     </div>
 
@@ -1510,21 +1552,70 @@
     <!-- ============================ WATER TAB ============================ -->
     <div class="tab-panel" data-tab="water">
     {% if data.stats.hyd_total_days %}
+    <!-- Headline + insight cards -->
     <div class="grid">
-        <div class="panel" data-tooltip="Average daily water intake across days with hydration data recorded. Days where the Garmin app didn't track water are excluded from the denominator.">
-            <div class="stat-label">Avg Water / Day</div>
-            <div class="stat-value hyd">{{ "{:,}".format(data.stats.hyd_avg_ml) }} ml</div>
-            <div class="stat-sub">{{ data.stats.hyd_total_days }} days tracked</div>
+        <div class="panel mood-avg-panel"
+             data-tooltip="All-time average water intake across {{ data.stats.hyd_total_days }} days with hydration data. Sparkline shows the last 30 logged days; delta compares them against the all-time average.">
+            <div class="stat-label">Avg Water / Day (All-Time)</div>
+            <div class="mood-avg-row">
+                <div class="stat-value hyd">{{ "{:,}".format(data.stats.hyd_avg_ml) }} ml</div>
+                {% if data.stats.hyd_30d_delta is not none %}
+                    {% set d = data.stats.hyd_30d_delta %}
+                    <div class="mood-avg-delta {{ 'delta-up' if d > 0 else ('delta-down' if d < 0 else 'delta-flat') }}">
+                        {% if d > 0 %}▲{% elif d < 0 %}▼{% else %}■{% endif %}
+                        {{ "{:,}".format(d|abs) }} ml over previous 30 days
+                    </div>
+                {% endif %}
+            </div>
+            <div class="ki-viz"><canvas id="hydAvgSparkline"></canvas></div>
         </div>
-        <div class="panel" data-tooltip="Count of days where logged water consumption met or exceeded that day's hydration goal. Percentage is over total tracked days.">
-            <div class="stat-label">Hydration Goal Met</div>
-            <div class="stat-value hyd">{{ data.stats.hyd_goal_days }}</div>
-            <div class="stat-sub">{{ "%.1f"|format(data.stats.hyd_goal_pct) }}% of tracked days</div>
+
+        {% if data.stats.hyd_dow_best %}
+        <div class="panel ki-panel"
+             data-tooltip="The weekday with the highest all-time average water intake. Mini-bars show every weekday's average.">
+            <div class="stat-label">Most Hydrated Day (All-Time)</div>
+            <div class="ki-row">
+                <div class="ki-icon ki-icon-great">💧</div>
+                <div class="ki-body">
+                    <div class="ki-title">{{ data.stats.hyd_dow_best.name_full }}s are your most hydrated days</div>
+                    <div class="ki-sub">{{ "{:,}".format(data.stats.hyd_dow_best.delta|int) }} ml above weekly average</div>
+                </div>
+            </div>
+            <div class="ki-viz"><canvas id="hydDowMini"></canvas></div>
         </div>
-        <div class="panel" data-tooltip="Lifetime total water consumed (in litres) across every day with hydration data.">
-            <div class="stat-label">Total Water</div>
-            <div class="stat-value hyd">{{ "{:,}".format(data.stats.hyd_total_liters) }} L</div>
-            <div class="stat-sub">lifetime</div>
+        {% endif %}
+
+        <div class="panel ki-panel"
+             data-tooltip="Share of the last 30 logged days where hydration met or exceeded that day's goal. Each dot below is one day — blue = goal hit, dim = missed.">
+            <div class="stat-label">Goal-Met Rate (30d)</div>
+            <div class="ki-row">
+                {% set pct = data.stats.hyd_recent_30_goal_pct %}
+                {% set klass = 'ki-icon-great' if pct >= 70 else ('ki-icon-rough' if pct < 40 else 'ki-icon-neutral') %}
+                <div class="ki-icon {{ klass }}">🎯</div>
+                <div class="ki-body">
+                    <div class="ki-title">{{ pct }}% of days hit goal</div>
+                    <div class="ki-sub">
+                        {% if pct >= 70 %}Hitting your hydration goal most days
+                        {% elif pct < 40 %}Hydration goal missed most days
+                        {% else %}Hitting goal roughly half the time
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {{ pass_fail_strip(data.stats.hyd_recent_30_goal_strip) }}
+        </div>
+
+        <div class="panel ki-panel"
+             data-tooltip="Lifetime totals across every day with hydration data. Strip below shows the last 14 days' goal-met pattern.">
+            <div class="stat-label">Lifetime Totals</div>
+            <div class="ki-row">
+                <div class="ki-icon ki-icon-neutral">📊</div>
+                <div class="ki-body">
+                    <div class="ki-title">{{ "{:,}".format(data.stats.hyd_total_liters) }} L consumed</div>
+                    <div class="ki-sub">across {{ data.stats.hyd_total_days }} tracked days · {{ "{:,}".format(data.stats.hyd_goal_days) }} goal-met days</div>
+                </div>
+            </div>
+            {{ pass_fail_strip(data.stats.hyd_recent_30_goal_strip[-14:]) }}
         </div>
     </div>
 
@@ -1574,16 +1665,75 @@
     <!-- ============================ SLEEP TAB ============================ -->
     <div class="tab-panel" data-tab="sleep">
     {% if data.stats.sleep_total_days %}
+    <!-- Headline + insight cards -->
     <div class="grid">
-        <div class="panel" data-tooltip="Average total sleep duration across nights where the device was worn. Nights without sleep data are excluded from the denominator.">
-            <div class="stat-label">Avg Sleep / Night</div>
-            <div class="stat-value sleep">{{ data.stats.sleep_avg_hours_str }}</div>
-            <div class="stat-sub">{{ data.stats.sleep_total_days }} nights tracked</div>
+        <div class="panel mood-avg-panel"
+             data-tooltip="All-time average sleep duration across {{ data.stats.sleep_total_days }} nights with data. Sparkline shows the last 30 nights' hours; the score delta below compares recent score vs all-time.">
+            <div class="stat-label">Avg Sleep / Night (All-Time)</div>
+            <div class="mood-avg-row">
+                <div class="stat-value sleep">{{ data.stats.sleep_avg_hours_str }}</div>
+                {% if data.stats.sleep_score_30d_delta is not none %}
+                    {% set d = data.stats.sleep_score_30d_delta %}
+                    <div class="mood-avg-delta {{ 'delta-up' if d > 0 else ('delta-down' if d < 0 else 'delta-flat') }}">
+                        {% if d > 0 %}▲{% elif d < 0 %}▼{% else %}■{% endif %}
+                        {{ d|abs }} score over previous 30 nights
+                    </div>
+                {% endif %}
+            </div>
+            <div class="ki-viz"><canvas id="sleepAvgSparkline"></canvas></div>
         </div>
-        <div class="panel" data-tooltip="Average Garmin sleep score (0–100, higher is better) across nights that received a score. Some nights are tracked but unscored.">
-            <div class="stat-label">Avg Sleep Score</div>
-            <div class="stat-value sleep">{{ data.stats.sleep_avg_score }}</div>
-            <div class="stat-sub">across {{ data.stats.sleep_scored_days }} scored nights</div>
+
+        {% if data.stats.sleep_dow_best %}
+        <div class="panel ki-panel"
+             data-tooltip="The weekday where you sleep the longest on average. Mini-bars show every weekday's average sleep duration.">
+            <div class="stat-label">Best Sleep Day (All-Time)</div>
+            <div class="ki-row">
+                <div class="ki-icon ki-icon-great">🌙</div>
+                <div class="ki-body">
+                    {% set delta_min = (data.stats.sleep_dow_best.delta * 60) | round | int %}
+                    <div class="ki-title">{{ data.stats.sleep_dow_best.name_full }} nights are your longest</div>
+                    <div class="ki-sub">{{ delta_min }} min above weekly average</div>
+                </div>
+            </div>
+            <div class="ki-viz"><canvas id="sleepDowMini"></canvas></div>
+        </div>
+        {% endif %}
+
+        <div class="panel ki-panel"
+             data-tooltip="Average Garmin sleep score (0–100, higher is better) across all scored nights. Sparkline shows the last 30 scored nights' scores.">
+            <div class="stat-label">Avg Sleep Score (All-Time)</div>
+            <div class="ki-row">
+                {% set s = data.stats.sleep_avg_score %}
+                {% set klass = 'ki-icon-great' if s >= 80 else ('ki-icon-rough' if s < 60 else 'ki-icon-neutral') %}
+                <div class="ki-icon {{ klass }}">⭐</div>
+                <div class="ki-body">
+                    <div class="ki-title">{{ s }} / 100</div>
+                    <div class="ki-sub">across {{ data.stats.sleep_scored_days }} scored nights</div>
+                </div>
+            </div>
+            <div class="ki-viz"><canvas id="sleepScoreSparkline"></canvas></div>
+        </div>
+
+        <div class="panel ki-panel"
+             data-tooltip="Nights in the last 14 logged where total sleep was under 6 hours. Strip below shows the same 14 nights — green = ≥6h, dim = under 6h.">
+            <div class="stat-label">Short Nights (Last 14)</div>
+            <div class="ki-row">
+                {% set short = data.stats.sleep_recent_14_short %}
+                {% if short > 0 %}
+                <div class="ki-icon ki-icon-rough">😴</div>
+                <div class="ki-body">
+                    <div class="ki-title">{{ short }} night{{ '' if short == 1 else 's' }} under 6h</div>
+                    <div class="ki-sub">in the last 14 logged nights</div>
+                </div>
+                {% else %}
+                <div class="ki-icon ki-icon-great">✨</div>
+                <div class="ki-body">
+                    <div class="ki-title">No short nights recently</div>
+                    <div class="ki-sub">All 14 recent nights ≥ 6 hours</div>
+                </div>
+                {% endif %}
+            </div>
+            {{ pass_fail_strip(data.stats.sleep_recent_14_long_enough) }}
         </div>
     </div>
 
@@ -1882,6 +2032,12 @@
         const warn = '#fbbf24';
         const danger = '#f87171';
         const grid = '#2a3147';
+        // Hoisted from the (formerly) per-section `const`s so insight-row
+        // sparklines + mini-bars can use them before the dedicated water /
+        // sleep chart blocks declare them. Kept in sync with --hyd / --sleep
+        // CSS vars in :root.
+        const hyd = '#38bdf8';
+        const sleepColor = '#a78bfa';
 
         function gridOpts(showX = true) {
             return {
@@ -1997,6 +2153,71 @@
                 }
             };
         }
+
+        // -------- Insight-row mini visualisations (steps/water/sleep) --------
+        // Sparkline helper + mini DoW bar helper. Cards that need a per-day
+        // pass/fail strip use the Jinja `pass_fail_strip` macro instead, so
+        // those don't require JS.
+        function makeSparkline(canvasId, series, color) {
+            const el = document.getElementById(canvasId);
+            if (!el || !series || !series.length) return;
+            new Chart(el, {
+                type: 'line',
+                data: {
+                    labels: series.map((_, i) => i),
+                    datasets: [{
+                        data: series,
+                        borderColor: color,
+                        backgroundColor: hexToRgba(color, 0.15),
+                        borderWidth: 1.5,
+                        pointRadius: 0,
+                        tension: 0.35,
+                        fill: true,
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                    scales: {
+                        x: { display: false },
+                        y: { display: false, beginAtZero: false },
+                    },
+                },
+            });
+        }
+        function makeDowMini(canvasId, dowSrc, highlightColor) {
+            const el = document.getElementById(canvasId);
+            if (!el || !dowSrc) return;
+            const vals = dowSrc.values;
+            const best = Math.max(...vals);
+            new Chart(el, {
+                type: 'bar',
+                data: {
+                    labels: dowSrc.labels,
+                    datasets: [{
+                        data: vals,
+                        backgroundColor: vals.map(v => v === best && v > 0 ? highlightColor : '#3a4258'),
+                        borderRadius: 2,
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                    scales: { x: { display: false }, y: { display: false, beginAtZero: true } },
+                },
+            });
+        }
+        makeSparkline('stepsAvgSparkline', charts.steps_sparkline, accent);
+        makeSparkline('hydAvgSparkline',   charts.hyd_sparkline,   hyd);
+        makeSparkline('sleepAvgSparkline', charts.sleep_sparkline, sleepColor);
+        makeSparkline('sleepScoreSparkline', charts.sleep_score_sparkline, accent);
+        makeDowMini('stepsDowMini', charts.dow,       accent);
+        makeDowMini('hydDowMini',   charts.hyd_dow,   hyd);
+        makeDowMini('sleepDowMini', charts.sleep_dow, sleepColor);
 
         // Steps Day-of-week bar chart
         const dowVals = charts.dow.values;
@@ -2476,7 +2697,6 @@
         // Hydration charts (only render if hydration data exists)
         const hydTimelineEl = document.getElementById('hydTimelineChart');
         if (hydTimelineEl) {
-            const hyd = '#38bdf8';
             new Chart(hydTimelineEl, {
                 type: 'bar',
                 data: {
@@ -2587,7 +2807,6 @@
         // Sleep charts (only render if sleep data exists)
         const sleepTimelineEl = document.getElementById('sleepTimelineChart');
         if (sleepTimelineEl) {
-            const sleepColor = '#a78bfa';
             // Convert seconds to hours for the duration display
             const sleepHours = charts.sleep_timeline.totals.map(
                 v => v == null ? null : +(v / 3600).toFixed(2)

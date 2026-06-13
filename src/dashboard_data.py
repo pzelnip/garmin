@@ -273,6 +273,31 @@ def build_dashboard_data():
     dow_best = DOW_NAMES[dow_avgs.index(max(dow_avgs))] if total_days else "—"
     steps_dow_best = _build_dow_best(dow_avgs, precision=0)
 
+    # Steps headline-panel sparkline + 30d delta (mirrors mood pattern).
+    steps_recent_30 = entries[-30:]
+    steps_recent_30_avg = (
+        round(mean(entry.step_count for entry in steps_recent_30))
+        if steps_recent_30 else 0
+    )
+    steps_30d_delta = (
+        round(steps_recent_30_avg - avg_steps) if steps_recent_30 else None
+    )
+    steps_sparkline = [entry.step_count for entry in steps_recent_30]
+
+    # Goal-met percentage over the last 30 days (insight card).
+    steps_recent_30_goal_pct = (
+        round(
+            sum(1 for entry in steps_recent_30 if entry.step_goal_met)
+            / len(steps_recent_30) * 100
+        )
+        if steps_recent_30 else 0
+    )
+    # Per-day pass/fail strip for the same window — feeds the dot strips on
+    # the Goal-Met Rate and Current Streak insight cards.
+    steps_recent_30_goal_strip = [
+        bool(entry.step_goal_met) for entry in steps_recent_30
+    ]
+
     today = datetime.now().date()
     yesterday = today - timedelta(days=1)
     last_365_cutoff = today - timedelta(days=365)
@@ -357,6 +382,27 @@ def build_dashboard_data():
         hyd_entries, lambda entry: entry.water_consumed_ml
     )
     hyd_dow_best = _build_dow_best(hyd_dow_avgs, precision=0)
+
+    # Hydration headline-panel sparkline + 30d delta + goal-met pct insight.
+    hyd_recent_30 = hyd_entries[-30:]
+    hyd_recent_30_avg = (
+        round(mean(entry.water_consumed_ml for entry in hyd_recent_30))
+        if hyd_recent_30 else 0
+    )
+    hyd_30d_delta = (
+        round(hyd_recent_30_avg - hyd_avg_ml) if hyd_recent_30 else None
+    )
+    hyd_sparkline = [entry.water_consumed_ml for entry in hyd_recent_30]
+    hyd_recent_30_goal_pct = (
+        round(
+            sum(1 for entry in hyd_recent_30 if entry.water_goal_met)
+            / len(hyd_recent_30) * 100
+        )
+        if hyd_recent_30 else 0
+    )
+    hyd_recent_30_goal_strip = [
+        bool(entry.water_goal_met) for entry in hyd_recent_30
+    ]
     hyd_heatmap = _build_heatmap(
         heatmap_start,
         today,
@@ -405,6 +451,42 @@ def build_dashboard_data():
         sleep_scored, lambda entry: entry.sleep_score, precision=1
     )
     sleep_score_dow_best = _build_dow_best(sleep_score_dow_avgs, precision=1)
+
+    # Sleep headline-panel sparkline (last 30 nights, in hours) + 30d
+    # score-delta vs all-time avg score (drives the trend insight). Short-night
+    # count in the last 14 nights drives the third insight card.
+    sleep_recent_30 = sleep_entries[-30:]
+    sleep_sparkline = [
+        round(entry.sleep_total_seconds / 3600, 2) for entry in sleep_recent_30
+    ]
+    sleep_recent_30_scored = [
+        entry for entry in sleep_recent_30 if entry.sleep_score is not None
+    ]
+    sleep_recent_30_score_avg = (
+        round(mean(entry.sleep_score for entry in sleep_recent_30_scored))
+        if sleep_recent_30_scored else 0
+    )
+    sleep_score_30d_delta = (
+        round(sleep_recent_30_score_avg - sleep_avg_score)
+        if sleep_recent_30_scored else None
+    )
+    sleep_recent_14 = sleep_entries[-14:]
+    sleep_recent_14_short = sum(
+        1 for entry in sleep_recent_14 if entry.sleep_total_seconds < 6 * 3600
+    )
+    # Per-night strip — "pass" = ≥6h, "fail" = <6h. Feeds the Short Nights
+    # insight card's dot strip.
+    sleep_recent_14_long_enough = [
+        entry.sleep_total_seconds >= 6 * 3600 for entry in sleep_recent_14
+    ]
+    # Score sparkline for the Avg Sleep Score insight card (last 30 scored
+    # nights). Filtered to scored nights so a stretch of unscored days
+    # doesn't leave the sparkline empty.
+    sleep_score_sparkline = [
+        entry.sleep_score
+        for entry in sleep_entries[-60:]
+        if entry.sleep_score is not None
+    ][-30:]
     sleep_scatter = [
         {"x": round(entry.sleep_total_seconds / 3600, 2), "y": entry.sleep_score}
         for entry in sleep_entries
@@ -494,6 +576,9 @@ def build_dashboard_data():
             "total_distance_km": round(total_distance_km, 1),
             "dow_best": dow_best,
             "steps_dow_best": steps_dow_best,
+            "steps_30d_delta": steps_30d_delta,
+            "steps_recent_30_goal_pct": steps_recent_30_goal_pct,
+            "steps_recent_30_goal_strip": steps_recent_30_goal_strip,
             "num_streaks": len(streaks),
             "hyd_total_days": hyd_total_days,
             "hyd_avg_ml": hyd_avg_ml,
@@ -501,6 +586,9 @@ def build_dashboard_data():
             "hyd_goal_pct": hyd_goal_pct,
             "hyd_total_liters": round(hyd_total_ml / 1000, 1),
             "hyd_dow_best": hyd_dow_best,
+            "hyd_30d_delta": hyd_30d_delta,
+            "hyd_recent_30_goal_pct": hyd_recent_30_goal_pct,
+            "hyd_recent_30_goal_strip": hyd_recent_30_goal_strip,
             "sleep_total_days": sleep_total_days,
             "sleep_avg_hours_str": (
                 f"{sleep_avg_seconds // 3600}h {(sleep_avg_seconds % 3600) // 60:02d}m"
@@ -512,6 +600,9 @@ def build_dashboard_data():
             "sleep_scored_days": len(sleep_scored),
             "sleep_dow_best": sleep_dow_best,
             "sleep_score_dow_best": sleep_score_dow_best,
+            "sleep_score_30d_delta": sleep_score_30d_delta,
+            "sleep_recent_14_short": sleep_recent_14_short,
+            "sleep_recent_14_long_enough": sleep_recent_14_long_enough,
             "hist_summary": step_histogram["summary"],
             "weekly_comparison": weekly_comparison,
             "hyd_weekly_comparison": hyd_weekly_comparison,
@@ -582,6 +673,10 @@ def build_dashboard_data():
             "mood_distribution": mood_dist_counts,
             "mood_dow": {"labels": DOW_NAMES, "values": mood_dow_avgs},
             "mood_sparkline": mood_sparkline,
+            "steps_sparkline": steps_sparkline,
+            "hyd_sparkline": hyd_sparkline,
+            "sleep_sparkline": sleep_sparkline,
+            "sleep_score_sparkline": sleep_score_sparkline,
             "mood_recent_14": mood_recent_14_series,
             "mood_calendar": [
                 {"day": entry.day.isoformat(), "score": entry.mood_score}
