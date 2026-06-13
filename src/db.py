@@ -3,10 +3,10 @@ import enum
 import logging
 import os
 import sys
-from datetime import date, datetime
+from datetime import date
 from typing import List, Optional
 
-from sqlalchemy import UniqueConstraint, text
+from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from sqlmodel import Column, Enum, Field, Session, SQLModel, create_engine, select
 
@@ -15,24 +15,6 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
 ENGINE = None
 NUM_RETRIES = 3
-
-
-class StepsToday(SQLModel, table=True):
-    """Hourly step-count snapshot for the current day.
-
-    Populated by the APScheduler job in `app.py` once per hour and used to
-    render the intra-day progress graph at the `/` route. Each row records
-    the cumulative step total observed at a specific hour on a specific day;
-    the (day, hour) pair is unique.
-    """
-
-    __table_args__ = (UniqueConstraint("day", "hour"),)
-
-    id: Optional[int] = Field(default=None, primary_key=True)
-    day: date
-    step_count: int
-    hour: int
-    retrieved_at: datetime
 
 
 class Source(enum.Enum):

@@ -60,7 +60,7 @@ source .envrc
 ```
 
 Confirm with `./scripts/db_sess.sh` (opens a `psql` shell against `CONN_STR`)
-— you should see `daystats` and `stepstoday` tables.
+— you should see the `daystats` table.
 
 ## 5. Smoke-test the script
 

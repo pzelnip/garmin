@@ -287,6 +287,90 @@
             border-color: var(--sleep);
             box-shadow: 0 0 0 1px var(--sleep);
         }
+        .tab-btn[data-tab="mood"].active {
+            border-color: #9bbe96;
+            box-shadow: 0 0 0 1px #9bbe96;
+        }
+        .stat-value.mood       { color: #9bbe96; }
+        .dow-best {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 14px;
+            padding: 10px 14px;
+            background: var(--panel-2);
+            border-radius: 8px;
+        }
+        .dow-best-star { font-size: 20px; line-height: 1; }
+        .dow-best-text { font-size: 13px; line-height: 1.4; }
+        .dow-best-sub { color: var(--text-dim); font-size: 12px; }
+        .stat-value.mood-great { color: #7cdda5; }
+        .stat-value.mood-rough { color: #cc8c7f; }
+
+        /* Mood calendar: month grid, cell coloured by mood score. */
+        .mood-cal-dow {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            width: 100%;
+            font-size: 11px;
+            color: var(--text-dim);
+            text-align: center;
+            margin: 8px 0 4px;
+            letter-spacing: 0.05em;
+        }
+        .mood-cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            width: 100%;
+        }
+        .mood-cal-cell {
+            position: relative;
+            aspect-ratio: 1 / 1;
+            border-radius: 6px;
+            background: var(--panel-2);
+        }
+        .mood-cal-cell.empty { background: transparent; }
+        .mood-cal-cell.no-data { background: var(--panel-2); opacity: 0.4; }
+        .mood-cal-day {
+            position: absolute;
+            top: 4px;
+            left: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.92);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+        }
+        .mood-cal-cell.no-data .mood-cal-day,
+        .mood-cal-cell.empty .mood-cal-day {
+            color: var(--text-dim);
+            text-shadow: none;
+            font-weight: 500;
+        }
+        .mood-cal-score {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-size: 28px;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            line-height: 1;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.45);
+            letter-spacing: -0.02em;
+        }
+        .mood-cal-select {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--grid);
+            border-radius: 6px;
+            padding: 3px 8px;
+            font: inherit;
+            font-size: 12px;
+            cursor: pointer;
+        }
         .tab-btn[data-tooltip] { position: relative; }
         .tab-btn[data-tooltip]:hover::after {
             content: attr(data-tooltip);
@@ -417,7 +501,13 @@
             font-size: 14px;
             resize: vertical;
         }
-        .day-notes-modes { display: flex; gap: 4px; margin-bottom: 8px; }
+        .day-notes-modes {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
         .day-notes-mode {
             background: transparent;
             color: var(--text-dim);
@@ -432,6 +522,54 @@
         .day-notes-mode.active {
             color: var(--text);
             border-color: var(--accent);
+        }
+        .day-notes-toolbar {
+            margin-left: auto;
+            display: flex;
+            gap: 2px;
+            flex-wrap: wrap;
+        }
+        .day-notes-toolbar button {
+            background: transparent;
+            color: var(--text-dim);
+            border: 1px solid transparent;
+            border-radius: 6px;
+            padding: 3px 7px;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            line-height: 1.3;
+            cursor: pointer;
+            min-width: 26px;
+        }
+        .day-notes-toolbar button:hover {
+            color: var(--text);
+            border-color: var(--grid);
+            background: var(--panel-2);
+        }
+        .day-notes-toolbar .tb-sep {
+            width: 1px;
+            background: var(--grid);
+            margin: 4px 4px;
+        }
+        .day-notes-toolbar .tb-italic { font-style: italic; font-weight: 500; }
+        .day-notes-toolbar .tb-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 500; }
+        .day-notes-toolbar .tb-select {
+            background: transparent;
+            color: var(--text-dim);
+            border: 1px solid transparent;
+            border-radius: 6px;
+            padding: 3px 4px;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            line-height: 1.3;
+            cursor: pointer;
+        }
+        .day-notes-toolbar .tb-select:hover {
+            color: var(--text);
+            border-color: var(--grid);
+            background: var(--panel-2);
         }
         .day-notes-preview {
             min-height: calc(4 * 1.4em + 20px);
@@ -755,6 +893,9 @@
         .weekly-bar.sleep {
             background: var(--sleep);
         }
+        .weekly-bar.mood {
+            background: #9bbe96;
+        }
         .weekly-bar.dim {
             background: #3a4258;
             border: 1px solid #4a5570;
@@ -774,6 +915,59 @@
         }
         .delta-up { color: var(--accent); }
         .delta-down { color: var(--danger); }
+        .delta-flat { color: var(--text-dim); }
+        .mood-avg-panel { display: flex; flex-direction: column; }
+        .mood-avg-row {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+        }
+        .mood-avg-delta {
+            font-size: 12px;
+            font-weight: 600;
+        }
+        /* Insight panels sit beside the Avg Mood panel in the same .grid row.
+           Each panel has a stat-label title up top, an icon + body row in
+           the middle, and a small visualisation at the bottom. */
+        .ki-panel { display: flex; flex-direction: column; }
+        .ki-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .ki-viz {
+            margin-top: 14px;
+            height: 36px;
+            flex: 1;            /* fill remaining vertical space in the card */
+            display: flex;
+            align-items: flex-end;
+        }
+        .ki-viz canvas { width: 100% !important; height: 100% !important; }
+        .ki-dots {
+            gap: 4px;
+            align-items: center;
+        }
+        .ki-dot {
+            flex: 1;
+            aspect-ratio: 1 / 1;
+            max-width: 18px;
+            border-radius: 50%;
+        }
+        .ki-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        .ki-icon-great   { background: rgba(124, 221, 165, 0.18); }
+        .ki-icon-rough   { background: rgba(204, 140, 127, 0.18); }
+        .ki-icon-neutral { background: rgba(167, 177, 144, 0.18); }
+        .ki-title { font-size: 14px; font-weight: 600; color: var(--text); line-height: 1.3; }
+        .ki-sub { font-size: 12px; color: var(--text-dim); margin-top: 4px; line-height: 1.4; }
         /* Step distribution coarse-bucket summary */
         .hist-summary {
             display: grid;
@@ -807,6 +1001,85 @@
             color: var(--text-dim);
             margin-left: 4px;
         }
+        /* Mood distribution: tint the bucket value + add a top accent in the
+           grouping's representative colour. */
+        .hist-bucket.mood-rough   { border-top: 3px solid #cc8c7f; }
+        .hist-bucket.mood-average { border-top: 3px solid #a7b190; }
+        .hist-bucket.mood-great   { border-top: 3px solid #7cdda5; }
+        .hist-bucket.mood-rough   .hist-bucket-value { color: #cc8c7f; }
+        .hist-bucket.mood-average .hist-bucket-value { color: #a7b190; }
+        .hist-bucket.mood-great   .hist-bucket-value { color: #7cdda5; }
+
+        /* Mood bucket layout: text on the left, donut on the right. */
+        .mood-bucket {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            text-align: left;
+            gap: 12px;
+            padding: 14px 16px;
+        }
+        .mood-bucket .hist-bucket-label {
+            text-transform: none;
+            font-size: 12px;
+            letter-spacing: 0;
+            color: var(--text-dim);
+            margin-bottom: 4px;
+        }
+        .mood-bucket .hist-bucket-value { font-size: 26px; line-height: 1.1; }
+        .mood-bucket-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+        .mood-bucket-donut { width: 56px; height: 56px; flex-shrink: 0; }
+        .mood-bucket-donut .donut-track {
+            fill: none;
+            stroke: var(--grid);
+            stroke-width: 3.5;
+        }
+        .mood-bucket-donut .donut-progress {
+            fill: none;
+            stroke-width: 3.5;
+            stroke-linecap: round;
+            transform: rotate(-90deg);
+            transform-origin: center;
+        }
+        .mood-bucket-donut .donut-text {
+            fill: var(--text);
+            font-size: 9px;
+            font-weight: 700;
+            text-anchor: middle;
+            dominant-baseline: middle;
+        }
+        /* Hover tooltip — mirrors .panel[data-tooltip] from the steps tab. */
+        .hist-bucket[data-tooltip] { cursor: help; position: relative; }
+        .hist-bucket[data-tooltip]::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #0f1419;
+            color: var(--text);
+            border: 1px solid var(--grid);
+            border-radius: 6px;
+            padding: 8px 10px;
+            font-size: 12px;
+            line-height: 1.4;
+            font-weight: normal;
+            text-transform: none;
+            width: max-content;
+            max-width: 280px;
+            white-space: normal;
+            text-align: left;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.15s ease, visibility 0.15s ease;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+        .hist-bucket[data-tooltip]:hover::after {
+            opacity: 1;
+            visibility: visible;
+        }
         .version-footer {
             margin-top: 48px;
             padding-top: 16px;
@@ -837,8 +1110,9 @@
     {% macro weekly_comparison_panel(wc, accent_class='this-week', unit='') %}
         {% set wc_max = [wc.this_week, wc.last_week, wc.four_week_avg, 1] | max %}
         {% set is_sleep = unit == 'hms' %}
-        {% set agg_word = 'avg per night' if is_sleep else 'total' %}
-        {% set metric_word = 'sleep' if is_sleep else ('water' if accent_class == 'water' else 'steps') %}
+        {% set is_mood = accent_class == 'mood' %}
+        {% set agg_word = 'avg per night' if is_sleep else ('avg score' if is_mood else 'total') %}
+        {% set metric_word = 'sleep' if is_sleep else ('mood' if is_mood else ('water' if accent_class == 'water' else 'steps')) %}
         <div class="chart-panel wide">
             <div class="panel-header">
                 <h2>Weekly Comparison</h2>
@@ -852,11 +1126,14 @@
             {% set value_str %}
                 {%- if is_sleep -%}
                     {{ value // 3600 }}h {{ (value % 3600) // 60 }}m
+                {%- elif unit == 'decimal' -%}
+                    {{ "{:.1f}".format(value) }}
                 {%- else -%}
                     {{ "{:,}".format(value) }}{% if unit %} {{ unit }}{% endif %}
                 {%- endif -%}
             {% endset %}
-            {% set tip %}{{ label }} ({{ range_str }})&#10;{{ window_desc }} {{ agg_word }} {{ metric_word }}: {{ value_str | trim }}{% if label == 'Last week' and wc.wow_pct is not none %}&#10;This week vs last: {{ '+' if wc.wow_pct >= 0 else '' }}{{ wc.wow_pct }}%{% endif %}{% endset %}
+            {% set row_pct = wc.wow_pct if label == 'Last week' else (wc.four_week_pct if label == '4-week avg' else none) %}
+            {% set tip %}{{ label }} ({{ range_str }})&#10;{{ window_desc }} {{ agg_word }} {{ metric_word }}: {{ value_str | trim }}{% if row_pct is not none %}&#10;This week vs {{ 'last' if label == 'Last week' else '4-week avg' }}: {{ '+' if row_pct >= 0 else '' }}{{ row_pct }}%{% endif %}{% endset %}
             <div class="weekly-row" data-tooltip="{{ tip }}">
                 <div class="weekly-label">{{ label }}</div>
                 <div class="weekly-bar-wrap">
@@ -865,9 +1142,9 @@
                 </div>
                 <div class="weekly-value">{{ value_str | trim }}</div>
                 <div class="weekly-delta">
-                    {% if label == 'Last week' and wc.wow_pct is not none %}
-                    <span class="{{ 'delta-up' if wc.wow_pct >= 0 else 'delta-down' }}">
-                        {{ '+' if wc.wow_pct >= 0 else '' }}{{ wc.wow_pct }}%
+                    {% if row_pct is not none %}
+                    <span class="{{ 'delta-up' if row_pct >= 0 else 'delta-down' }}">
+                        {{ '+' if row_pct >= 0 else '' }}{{ row_pct }}%
                     </span>
                     {% endif %}
                 </div>
@@ -902,7 +1179,7 @@
     </div>
 
     <h1>Health Dashboard</h1>
-    <div class="subtitle">{{ data.stats.total_days }} days tracked · {{ "{:,}".format(data.stats.total_steps) }} total steps</div>
+    <div class="subtitle">{{ data.stats.total_days }} days tracked · {{ "{:,}".format(data.stats.total_steps) }} total steps · {{ "{:,}".format(data.stats.hyd_total_liters) }} L water · {{ "{:,}".format(data.stats.sleep_total_hours) }} h sleep</div>
 
     <!-- Tabs -->
     <div class="tabs" role="tablist">
@@ -917,6 +1194,10 @@
         <button class="tab-btn" data-tab="sleep" role="tab"
                 data-tooltip="Nightly sleep duration and quality score — sleep-stage breakdown, day-of-week patterns, and a duration-vs-score scatter.">
             <span class="tab-icon" aria-hidden="true">🌙</span> Sleep
+        </button>
+        <button class="tab-btn" data-tab="mood" role="tab"
+                data-tooltip="Self-reported daily mood — averages, distribution, day-of-week patterns, and the relationship between steps and mood.">
+            <span class="tab-icon" aria-hidden="true">🙂</span> Mood
         </button>
         <button class="tab-btn" data-tab="day" role="tab"
                 data-tooltip="All recorded metrics for a single selected day — pick any date with the picker.">
@@ -1268,6 +1549,183 @@
     </div>
     <!-- /SLEEP TAB -->
 
+    <!-- ============================ MOOD TAB ============================ -->
+    <div class="tab-panel" data-tab="mood">
+    {% if data.stats.mood_total_days %}
+    <div class="grid">
+        <div class="panel mood-avg-panel"
+             data-tooltip="All-time average mood across {{ data.stats.mood_total_days }} recorded days. The sparkline + delta below show the last 30 logged days vs the prior 30.">
+            <div class="stat-label">Average Mood (All-Time)</div>
+            <div class="mood-avg-row">
+                <div class="stat-value mood">{{ data.stats.mood_avg }}</div>
+                {% if data.stats.mood_30d_delta is not none %}
+                    {% set d = data.stats.mood_30d_delta %}
+                    <div class="mood-avg-delta {{ 'delta-up' if d > 0 else ('delta-down' if d < 0 else 'delta-flat') }}">
+                        {% if d > 0 %}▲{% elif d < 0 %}▼{% else %}■{% endif %}
+                        {{ "%.1f"|format(d|abs) }} over previous 30 days
+                    </div>
+                {% else %}
+                    <div class="stat-sub">across {{ data.stats.mood_total_days }} days</div>
+                {% endif %}
+            </div>
+            <div class="ki-viz"><canvas id="moodAvgSparkline"></canvas></div>
+        </div>
+
+        {# Insight 1: best weekday #}
+        {% if data.stats.mood_dow_best %}
+        <div class="panel ki-panel"
+             data-tooltip="The weekday with the highest all-time average mood. Delta is best-day minus the average across recorded weekdays. Mini-bars show the average for each weekday.">
+            <div class="stat-label">Happiest Day Of Week (All-Time)</div>
+            <div class="ki-row">
+                <div class="ki-icon ki-icon-great">📅</div>
+                <div class="ki-body">
+                    <div class="ki-title">{{ data.stats.mood_dow_best.name_full }}s are your happiest days</div>
+                    <div class="ki-sub">{{ "%.1f"|format(data.stats.mood_dow_best.delta) }} points above weekly average</div>
+                </div>
+            </div>
+            <div class="ki-viz"><canvas id="happiestDayMini"></canvas></div>
+        </div>
+        {% endif %}
+
+        {# Insight 2: recent trend #}
+        {% if data.stats.mood_30d_delta is not none %}
+            {% set d = data.stats.mood_30d_delta %}
+            {% if d >= 0.2 %}
+                {% set ki_title = "You're on the right track" %}
+                {% set ki_sub = 'Your mood has improved %.1f points over the last 30 days'|format(d) %}
+                {% set ki_klass = 'ki-icon-great' %}
+                {% set ki_emoji = '📈' %}
+            {% elif d <= -0.2 %}
+                {% set ki_title = "Mood has been dipping" %}
+                {% set ki_sub = 'Down %.1f points over the last 30 days vs all-time'|format(d|abs) %}
+                {% set ki_klass = 'ki-icon-rough' %}
+                {% set ki_emoji = '📉' %}
+            {% else %}
+                {% set ki_title = "Mood is steady" %}
+                {% set ki_sub = 'Within 0.2 of your all-time average over the last 30 days' %}
+                {% set ki_klass = 'ki-icon-neutral' %}
+                {% set ki_emoji = '➖' %}
+            {% endif %}
+            <div class="panel ki-panel"
+                 data-tooltip="How the last 30 logged mood scores compare to your all-time average. The sparkline traces those 30 scores in order.">
+                <div class="stat-label">Mood Trend</div>
+                <div class="ki-row">
+                    <div class="ki-icon {{ ki_klass }}">{{ ki_emoji }}</div>
+                    <div class="ki-body">
+                        <div class="ki-title">{{ ki_title }}</div>
+                        <div class="ki-sub">{{ ki_sub }}</div>
+                    </div>
+                </div>
+                <div class="ki-viz"><canvas id="moodTrendMini"></canvas></div>
+            </div>
+        {% endif %}
+
+        {# Insight 3: rough days in last 14 logged days #}
+        <div class="panel ki-panel"
+             data-tooltip="Days in the last 14 logged where mood was rated 3 or lower. The colour strip shows each of those 14 days; redder dots are rougher.">
+            <div class="stat-label">Recent Rough Days</div>
+            {% if data.stats.mood_recent_14_rough > 0 %}
+            <div class="ki-row">
+                <div class="ki-icon ki-icon-rough">🩹</div>
+                <div class="ki-body">
+                    <div class="ki-title">{{ data.stats.mood_recent_14_rough }} rough day{{ 's' if data.stats.mood_recent_14_rough != 1 else '' }} in the last 14 days</div>
+                    <div class="ki-sub">Try focusing on sleep and recovery</div>
+                </div>
+            </div>
+            {% else %}
+            <div class="ki-row">
+                <div class="ki-icon ki-icon-great">✨</div>
+                <div class="ki-body">
+                    <div class="ki-title">No rough days recently</div>
+                    <div class="ki-sub">Zero ≤3 scores in the last 14 logged days</div>
+                </div>
+            </div>
+            {% endif %}
+            <div class="ki-viz ki-dots" id="recentRoughDots"></div>
+        </div>
+    </div>
+
+    <div class="chart-grid">
+        {{ weekly_comparison_panel(data.stats.mood_weekly_comparison, 'mood', 'decimal') }}
+
+        <div class="chart-panel wide">
+            <div class="panel-header">
+                <h2>Mood with 7-Day &amp; 30-Day Rolling Average</h2>
+                <div class="range-controls" id="mood-range">
+                    <button class="range-btn" data-days="7">7d</button>
+                    <button class="range-btn" data-days="30">30d</button>
+                    <button class="range-btn active" data-days="90">90d</button>
+                    <button class="range-btn" data-days="365">365d</button>
+                    <button class="range-btn" data-days="all">All</button>
+                </div>
+            </div>
+            <div class="chart-wrap tall"><canvas id="moodTimelineChart"></canvas></div>
+        </div>
+        <div class="chart-panel">
+            <h2>Mood Distribution</h2>
+            <div class="chart-wrap"><canvas id="moodDistChart"></canvas></div>
+            {% macro mood_bucket(label, summary, klass, color, tip) %}
+                <div class="hist-bucket mood-bucket {{ klass }}" data-tooltip="{{ tip }}">
+                    <div class="mood-bucket-text">
+                        <div class="hist-bucket-label">{{ label }}</div>
+                        <div class="hist-bucket-value">{{ "{:,}".format(summary.count) }}</div>
+                        <div class="mood-bucket-sub">{{ summary.pct }}% of days</div>
+                    </div>
+                    {% set circ = 100 %}
+                    {% set offset = circ - (circ * summary.pct / 100) %}
+                    <svg class="mood-bucket-donut" viewBox="0 0 40 40" aria-hidden="true">
+                        <circle cx="20" cy="20" r="15.915" class="donut-track"></circle>
+                        <circle cx="20" cy="20" r="15.915" class="donut-progress"
+                                stroke="{{ color }}"
+                                stroke-dasharray="{{ '%.2f'|format(circ - offset) }} {{ '%.2f'|format(offset) }}"
+                                stroke-dashoffset="25"></circle>
+                        <text x="20" y="21" class="donut-text">{{ summary.pct }}%</text>
+                    </svg>
+                </div>
+            {% endmacro %}
+            <div class="hist-summary">
+                {{ mood_bucket('Rough Days (1–3)', data.stats.mood_dist_summary.rough, 'mood-rough', '#cc8c7f',
+                    'Days where mood was rated 1, 2, or 3. The percentage is the share of all days with a recorded mood.') }}
+                {{ mood_bucket('Average Days (4–6)', data.stats.mood_dist_summary.average, 'mood-average', '#a7b190',
+                    'Days where mood was rated 4, 5, or 6 — the middle of the scale.') }}
+                {{ mood_bucket('Great Days (7+)', data.stats.mood_dist_summary.great, 'mood-great', '#7cdda5',
+                    'Days where mood was rated 7 or higher.') }}
+            </div>
+        </div>
+        <div class="chart-panel">
+            <h2>Avg Mood by Day of Week</h2>
+            <div class="chart-wrap"><canvas id="moodDowChart"></canvas></div>
+            {% if data.stats.mood_dow_best %}
+                <div class="dow-best">
+                    <span class="dow-best-star">⭐</span>
+                    <div class="dow-best-text">
+                        <div><strong>Best day:</strong> {{ data.stats.mood_dow_best.name }}</div>
+                        <div class="dow-best-sub">{{ "%.1f"|format(data.stats.mood_dow_best.delta) }} points above weekly average</div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        <div class="chart-panel">
+            <div class="panel-header">
+                <h2 id="mood-cal-title">Mood Calendar</h2>
+                <div class="range-controls" id="mood-cal-nav">
+                    <button class="range-btn" id="mood-cal-prev" aria-label="Previous month">‹</button>
+                    <select id="mood-cal-select" class="mood-cal-select" aria-label="Jump to month"></select>
+                    <button class="range-btn" id="mood-cal-next" aria-label="Next month">›</button>
+                </div>
+            </div>
+            <div class="mood-cal-dow">
+                <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+            </div>
+            <div class="mood-cal-grid" id="mood-cal-grid"></div>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">No mood data yet. Record a 1–10 score on the Day tab to start building this view.</div>
+    {% endif %}
+    </div>
+    <!-- /MOOD TAB -->
+
     <!-- ============================ DAY TAB ============================ -->
     <div class="tab-panel" data-tab="day">
         <div class="day-picker-row">
@@ -1290,8 +1748,25 @@
             <div class="day-notes-modes">
                 <button type="button" id="day-notes-write-tab" class="day-notes-mode active">Write</button>
                 <button type="button" id="day-notes-preview-tab" class="day-notes-mode">Preview</button>
+                <div id="day-notes-toolbar" class="day-notes-toolbar">
+                    <select id="day-notes-heading" class="tb-select" title="Heading level">
+                        <option value="" disabled selected>H</option>
+                        <option value="1">H1</option>
+                        <option value="2">H2</option>
+                        <option value="3">H3</option>
+                    </select>
+                    <button type="button" data-md="bold" title="Bold (Cmd/Ctrl+B)"><b>B</b></button>
+                    <button type="button" data-md="italic" title="Italic (Cmd/Ctrl+I)" class="tb-italic">I</button>
+                    <button type="button" data-md="code" title="Code" class="tb-code">&lt;&gt;</button>
+                    <button type="button" data-md="link" title="Link">🔗</button>
+                    <span class="tb-sep"></span>
+                    <button type="button" data-md="ul" title="Bulleted list">• ―</button>
+                    <button type="button" data-md="ol" title="Numbered list">1.</button>
+                    <button type="button" data-md="task" title="Task list">☐</button>
+                    <button type="button" data-md="quote" title="Quote">❝</button>
+                </div>
             </div>
-            <textarea id="day-notes" rows="4" placeholder="Notes for this day… (Markdown supported)"></textarea>
+            <textarea id="day-notes" rows="4" placeholder="Notes for this day… (Markdown supported).  Things like workouts, notable meals, medications, etc."></textarea>
             <div id="day-notes-preview" class="day-notes-preview" style="display: none;"></div>
             <div class="day-notes-actions">
                 <button type="button" id="day-notes-save" class="day-notes-save">Save</button>
@@ -2209,6 +2684,411 @@
             });
         }
 
+        // Mood palette: deep red (1) → light green (10). Used by mood chips,
+        // mood calendar cells, and any future mood visualisation that needs a
+        // single source of truth for score → colour mapping.
+        const MOOD_COLORS = [
+            '#d98079', '#cc8c7f', '#c09885', '#b3a58b', '#a7b190',
+            '#9bbe96', '#8eca9c', '#82d7a2', '#69f0ae', '#75e3a8'
+        ];
+        function hexToRgba(hex, alpha) {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r},${g},${b},${alpha})`;
+        }
+
+        // -------- Mood charts --------
+        const moodTimelineEl = document.getElementById('moodTimelineChart');
+        if (moodTimelineEl && charts.mood_timeline) {
+            // Average-mood hue (#9bbe96, the score-6 swatch) — keeps the
+            // mood graphs visually anchored to the palette instead of leaning
+            // on --accent-2's purple, which has no place on the 1-10 scale.
+            const moodColor = '#9bbe96';
+            const moodChart = new Chart(moodTimelineEl, {
+                type: 'line',
+                data: {
+                    labels: charts.mood_timeline.labels,
+                    datasets: [
+                        {
+                            label: 'Mood',
+                            data: charts.mood_timeline.values,
+                            borderColor: moodColor,
+                            backgroundColor: hexToRgba(moodColor, 0.18),
+                            borderWidth: 1.5,
+                            pointRadius: 3,
+                            pointBackgroundColor: moodColor,
+                            tension: 0.3,
+                            spanGaps: true,
+                            fill: true,
+                        },
+                        {
+                            label: '7-day avg',
+                            data: charts.mood_timeline.rolling_7,
+                            borderColor: accent,
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            tension: 0.3,
+                            spanGaps: true,
+                        },
+                        {
+                            label: '30-day avg',
+                            data: charts.mood_timeline.rolling_30,
+                            borderColor: warn,
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            tension: 0.3,
+                            spanGaps: true,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: { legend: { labels: { color: '#e6e8ec' } } },
+                    scales: {
+                        x: { grid: { color: grid }, ticks: { color: '#8a92a6', maxTicksLimit: 12 } },
+                        y: {
+                            grid: { color: grid },
+                            ticks: { color: '#8a92a6', stepSize: 1 },
+                            min: 1, max: 10,
+                            title: { display: true, text: 'Score', color: '#8a92a6' },
+                        }
+                    }
+                }
+            });
+
+            // Range selector — slices labels + all three series together so
+            // the rolling lines stay aligned with the daily points.
+            const moodFull = {
+                labels: charts.mood_timeline.labels.slice(),
+                values: charts.mood_timeline.values.slice(),
+                rolling_7: charts.mood_timeline.rolling_7.slice(),
+                rolling_30: charts.mood_timeline.rolling_30.slice(),
+            };
+            function applyMoodRange(days) {
+                let startIdx = 0;
+                if (days !== 'all') {
+                    startIdx = Math.max(0, moodFull.labels.length - Number(days));
+                }
+                moodChart.data.labels = moodFull.labels.slice(startIdx);
+                moodChart.data.datasets[0].data = moodFull.values.slice(startIdx);
+                moodChart.data.datasets[1].data = moodFull.rolling_7.slice(startIdx);
+                moodChart.data.datasets[2].data = moodFull.rolling_30.slice(startIdx);
+                moodChart.update();
+            }
+            document.querySelectorAll('#mood-range .range-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('#mood-range .range-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    applyMoodRange(btn.dataset.days);
+                });
+            });
+            applyMoodRange('90');
+
+            // Sparkline inside the Avg Mood card (last 30 logged days).
+            const sparkEl = document.getElementById('moodAvgSparkline');
+            if (sparkEl && charts.mood_sparkline && charts.mood_sparkline.length) {
+                new Chart(sparkEl, {
+                    type: 'line',
+                    data: {
+                        labels: charts.mood_sparkline.map((_, i) => i),
+                        datasets: [{
+                            data: charts.mood_sparkline,
+                            borderColor: moodColor,
+                            backgroundColor: hexToRgba(moodColor, 0.15),
+                            borderWidth: 1.75,
+                            pointRadius: 0,
+                            tension: 0.35,
+                            fill: true,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: false,
+                        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                        scales: {
+                            x: { display: false },
+                            y: { display: false, min: 1, max: 10 },
+                        },
+                        elements: { line: { borderJoinStyle: 'round' } },
+                    }
+                });
+            }
+
+            // -------- Key Insights mini-viz --------
+            // 1. Happiest Day mini bar chart: all 7 weekdays, best highlighted
+            //    in green, others dimmed.
+            const happiestEl = document.getElementById('happiestDayMini');
+            if (happiestEl && charts.mood_dow) {
+                const dowVals = charts.mood_dow.values;
+                const dowBest = Math.max(...dowVals);
+                const dowColors = dowVals.map(v => v === dowBest && v > 0 ? '#7cdda5' : '#3a4258');
+                new Chart(happiestEl, {
+                    type: 'bar',
+                    data: {
+                        labels: charts.mood_dow.labels,
+                        datasets: [{ data: dowVals, backgroundColor: dowColors, borderRadius: 2 }],
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: false,
+                        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                        scales: {
+                            x: { display: false },
+                            y: { display: false, min: 0, max: 10 },
+                        },
+                    }
+                });
+            }
+
+            // 2. Mood Trend mini sparkline: reuses the last-30 mood series.
+            const trendEl = document.getElementById('moodTrendMini');
+            if (trendEl && charts.mood_sparkline && charts.mood_sparkline.length) {
+                new Chart(trendEl, {
+                    type: 'line',
+                    data: {
+                        labels: charts.mood_sparkline.map((_, i) => i),
+                        datasets: [{
+                            data: charts.mood_sparkline,
+                            borderColor: moodColor,
+                            backgroundColor: hexToRgba(moodColor, 0.15),
+                            borderWidth: 1.5,
+                            pointRadius: 0,
+                            tension: 0.35,
+                            fill: true,
+                        }],
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: false,
+                        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                        scales: {
+                            x: { display: false },
+                            y: { display: false, min: 1, max: 10 },
+                        },
+                    }
+                });
+            }
+
+            // 3. Recent Rough Days dot strip: one circle per logged day in
+            //    the last 14, coloured by score using MOOD_COLORS.
+            const dotsEl = document.getElementById('recentRoughDots');
+            if (dotsEl && charts.mood_recent_14) {
+                dotsEl.innerHTML = charts.mood_recent_14.map(d => {
+                    const bg = MOOD_COLORS[d.score - 1];
+                    return `<span class="ki-dot" style="background:${bg}" title="${d.day}: ${d.score}/10"></span>`;
+                }).join('');
+            }
+
+            // -------- Mood calendar --------
+            // Group mood entries by YYYY-MM so the prev/next buttons can hop
+            // between months that have data and skip past empty stretches.
+            const moodByMonth = new Map();  // 'YYYY-MM' -> Map(day -> score)
+            (charts.mood_calendar || []).forEach(entry => {
+                const ym = entry.day.slice(0, 7);
+                if (!moodByMonth.has(ym)) moodByMonth.set(ym, new Map());
+                moodByMonth.get(ym).set(entry.day, entry.score);
+            });
+            const moodMonthsAvailable = Array.from(moodByMonth.keys()).sort();
+
+            const calGrid = document.getElementById('mood-cal-grid');
+            const calTitle = document.getElementById('mood-cal-title');
+            const calPrev = document.getElementById('mood-cal-prev');
+            const calNext = document.getElementById('mood-cal-next');
+            const calSelect = document.getElementById('mood-cal-select');
+            const MONTH_NAMES = ['January','February','March','April','May','June',
+                                 'July','August','September','October','November','December'];
+
+            // Populate the dropdown with every month that has mood data, newest first.
+            calSelect.innerHTML = moodMonthsAvailable.slice().reverse().map(ym => {
+                const [year, month] = ym.split('-').map(Number);
+                return `<option value="${ym}">${MONTH_NAMES[month - 1]} ${year}</option>`;
+            }).join('');
+
+            // Active month state. Default to the most recent month that has
+            // data; if none, fall through to the most recent calendar month
+            // available in the timeline labels.
+            let calCurrent = moodMonthsAvailable.length
+                ? moodMonthsAvailable[moodMonthsAvailable.length - 1]
+                : (charts.mood_timeline.labels.length
+                    ? charts.mood_timeline.labels[charts.mood_timeline.labels.length - 1].slice(0, 7)
+                    : null);
+
+            function renderMoodCalendar(ym) {
+                if (!ym) { calGrid.innerHTML = ''; return; }
+                const [year, month] = ym.split('-').map(Number);
+                calTitle.textContent = `Mood Calendar — ${MONTH_NAMES[month - 1]} ${year}`;
+                const firstDow = new Date(year, month - 1, 1).getDay();   // 0=Sun
+                const daysInMonth = new Date(year, month, 0).getDate();
+                const monthScores = moodByMonth.get(ym) || new Map();
+                const cells = [];
+                for (let i = 0; i < firstDow; i++) {
+                    cells.push('<div class="mood-cal-cell empty"></div>');
+                }
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const iso = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    const score = monthScores.get(iso);
+                    if (score) {
+                        const bg = hexToRgba(MOOD_COLORS[score - 1], 0.65);
+                        cells.push(
+                            `<div class="mood-cal-cell" style="background:${bg}" title="${iso}: ${score}/10">`
+                            + `<span class="mood-cal-day">${d}</span>`
+                            + `<span class="mood-cal-score">${score}</span>`
+                            + `</div>`
+                        );
+                    } else {
+                        cells.push(
+                            `<div class="mood-cal-cell no-data" title="${iso}: no entry">`
+                            + `<span class="mood-cal-day">${d}</span>`
+                            + `</div>`
+                        );
+                    }
+                }
+                calGrid.innerHTML = cells.join('');
+                // Disable nav buttons when there's nowhere further to go.
+                const idx = moodMonthsAvailable.indexOf(ym);
+                calPrev.disabled = idx <= 0;
+                calNext.disabled = idx < 0 || idx >= moodMonthsAvailable.length - 1;
+                if (calSelect.value !== ym) calSelect.value = ym;
+            }
+            calPrev.addEventListener('click', () => {
+                const idx = moodMonthsAvailable.indexOf(calCurrent);
+                if (idx > 0) { calCurrent = moodMonthsAvailable[idx - 1]; renderMoodCalendar(calCurrent); }
+            });
+            calNext.addEventListener('click', () => {
+                const idx = moodMonthsAvailable.indexOf(calCurrent);
+                if (idx >= 0 && idx < moodMonthsAvailable.length - 1) {
+                    calCurrent = moodMonthsAvailable[idx + 1];
+                    renderMoodCalendar(calCurrent);
+                }
+            });
+            calSelect.addEventListener('change', () => {
+                calCurrent = calSelect.value;
+                renderMoodCalendar(calCurrent);
+            });
+            renderMoodCalendar(calCurrent);
+
+            const moodDistDataLabels = {
+                id: 'moodDistDataLabels',
+                afterDatasetsDraw(chart) {
+                    const { ctx } = chart;
+                    const meta = chart.getDatasetMeta(0);
+                    ctx.save();
+                    ctx.font = '600 12px system-ui, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'bottom';
+                    ctx.fillStyle = '#cfd2da';
+                    chart.data.datasets[0].data.forEach((value, i) => {
+                        if (!value) return;
+                        const bar = meta.data[i];
+                        ctx.fillText(value, bar.x, bar.y - 4);
+                    });
+                    ctx.restore();
+                }
+            };
+            new Chart(document.getElementById('moodDistChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
+                    datasets: [{
+                        label: 'Days',
+                        data: charts.mood_distribution,
+                        backgroundColor: MOOD_COLORS,
+                        borderRadius: 4,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: { padding: { top: 18 } },
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: {
+                            grid: { color: grid },
+                            ticks: { color: '#8a92a6' },
+                            title: { display: true, text: 'Mood score', color: '#8a92a6' },
+                        },
+                        y: {
+                            grid: { color: grid },
+                            ticks: { color: '#8a92a6', precision: 0 },
+                            title: { display: true, text: 'Days', color: '#8a92a6' },
+                            beginAtZero: true,
+                        }
+                    }
+                },
+                plugins: [moodDistDataLabels],
+            });
+
+            // Highlight the best weekday in the average-mood-by-DoW chart;
+            // dim the rest so the best day reads as the focal point. The
+            // inline plugin paints each bar's value above its top edge.
+            const moodDowVals = charts.mood_dow.values;
+            const moodDowNonzero = moodDowVals.filter(v => v > 0);
+            const moodDowBestVal = moodDowNonzero.length ? Math.max(...moodDowNonzero) : 0;
+            const moodDowColors = moodDowVals.map(v => v === moodDowBestVal && v > 0 ? '#7cdda5' : '#4a5570');
+            const moodDowDataLabels = {
+                id: 'moodDowDataLabels',
+                afterDatasetsDraw(chart) {
+                    const { ctx, data: chartData } = chart;
+                    const meta = chart.getDatasetMeta(0);
+                    ctx.save();
+                    ctx.font = '600 12px system-ui, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'bottom';
+                    chartData.datasets[0].data.forEach((value, i) => {
+                        if (!value) return;
+                        const bar = meta.data[i];
+                        ctx.fillStyle = value === moodDowBestVal ? '#7cdda5' : '#cfd2da';
+                        ctx.fillText(value.toFixed(1), bar.x, bar.y - 4);
+                    });
+                    ctx.restore();
+                }
+            };
+            new Chart(document.getElementById('moodDowChart'), {
+                type: 'bar',
+                data: {
+                    labels: charts.mood_dow.labels,
+                    datasets: [{
+                        label: 'Avg mood',
+                        data: moodDowVals,
+                        backgroundColor: moodDowColors,
+                        borderRadius: 6,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: { padding: { top: 18 } },  // headroom for value labels
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}`,
+                            }
+                        },
+                    },
+                    scales: {
+                        x: { grid: { color: grid }, ticks: { color: '#8a92a6' } },
+                        y: {
+                            grid: { color: grid },
+                            ticks: { color: '#8a92a6' },
+                            min: 0, max: 10,
+                            title: { display: true, text: 'Avg score', color: '#8a92a6' },
+                        }
+                    }
+                },
+                plugins: [moodDowDataLabels],
+            });
+
+        }
+
         // -------- Tab switching --------
         const TAB_STORAGE_KEY = 'dashboard.activeTab';
         const tabButtons = document.querySelectorAll('.tab-btn');
@@ -2242,9 +3122,9 @@
             btn.addEventListener('click', () => activateTab(btn.dataset.tab));
         });
 
-        // Hotkeys: 1 = steps, 2 = water, 3 = sleep, 4 = day. Ignored if typing
-        // into a form field or while the debug panel is open.
-        const TAB_HOTKEYS = { '1': 'steps', '2': 'water', '3': 'sleep', '4': 'day' };
+        // Hotkeys: 1 = steps, 2 = water, 3 = sleep, 4 = mood, 5 = day. Ignored
+        // if typing into a form field or while the debug panel is open.
+        const TAB_HOTKEYS = { '1': 'steps', '2': 'water', '3': 'sleep', '4': 'mood', '5': 'day' };
         document.addEventListener('keydown', (e) => {
             if (!(e.key in TAB_HOTKEYS)) return;
             if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -2565,21 +3445,111 @@
         const notesWriteTab = document.getElementById('day-notes-write-tab');
         const notesPreviewTab = document.getElementById('day-notes-preview-tab');
         const notesPreview = document.getElementById('day-notes-preview');
+        const notesToolbar = document.getElementById('day-notes-toolbar');
         function showNotesWrite() {
             notesField.style.display = '';
             notesPreview.style.display = 'none';
+            notesToolbar.style.visibility = '';
             notesWriteTab.classList.add('active');
             notesPreviewTab.classList.remove('active');
         }
         function showNotesPreview() {
-            notesPreview.innerHTML = DOMPurify.sanitize(marked.parse(notesField.value || ''));
+            notesPreview.innerHTML = DOMPurify.sanitize(marked.parse(notesField.value || '', { breaks: true }));
             notesField.style.display = 'none';
             notesPreview.style.display = '';
+            notesToolbar.style.visibility = 'hidden';
             notesPreviewTab.classList.add('active');
             notesWriteTab.classList.remove('active');
         }
         notesWriteTab.addEventListener('click', showNotesWrite);
         notesPreviewTab.addEventListener('click', showNotesPreview);
+
+        // Markdown toolbar — operates on the textarea selection.
+        // wrapSelection: inline formatting (bold, italic, code, link).
+        // prefixLines: line-prefix formatting (heading, lists, quote, task).
+        function wrapSelection(before, after, placeholder) {
+            const ta = notesField;
+            const start = ta.selectionStart;
+            const end = ta.selectionEnd;
+            const selected = ta.value.slice(start, end) || (placeholder || '');
+            const insert = before + selected + after;
+            ta.setRangeText(insert, start, end, 'end');
+            if (start === end) {
+                // No selection: drop the caret between the wrappers. If a
+                // placeholder was supplied, select it so the user can overtype.
+                ta.selectionStart = start + before.length;
+                ta.selectionEnd = start + before.length + (placeholder ? placeholder.length : 0);
+            }
+            ta.focus();
+        }
+        function prefixLines(makePrefix) {
+            const ta = notesField;
+            const value = ta.value;
+            const start = ta.selectionStart;
+            const end = ta.selectionEnd;
+            const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+            const lineEnd = (value.indexOf('\n', end) === -1) ? value.length : value.indexOf('\n', end);
+            const block = value.slice(lineStart, lineEnd);
+            const lines = block.split('\n');
+            const transformed = lines.map((line, i) => makePrefix(i) + line).join('\n');
+            ta.setRangeText(transformed, lineStart, lineEnd, 'end');
+            ta.focus();
+        }
+        const MD_ACTIONS = {
+            heading: (level = 3) => prefixLines(() => '#'.repeat(level) + ' '),
+            bold: () => wrapSelection('**', '**', 'bold text'),
+            italic: () => wrapSelection('_', '_', 'italic text'),
+            code: () => wrapSelection('```\n', '\n```'),
+            link: () => wrapSelection('[', '](url)', 'text'),
+            ul: () => prefixLines(() => '* '),
+            ol: () => prefixLines(i => `${i + 1}. `),
+            task: () => prefixLines(() => '- [ ] '),
+            quote: () => prefixLines(() => '> '),
+        };
+        notesToolbar.addEventListener('click', e => {
+            const btn = e.target.closest('button[data-md]');
+            if (!btn) return;
+            const action = MD_ACTIONS[btn.dataset.md];
+            if (action) action();
+        });
+        const notesHeadingSelect = document.getElementById('day-notes-heading');
+        notesHeadingSelect.addEventListener('change', e => {
+            const level = parseInt(e.target.value, 10);
+            if (level) MD_ACTIONS.heading(level);
+            e.target.selectedIndex = 0;  // reset to placeholder "H"
+        });
+        // Match a list-item prefix: optional leading whitespace, then either
+        //   * / - bullet, optional task checkbox, OR a numbered "N. " marker.
+        const LIST_RE = /^(\s*)([*-]) (\[[ xX]\] )?(.*)$|^(\s*)(\d+)\. (.*)$/;
+        notesField.addEventListener('keydown', e => {
+            if (e.key === 'Enter' && !e.shiftKey && !e.metaKey && !e.ctrlKey && !e.altKey) {
+                const ta = notesField;
+                const pos = ta.selectionStart;
+                if (pos !== ta.selectionEnd) return;  // ignore if there's a selection
+                const value = ta.value;
+                const lineStart = value.lastIndexOf('\n', pos - 1) + 1;
+                const line = value.slice(lineStart, pos);
+                const m = line.match(LIST_RE);
+                if (!m) return;
+                // Two capture-group sets: bullet form (1-4) and numbered form (5-7).
+                const isBullet = m[2] !== undefined;
+                const indent = isBullet ? m[1] : m[5];
+                const marker = isBullet ? m[2] + ' ' + (m[3] ? '[ ] ' : '') : `${parseInt(m[6], 10) + 1}. `;
+                const content = isBullet ? m[4] : m[7];
+                e.preventDefault();
+                if (content === '') {
+                    // Empty list item: exit the list by replacing the prefix with a blank line.
+                    ta.setRangeText('', lineStart, pos, 'end');
+                } else {
+                    ta.setRangeText('\n' + indent + marker, pos, pos, 'end');
+                }
+                return;
+            }
+            if (!(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey) return;
+            const key = e.key.toLowerCase();
+            if (key === 'b') { e.preventDefault(); MD_ACTIONS.bold(); }
+            else if (key === 'i') { e.preventDefault(); MD_ACTIONS.italic(); }
+        });
 
         // Mood score panel: 1–10 chips with save + clear handlers.
         const moodScale = document.getElementById('day-mood-scale');
@@ -2592,17 +3562,6 @@
         function setMoodStatus(text, cls) {
             moodStatus.textContent = text;
             moodStatus.className = 'day-notes-status' + (cls ? ' ' + cls : '');
-        }
-        // Mood chip colours: deep red (1) → light green (10), applied as translucent fill.
-        const MOOD_COLORS = [
-            '#c0392b', '#d35400', '#e67e22', '#f39c12', '#f1c40f',
-            '#d4ac0d', '#7dcea0', '#52be80', '#27ae60', '#1e8449'
-        ];
-        function hexToRgba(hex, alpha) {
-            const r = parseInt(hex.slice(1, 3), 16);
-            const g = parseInt(hex.slice(3, 5), 16);
-            const b = parseInt(hex.slice(5, 7), 16);
-            return `rgba(${r},${g},${b},${alpha})`;
         }
         function renderMoodChips(score) {
             moodSelected = score ?? null;

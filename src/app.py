@@ -1,4 +1,3 @@
-import atexit
 import json
 import os
 import subprocess
@@ -6,16 +5,13 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from statistics import mean
 
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.triggers.cron import CronTrigger
 from flask import Flask, jsonify, request
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from sqlmodel import select
 
 from analytics import build_streaks, find_current_streak
-from db import DayStats, Source, StepsToday, _init_db, db_session, get_all_entries
-from so_far_today import retrieve_steps_at_hour
+from db import DayStats, Source, _init_db, db_session, get_all_entries
 
 # Set GARMIN_DASHBOARD_DEBUG=1 (or any truthy 1/true/yes) to enable Flask's
 # reloader / debugger locally. Defaults to False so the Pi runs in
@@ -23,58 +19,6 @@ from so_far_today import retrieve_steps_at_hour
 DEBUG = os.getenv("GARMIN_DASHBOARD_DEBUG", "").lower() in ("1", "true", "yes")
 
 app = Flask(__name__)
-
-
-# Start and end hour for the graph
-START_HOUR = 9
-END_HOUR = 22
-
-
-# Make sure scheduler is only started once
-# See: https://stackoverflow.com/a/25519547/808804
-if not DEBUG or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(retrieve_steps_at_hour, CronTrigger.from_crontab("0 9-22 * * *"))
-    scheduler.start()
-    atexit.register(scheduler.shutdown)
-
-
-def none_to_null(iterable):
-    """Convert None to 'null' in a list of values."""
-    return str(iterable).replace("None", "null")
-
-
-def get_hourly_steps():
-    today = datetime.now().date()
-    with db_session() as session:
-        stmt = (
-            select(StepsToday)
-            .where(StepsToday.day == today)
-            .where(StepsToday.hour >= START_HOUR)
-            .where(StepsToday.hour <= END_HOUR)
-            .order_by(StepsToday.hour)
-        )
-
-        # Pre-allocate array to allow missing entries
-        steps = [None] * (END_HOUR - START_HOUR + 1)
-        for entry in session.exec(stmt):
-            steps[entry.hour - START_HOUR] = entry.step_count
-
-    return steps
-
-
-@app.route("/")
-def step_progress():
-    env = Environment(
-        loader=FileSystemLoader(os.path.dirname(os.path.abspath(__file__))),
-        autoescape=select_autoescape(["html", "xml"]),
-    )
-    env.filters["none_to_null"] = none_to_null
-    return env.get_template("graph.jinja2").render(
-        hourly_step_data=get_hourly_steps(),
-        start_hour=START_HOUR,
-        end_hour=END_HOUR,
-    )
 
 
 def _rolling_avg(values, window):
@@ -172,6 +116,10 @@ def _build_dashboard_data():
         wow_pct = round((this_week_steps - last_week_steps) / last_week_steps * 100)
     else:
         wow_pct = None
+    if four_week_avg:
+        four_week_pct = round((this_week_steps - four_week_avg) / four_week_avg * 100)
+    else:
+        four_week_pct = None
 
     this_week_start = yesterday - timedelta(days=6)
     last_week_start = yesterday - timedelta(days=13)
@@ -186,6 +134,7 @@ def _build_dashboard_data():
         "last_week": last_week_steps,
         "four_week_avg": four_week_avg,
         "wow_pct": wow_pct,
+        "four_week_pct": four_week_pct,
         "this_week_range": this_week_range_str,
         "last_week_range": last_week_range_str,
         "four_week_range": four_week_range_str,
@@ -202,7 +151,7 @@ def _build_dashboard_data():
     def _sum_lookup(lookup, end_day, days):
         return sum(lookup.get(end_day - timedelta(days=i), 0) for i in range(days))
 
-    def _build_weekly(lookup, mode="sum"):
+    def _build_weekly(lookup, mode="sum", precision=0):
         if mode == "avg":
             # Average over days that actually have data (ignores nulls so a
             # missed night doesn't drag down a week's average).
@@ -212,7 +161,7 @@ def _build_dashboard_data():
                     for i in range(days)
                     if lookup.get(end_day - timedelta(days=i))
                 ]
-                return round(sum(vals) / len(vals)) if vals else 0
+                return round(sum(vals) / len(vals), precision) if vals else 0
 
             this_w = _avg(yesterday, 7)
             last_w = _avg(yesterday - timedelta(days=7), 7)
@@ -226,6 +175,7 @@ def _build_dashboard_data():
             "last_week": last_w,
             "four_week_avg": four_avg,
             "wow_pct": (round((this_w - last_w) / last_w * 100) if last_w else None),
+            "four_week_pct": (round((this_w - four_avg) / four_avg * 100) if four_avg else None),
             "this_week_range": this_week_range_str,
             "last_week_range": last_week_range_str,
             "four_week_range": four_week_range_str,
@@ -374,10 +324,10 @@ def _build_dashboard_data():
     # Sleep — entries where total sleep is recorded
     sleep_entries = [e for e in entries if e.sleep_total_seconds is not None]
     sleep_total_days = len(sleep_entries)
+    sleep_total_seconds = sum(e.sleep_total_seconds for e in sleep_entries)
+    sleep_total_hours = round(sleep_total_seconds / 3600)
     sleep_avg_seconds = (
-        round(sum(e.sleep_total_seconds for e in sleep_entries) / sleep_total_days)
-        if sleep_total_days
-        else 0
+        round(sleep_total_seconds / sleep_total_days) if sleep_total_days else 0
     )
     sleep_scored = [e for e in sleep_entries if e.sleep_score is not None]
     sleep_avg_score = (
@@ -422,6 +372,89 @@ def _build_dashboard_data():
         if e.day >= cutoff and e.sleep_score is not None
     ]
 
+    # Mood — days where the user recorded a 1-10 score
+    mood_entries = [e for e in entries if e.mood_score is not None]
+    mood_total_days = len(mood_entries)
+    mood_avg = round(mean(e.mood_score for e in mood_entries), 1) if mood_entries else 0
+    mood_great_days = sum(1 for e in mood_entries if e.mood_score >= 8)
+    mood_rough_days = sum(1 for e in mood_entries if e.mood_score <= 3)
+
+    # Last 30 logged days — feeds the Avg Mood card's sparkline and the
+    # "X.X vs previous 30 days" delta (compared against the all-time
+    # average so it reads as "recent trend vs your baseline"). Logged
+    # days, not calendar days, so a stretch of skipped entries doesn't
+    # shrink the window.
+    mood_recent_30 = mood_entries[-30:]
+    mood_recent_30_avg = (
+        round(mean(e.mood_score for e in mood_recent_30), 1) if mood_recent_30 else 0
+    )
+    mood_30d_delta = (
+        round(mood_recent_30_avg - mood_avg, 1) if mood_recent_30 else None
+    )
+    mood_sparkline = [e.mood_score for e in mood_recent_30]
+
+    # Rough days in the last 14 logged days — feeds the "Key Insights" row.
+    mood_recent_14 = mood_entries[-14:]
+    mood_recent_14_rough = sum(1 for e in mood_recent_14 if e.mood_score <= 3)
+    mood_recent_14_series = [
+        {"day": e.day.isoformat(), "score": e.mood_score} for e in mood_recent_14
+    ]
+
+    # Mood-by-day lookup feeds the weekly comparison (avg mode skips null days).
+    mood_by_day = {e.day: e.mood_score for e in mood_entries}
+    mood_weekly_comparison = _build_weekly(mood_by_day, mode="avg", precision=1)
+
+    # Distribution: count per score 1-10, plus a summary bucketed into
+    # rough (1-3) / average (4-6) / great (7-10) to mirror the step
+    # distribution's under-5k / 5-10k / 10k+ summary row.
+    mood_dist_counts = [0] * 10
+    for e in mood_entries:
+        if 1 <= e.mood_score <= 10:
+            mood_dist_counts[e.mood_score - 1] += 1
+    mood_rough = sum(mood_dist_counts[0:3])    # scores 1-3
+    mood_average = sum(mood_dist_counts[3:6])  # scores 4-6
+    mood_great = sum(mood_dist_counts[6:10])   # scores 7-10
+    mood_dist_summary = {
+        "rough":   {"count": mood_rough,   "pct": round(100 * mood_rough   / mood_total_days) if mood_total_days else 0},
+        "average": {"count": mood_average, "pct": round(100 * mood_average / mood_total_days) if mood_total_days else 0},
+        "great":   {"count": mood_great,   "pct": round(100 * mood_great   / mood_total_days) if mood_total_days else 0},
+    }
+
+    # Mood timeline — full history so the range selector can drill back as far
+    # as data exists. Rolling averages are computed over consecutive mood
+    # entries (not consecutive calendar days), which fits the sparse cadence
+    # better than steps-style calendar-aligned rolling does.
+    mood_timeline_labels = [e.day.isoformat() for e in mood_entries]
+    mood_timeline_values = [e.mood_score for e in mood_entries]
+    mood_rolling_7 = _rolling_avg(mood_timeline_values, 7)
+    mood_rolling_30 = _rolling_avg(mood_timeline_values, 30)
+
+    # Mood by day-of-week (avg).
+    mood_dow_buckets = defaultdict(list)
+    for e in mood_entries:
+        mood_dow_buckets[e.day.weekday()].append(e.mood_score)
+    mood_dow_avgs = [
+        round(mean(mood_dow_buckets[i]), 1) if mood_dow_buckets[i] else 0
+        for i in range(7)
+    ]
+    # Best weekday for mood + delta vs the average of recorded weekdays.
+    # Used by the Mood-by-DoW chart footer; None if no mood data exists.
+    dow_names_full = ["Monday", "Tuesday", "Wednesday", "Thursday",
+                      "Friday", "Saturday", "Sunday"]
+    mood_dow_nonzero = [v for v in mood_dow_avgs if v]
+    if mood_dow_nonzero:
+        best_val = max(mood_dow_nonzero)
+        best_idx = mood_dow_avgs.index(best_val)
+        weekly_avg = sum(mood_dow_nonzero) / len(mood_dow_nonzero)
+        mood_dow_best = {
+            "name": dow_names[best_idx],
+            "name_full": dow_names_full[best_idx],
+            "value": best_val,
+            "delta": round(best_val - weekly_avg, 2),
+        }
+    else:
+        mood_dow_best = None
+
     return {
         "stats": {
             "total_days": total_days,
@@ -444,12 +477,23 @@ def _build_dashboard_data():
                 if sleep_total_days
                 else "—"
             ),
+            "sleep_total_hours": sleep_total_hours,
             "sleep_avg_score": sleep_avg_score,
             "sleep_scored_days": len(sleep_scored),
             "hist_summary": hist_summary,
             "weekly_comparison": weekly_comparison,
             "hyd_weekly_comparison": hyd_weekly_comparison,
             "sleep_weekly_comparison": sleep_weekly_comparison,
+            "mood_total_days": mood_total_days,
+            "mood_avg": mood_avg,
+            "mood_recent_30_avg": mood_recent_30_avg,
+            "mood_30d_delta": mood_30d_delta,
+            "mood_recent_14_rough": mood_recent_14_rough,
+            "mood_great_days": mood_great_days,
+            "mood_rough_days": mood_rough_days,
+            "mood_weekly_comparison": mood_weekly_comparison,
+            "mood_dist_summary": mood_dist_summary,
+            "mood_dow_best": mood_dow_best,
         },
         "current_streak": (
             {
@@ -529,6 +573,20 @@ def _build_dashboard_data():
             "sleep_dow": {"labels": dow_names, "values": sleep_dow_avgs},
             "sleep_score_dow": {"labels": dow_names, "values": sleep_score_dow_avgs},
             "sleep_scatter": sleep_scatter,
+            "mood_timeline": {
+                "labels": mood_timeline_labels,
+                "values": mood_timeline_values,
+                "rolling_7": mood_rolling_7,
+                "rolling_30": mood_rolling_30,
+            },
+            "mood_distribution": mood_dist_counts,
+            "mood_dow": {"labels": dow_names, "values": mood_dow_avgs},
+            "mood_sparkline": mood_sparkline,
+            "mood_recent_14": mood_recent_14_series,
+            "mood_calendar": [
+                {"day": e.day.isoformat(), "score": e.mood_score}
+                for e in mood_entries
+            ],
         },
     }
 
@@ -594,7 +652,6 @@ def _diagnostics():
         "SQLModel": _pkg("sqlmodel"),
         "SQLAlchemy": _pkg("sqlalchemy"),
         "garminconnect": _pkg("garminconnect"),
-        "APScheduler": _pkg("apscheduler"),
         "DEBUG mode": "on" if DEBUG else "off",
         "Server started": SERVER_STARTED,
     }
