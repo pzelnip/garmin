@@ -9,7 +9,7 @@ from jinja2 import select_autoescape
 
 from sqlmodel import select
 
-from dashboard_data import build_dashboard_data
+from dashboard_data import get_dashboard_data_cached, invalidate_dashboard_cache
 from db import DayStats, Source, _init_db, db_session
 
 # Set GARMIN_DASHBOARD_DEBUG=1 (or any truthy 1/true/yes) to enable Flask's
@@ -84,7 +84,7 @@ def _diagnostics():
 
 @app.route("/dashboard")
 def dashboard():
-    data = build_dashboard_data()
+    data = get_dashboard_data_cached()
     git_sha, git_commit_date = _git_info()
     return render_template(
         "dashboard.jinja2",
@@ -216,6 +216,7 @@ def update_day_notes(iso_date):
         row.notes = notes
         session.add(row)
         session.commit()
+        invalidate_dashboard_cache()
         return jsonify({"day": iso_date, "notes": notes, "saved": True})
 
 
@@ -246,6 +247,7 @@ def update_day_mood(iso_date):
         row.mood_score = score
         session.add(row)
         session.commit()
+        invalidate_dashboard_cache()
         return jsonify({"day": iso_date, "mood_score": score, "saved": True})
 
 

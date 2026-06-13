@@ -1,3 +1,5 @@
+import logging
+import time
 from collections import defaultdict
 from datetime import datetime, timedelta
 from heapq import nlargest, nsmallest
@@ -277,7 +279,8 @@ def build_dashboard_data():
     steps_recent_30 = entries[-30:]
     steps_recent_30_avg = (
         round(mean(entry.step_count for entry in steps_recent_30))
-        if steps_recent_30 else 0
+        if steps_recent_30
+        else 0
     )
     steps_30d_delta = (
         round(steps_recent_30_avg - avg_steps) if steps_recent_30 else None
@@ -288,9 +291,11 @@ def build_dashboard_data():
     steps_recent_30_goal_pct = (
         round(
             sum(1 for entry in steps_recent_30 if entry.step_goal_met)
-            / len(steps_recent_30) * 100
+            / len(steps_recent_30)
+            * 100
         )
-        if steps_recent_30 else 0
+        if steps_recent_30
+        else 0
     )
     # Per-day pass/fail strip for the same window — feeds the dot strips on
     # the Goal-Met Rate and Current Streak insight cards.
@@ -387,22 +392,21 @@ def build_dashboard_data():
     hyd_recent_30 = hyd_entries[-30:]
     hyd_recent_30_avg = (
         round(mean(entry.water_consumed_ml for entry in hyd_recent_30))
-        if hyd_recent_30 else 0
+        if hyd_recent_30
+        else 0
     )
-    hyd_30d_delta = (
-        round(hyd_recent_30_avg - hyd_avg_ml) if hyd_recent_30 else None
-    )
+    hyd_30d_delta = round(hyd_recent_30_avg - hyd_avg_ml) if hyd_recent_30 else None
     hyd_sparkline = [entry.water_consumed_ml for entry in hyd_recent_30]
     hyd_recent_30_goal_pct = (
         round(
             sum(1 for entry in hyd_recent_30 if entry.water_goal_met)
-            / len(hyd_recent_30) * 100
+            / len(hyd_recent_30)
+            * 100
         )
-        if hyd_recent_30 else 0
+        if hyd_recent_30
+        else 0
     )
-    hyd_recent_30_goal_strip = [
-        bool(entry.water_goal_met) for entry in hyd_recent_30
-    ]
+    hyd_recent_30_goal_strip = [bool(entry.water_goal_met) for entry in hyd_recent_30]
     hyd_heatmap = _build_heatmap(
         heatmap_start,
         today,
@@ -464,11 +468,13 @@ def build_dashboard_data():
     ]
     sleep_recent_30_score_avg = (
         round(mean(entry.sleep_score for entry in sleep_recent_30_scored))
-        if sleep_recent_30_scored else 0
+        if sleep_recent_30_scored
+        else 0
     )
     sleep_score_30d_delta = (
         round(sleep_recent_30_score_avg - sleep_avg_score)
-        if sleep_recent_30_scored else None
+        if sleep_recent_30_scored
+        else None
     )
     sleep_recent_14 = sleep_entries[-14:]
     sleep_recent_14_short = sum(
@@ -684,3 +690,47 @@ def build_dashboard_data():
             ],
         },
     }
+
+
+# Process-local cache for the dashboard payload. The dashboard is read far more
+# often than its data changes (most data lands once/day after the Garmin sync;
+# only notes/mood edits are more frequent and invalidate explicitly below).
+#
+_CACHE_TTL_SECONDS = 300  # 5 minutes
+_CACHE = {
+    "data": None,
+    "built_at": None,
+}
+
+
+def get_dashboard_data_cached():
+    """Return the dashboard payload, rebuilding only if the cache is empty or
+    older than _CACHE_TTL_SECONDS. Use this from the web layer instead of
+    calling build_dashboard_data() directly."""
+    now = time.monotonic()
+    built_at = _CACHE["built_at"]
+    if (
+        _CACHE["data"] is not None
+        and built_at is not None
+        and (now - built_at < _CACHE_TTL_SECONDS)
+    ):
+        logging.info("[dashboard cache] hit")
+        return _CACHE["data"]
+
+    logging.info("[dashboard cache] miss / rebuild")
+    started = time.monotonic()
+    data = build_dashboard_data()
+    _CACHE["data"] = data
+    _CACHE["built_at"] = time.monotonic()
+    logging.info(
+        "[dashboard cache] build_dashboard_data took %.0fms",
+        (_CACHE["built_at"] - started) * 1000,
+    )
+    return data
+
+
+def invalidate_dashboard_cache():
+    """Drop the cached payload so the next dashboard request rebuilds. Call
+    after writes that should be reflected immediately (notes / mood edits)."""
+    _CACHE["data"] = None
+    _CACHE["built_at"] = None
