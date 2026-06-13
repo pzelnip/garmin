@@ -8,6 +8,7 @@ from typing import List, Optional
 
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
+from sqlalchemy.orm import defer
 from sqlmodel import Column, Enum, Field, Session, SQLModel, create_engine, select
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -93,10 +94,14 @@ class DayStats(SQLModel, table=True):
 
     @property
     def floors_climbed_goal_met(self):
+        if self.floors_climbed is None or self.floors_climbed_goal is None:
+            return False
         return self.floors_climbed >= self.floors_climbed_goal
 
     @property
     def weight_pounds(self):
+        if self.weight_grams is None:
+            return None
         return self.weight_grams * 0.00220462
 
     @property
@@ -150,9 +155,11 @@ def get_steps_per_day_from_db(day: date, session) -> DayStats | None:
     return None
 
 
-def get_all_entries() -> List[DayStats]:
+def get_all_entries(include_notes: bool = True) -> List[DayStats]:
     with db_session() as session:
         stmt = select(DayStats).order_by(DayStats.day)
+        if not include_notes:
+            stmt = stmt.options(defer(DayStats.notes))
         return list(session.exec(stmt))
 
 
