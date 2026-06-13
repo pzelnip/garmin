@@ -3,7 +3,9 @@ set -euo pipefail
 
 cd /home/pi/temp/sandbox/garmin
 git pull origin main
-sudo systemctl restart garmin.service
+
+# Clear python bytecode files to ensure any code changes are picked up.
+find . -type d -name __pycache__ -exec rm -rf {} +
 
 set -a
 source ./.envrc
