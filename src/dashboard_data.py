@@ -268,7 +268,13 @@ def build_dashboard_data():
     )
 
     top_step_days = nlargest(10, entries, key=lambda entry: entry.step_count)
-    bottom_step_days = nsmallest(10, entries, key=lambda entry: entry.step_count)
+    # Filter out 0-step days — they're typically manual notes/mood-only rows
+    # (no Garmin data) and would otherwise crowd out real low-step days.
+    bottom_step_days = nsmallest(
+        10,
+        (entry for entry in entries if entry.step_count > 0),
+        key=lambda entry: entry.step_count,
+    )
     top_streaks = streaks[:10]
 
     dow_avgs = _build_dow_averages(entries, lambda entry: entry.step_count)
