@@ -91,6 +91,48 @@
             opacity: 1;
             visibility: visible;
         }
+        /* Chart-panel H2 tooltips: anchor on the heading (not the whole
+           panel) so hovering the canvas leaves room for Chart.js's own
+           tooltip. The H2 gets a subtle info dot to signal hover affordance. */
+        .chart-panel h2[data-tooltip] {
+            cursor: help;
+            position: relative;
+            display: inline-block;
+        }
+        .chart-panel h2[data-tooltip]::after {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--text-dim);
+            opacity: 0.5;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+        .chart-panel h2[data-tooltip]:hover::before {
+            content: attr(data-tooltip);
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            background: #0f1419;
+            color: var(--text);
+            border: 1px solid var(--grid);
+            border-radius: 6px;
+            padding: 8px 10px;
+            font-size: 12px;
+            line-height: 1.4;
+            font-weight: normal;
+            letter-spacing: normal;
+            text-transform: none;
+            width: max-content;
+            max-width: 320px;
+            white-space: normal;
+            text-align: left;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            pointer-events: none;
+        }
         .stat-label {
             color: var(--text-dim);
             font-size: 11px;
@@ -1107,6 +1149,22 @@
        "{:,}" (steps), "{:,} ml" (water), or "{}" combined with a custom
        seconds-to-h-m formatter via the `sleep` flag. `accent_class` is
        the CSS class controlling the bright bar color. #}
+    {# DoW chart "best day" footer. `best` is the dict produced by
+       _build_dow_best (or None to skip the footer). `delta_str` is a
+       caller-formatted string already including units, e.g.
+       "0.9 points above weekly average" or "3,400 steps above weekly avg". #}
+    {% macro dow_best_footer(best, delta_str) %}
+        {% if best %}
+        <div class="dow-best">
+            <span class="dow-best-star">⭐</span>
+            <div class="dow-best-text">
+                <div><strong>Best day:</strong> {{ best.name }}</div>
+                <div class="dow-best-sub">{{ delta_str }}</div>
+            </div>
+        </div>
+        {% endif %}
+    {% endmacro %}
+
     {% macro weekly_comparison_panel(wc, accent_class='this-week', unit='') %}
         {% set wc_max = [wc.this_week, wc.last_week, wc.four_week_avg, 1] | max %}
         {% set is_sleep = unit == 'hms' %}
@@ -1115,7 +1173,7 @@
         {% set metric_word = 'sleep' if is_sleep else ('mood' if is_mood else ('water' if accent_class == 'water' else 'steps')) %}
         <div class="chart-panel wide">
             <div class="panel-header">
-                <h2>Weekly Comparison</h2>
+                <h2 data-tooltip="This week (last 7 days ending yesterday), last week, and the rolling 4-week average. Percentages compare this week against each baseline.">Weekly Comparison</h2>
                 <span class="weekly-range">vs {{ wc.last_week_range }}</span>
             </div>
             {% for label, value, is_active, range_str, window_desc in [
@@ -1260,7 +1318,7 @@
 
     <!-- Heatmap -->
     <div class="chart-panel" style="margin-bottom: 24px;">
-        <h2>Activity Heatmap (Steps)</h2>
+        <h2 data-tooltip="GitHub-style heatmap of daily step counts over the last 365 days. Darker green = more steps; black cells = no data.">Activity Heatmap (Steps)</h2>
         <div class="heatmap-wrap">
             <div class="heatmap-dow">
                 <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
@@ -1283,7 +1341,7 @@
 
         <div class="chart-panel wide">
             <div class="panel-header">
-                <h2>Daily Steps with 7-Day &amp; 30-Day Rolling Average</h2>
+                <h2 data-tooltip="Daily step bars with overlaid 7-day and 30-day rolling-average lines, plus the daily-goal line. Use the buttons on the right to switch window size.">Daily Steps with 7-Day &amp; 30-Day Rolling Average</h2>
                 <div class="range-controls" id="recent-range">
                     <button class="range-btn" data-days="7">7d</button>
                     <button class="range-btn" data-days="30">30d</button>
@@ -1296,12 +1354,15 @@
         </div>
 
         <div class="chart-panel">
-            <h2>Average Steps by Day of Week</h2>
+            <h2 data-tooltip="Average step count for each weekday across all recorded days. The bar with the highest average is highlighted.">Average Steps by Day of Week</h2>
             <div class="chart-wrap"><canvas id="dowChart"></canvas></div>
+            {% if data.stats.steps_dow_best %}
+                {{ dow_best_footer(data.stats.steps_dow_best, "{:,} steps above weekly average".format(data.stats.steps_dow_best.delta|int)) }}
+            {% endif %}
         </div>
 
         <div class="chart-panel">
-            <h2>Step Count Distribution</h2>
+            <h2 data-tooltip="Histogram of how many days fell into each 2,500-step bucket. The summary row below counts low / mid / high activity days.">Step Count Distribution</h2>
             <div class="chart-wrap"><canvas id="histChart"></canvas></div>
             <div class="hist-summary">
                 <div class="hist-bucket">
@@ -1329,24 +1390,24 @@
         </div>
 
         <div class="chart-panel wide">
-            <h2>Monthly Step Totals & Goal-Met %</h2>
+            <h2 data-tooltip="Monthly totals (bars) and the percentage of days that month where the daily step goal was met (line, right axis).">Monthly Step Totals & Goal-Met %</h2>
             <div class="chart-wrap tall"><canvas id="monthlyChart"></canvas></div>
         </div>
 
         <div class="chart-panel wide">
-            <h2>Cumulative Steps &amp; Milestones</h2>
+            <h2 data-tooltip="Running total of all steps ever recorded, with annotation lines and labels marking each 5-million-step milestone.">Cumulative Steps &amp; Milestones</h2>
             <div class="chart-wrap"><canvas id="cumulativeChart"></canvas></div>
         </div>
 
         <div class="chart-panel wide">
-            <h2>Time to Reach Each 5M-Step Milestone</h2>
+            <h2 data-tooltip="How many days it took to go from one 5M-step milestone to the next. The first bar (0 → 5M) starts from the very first day with data.">Time to Reach Each 5M-Step Milestone</h2>
             <div class="chart-wrap"><canvas id="milestonePaceChart"></canvas></div>
         </div>
 
         {% if data.charts.rhr.values %}
         <div class="chart-panel">
             <div class="panel-header">
-                <h2>Resting Heart Rate</h2>
+                <h2 data-tooltip="Daily resting heart rate (Garmin's RHR estimate) over time. Lower generally indicates better cardiovascular fitness.">Resting Heart Rate</h2>
                 <div class="range-controls" data-canvas="rhrChart">
                     <button class="range-btn" data-days="90">90d</button>
                     <button class="range-btn" data-days="365">365d</button>
@@ -1360,7 +1421,7 @@
         {% if data.charts.stress.values %}
         <div class="chart-panel">
             <div class="panel-header">
-                <h2>Average Stress Level</h2>
+                <h2 data-tooltip="Garmin's all-day average stress score (0–100, lower is better). Calculated from heart-rate variability.">Average Stress Level</h2>
                 <div class="range-controls" data-canvas="stressChart">
                     <button class="range-btn" data-days="90">90d</button>
                     <button class="range-btn" data-days="365">365d</button>
@@ -1374,7 +1435,7 @@
         {% if data.charts.weight.values %}
         <div class="chart-panel">
             <div class="panel-header">
-                <h2>Weight (lbs)</h2>
+                <h2 data-tooltip="Daily body weight (pounds). Only populated on days when the connected scale logged a measurement.">Weight (lbs)</h2>
                 <div class="range-controls">
                     <button class="range-btn" id="weightZoomReset" title="Reset zoom">Reset zoom</button>
                 </div>
@@ -1385,7 +1446,7 @@
 
         {% if data.charts.floors.values %}
         <div class="chart-panel">
-            <h2>Floors Climbed (last 365 days)</h2>
+            <h2 data-tooltip="Daily floor count over the last 365 days. One floor ≈ 10 vertical feet (Garmin's definition).">Floors Climbed (last 365 days)</h2>
             <div class="chart-wrap"><canvas id="floorsChart"></canvas></div>
         </div>
         {% endif %}
@@ -1395,7 +1456,7 @@
     <!-- Tables -->
     <div class="tables-grid">
         <div class="chart-panel">
-            <h2>Top 10 Streaks</h2>
+            <h2 data-tooltip="The 10 longest runs of consecutive goal-met days, with start/end dates. The active streak (if any) is highlighted at the top of the stat grid.">Top 10 Streaks</h2>
             <table>
                 <thead><tr><th>#</th><th>Days</th><th>Start</th><th>End</th></tr></thead>
                 <tbody>
@@ -1412,7 +1473,7 @@
         </div>
 
         <div class="chart-panel">
-            <h2>Top 10 Step Days</h2>
+            <h2 data-tooltip="The 10 highest single-day step counts on record, in descending order.">Top 10 Step Days</h2>
             <table>
                 <thead><tr><th>#</th><th>Day</th><th>Steps</th></tr></thead>
                 <tbody>
@@ -1428,7 +1489,7 @@
         </div>
 
         <div class="chart-panel">
-            <h2>Bottom 10 Step Days</h2>
+            <h2 data-tooltip="The 10 lowest single-day step counts on record. Often rest days, travel days, or sick days.">Bottom 10 Step Days</h2>
             <table>
                 <thead><tr><th>#</th><th>Day</th><th>Steps</th></tr></thead>
                 <tbody>
@@ -1450,17 +1511,17 @@
     <div class="tab-panel" data-tab="water">
     {% if data.stats.hyd_total_days %}
     <div class="grid">
-        <div class="panel">
+        <div class="panel" data-tooltip="Average daily water intake across days with hydration data recorded. Days where the Garmin app didn't track water are excluded from the denominator.">
             <div class="stat-label">Avg Water / Day</div>
             <div class="stat-value hyd">{{ "{:,}".format(data.stats.hyd_avg_ml) }} ml</div>
             <div class="stat-sub">{{ data.stats.hyd_total_days }} days tracked</div>
         </div>
-        <div class="panel">
+        <div class="panel" data-tooltip="Count of days where logged water consumption met or exceeded that day's hydration goal. Percentage is over total tracked days.">
             <div class="stat-label">Hydration Goal Met</div>
             <div class="stat-value hyd">{{ data.stats.hyd_goal_days }}</div>
             <div class="stat-sub">{{ "%.1f"|format(data.stats.hyd_goal_pct) }}% of tracked days</div>
         </div>
-        <div class="panel">
+        <div class="panel" data-tooltip="Lifetime total water consumed (in litres) across every day with hydration data.">
             <div class="stat-label">Total Water</div>
             <div class="stat-value hyd">{{ "{:,}".format(data.stats.hyd_total_liters) }} L</div>
             <div class="stat-sub">lifetime</div>
@@ -1468,7 +1529,7 @@
     </div>
 
     <div class="chart-panel" style="margin-bottom: 24px;">
-        <h2>Hydration Heatmap (% of goal)</h2>
+        <h2 data-tooltip="GitHub-style heatmap over the last 365 days. Each cell's shade reflects what % of that day's hydration goal was met; black = no data.">Hydration Heatmap (% of goal)</h2>
         <div class="heatmap-wrap">
             <div class="heatmap-dow">
                 <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
@@ -1489,15 +1550,18 @@
         {{ weekly_comparison_panel(data.stats.hyd_weekly_comparison, 'water', 'ml') }}
 
         <div class="chart-panel wide">
-            <h2>Daily Hydration vs Goal — Last 90 Days</h2>
+            <h2 data-tooltip="Daily water consumption (bars) against each day's hydration goal (line) for the last 90 days.">Daily Hydration vs Goal — Last 90 Days</h2>
             <div class="chart-wrap tall"><canvas id="hydTimelineChart"></canvas></div>
         </div>
         <div class="chart-panel">
-            <h2>Average Water by Day of Week</h2>
+            <h2 data-tooltip="Average water intake per weekday across all tracked days. The bar with the highest average is highlighted.">Average Water by Day of Week</h2>
             <div class="chart-wrap"><canvas id="hydDowChart"></canvas></div>
+            {% if data.stats.hyd_dow_best %}
+                {{ dow_best_footer(data.stats.hyd_dow_best, "{:,} ml above weekly average".format(data.stats.hyd_dow_best.delta|int)) }}
+            {% endif %}
         </div>
         <div class="chart-panel">
-            <h2>Steps vs Water (last 365 days)</h2>
+            <h2 data-tooltip="One point per day where both steps and water are recorded. Useful for spotting whether active days correlate with hydration.">Steps vs Water (last 365 days)</h2>
             <div class="chart-wrap"><canvas id="hydScatterChart"></canvas></div>
         </div>
     </div>
@@ -1511,12 +1575,12 @@
     <div class="tab-panel" data-tab="sleep">
     {% if data.stats.sleep_total_days %}
     <div class="grid">
-        <div class="panel">
+        <div class="panel" data-tooltip="Average total sleep duration across nights where the device was worn. Nights without sleep data are excluded from the denominator.">
             <div class="stat-label">Avg Sleep / Night</div>
             <div class="stat-value sleep">{{ data.stats.sleep_avg_hours_str }}</div>
             <div class="stat-sub">{{ data.stats.sleep_total_days }} nights tracked</div>
         </div>
-        <div class="panel">
+        <div class="panel" data-tooltip="Average Garmin sleep score (0–100, higher is better) across nights that received a score. Some nights are tracked but unscored.">
             <div class="stat-label">Avg Sleep Score</div>
             <div class="stat-value sleep">{{ data.stats.sleep_avg_score }}</div>
             <div class="stat-sub">across {{ data.stats.sleep_scored_days }} scored nights</div>
@@ -1527,19 +1591,23 @@
         {{ weekly_comparison_panel(data.stats.sleep_weekly_comparison, 'sleep', 'hms') }}
 
         <div class="chart-panel wide">
-            <h2>Sleep Duration & Score — Last 90 Days</h2>
+            <h2 data-tooltip="Nightly sleep duration (bars, left axis) with the sleep score overlaid as a line (right axis, 0–100).">Sleep Duration & Score — Last 90 Days</h2>
             <div class="chart-wrap tall"><canvas id="sleepTimelineChart"></canvas></div>
         </div>
         <div class="chart-panel wide">
-            <h2>Sleep Stage Breakdown — Last 90 Days</h2>
+            <h2 data-tooltip="Stacked nightly breakdown of Deep / REM / Light / Awake minutes for the last 90 nights. Tooltip on hover shows the per-stage hours and minutes.">Sleep Stage Breakdown — Last 90 Days</h2>
             <div class="chart-wrap tall"><canvas id="sleepStagesChart"></canvas></div>
         </div>
         <div class="chart-panel">
-            <h2>Sleep by Day of Week — Hours &amp; Score</h2>
+            <h2 data-tooltip="Average sleep hours (left axis) and average sleep score (right axis) per weekday. Best night for hours is highlighted.">Sleep by Day of Week — Hours &amp; Score</h2>
             <div class="chart-wrap"><canvas id="sleepDowChart"></canvas></div>
+            {% if data.stats.sleep_dow_best %}
+                {% set delta_min = (data.stats.sleep_dow_best.delta * 60) | round | int %}
+                {{ dow_best_footer(data.stats.sleep_dow_best, "%d min above weekly average"|format(delta_min)) }}
+            {% endif %}
         </div>
         <div class="chart-panel">
-            <h2>Sleep Duration vs Score (last 365 days)</h2>
+            <h2 data-tooltip="One point per night where both duration and score are recorded. X = hours slept, Y = sleep score (0–100).">Sleep Duration vs Score (last 365 days)</h2>
             <div class="chart-wrap"><canvas id="sleepScatterChart"></canvas></div>
         </div>
     </div>
@@ -1650,7 +1718,7 @@
 
         <div class="chart-panel wide">
             <div class="panel-header">
-                <h2>Mood with 7-Day &amp; 30-Day Rolling Average</h2>
+                <h2 data-tooltip="Daily mood (filled line) with 7-day and 30-day rolling averages overlaid. Use the range buttons to zoom the time window.">Mood with 7-Day &amp; 30-Day Rolling Average</h2>
                 <div class="range-controls" id="mood-range">
                     <button class="range-btn" data-days="7">7d</button>
                     <button class="range-btn" data-days="30">30d</button>
@@ -1662,7 +1730,7 @@
             <div class="chart-wrap tall"><canvas id="moodTimelineChart"></canvas></div>
         </div>
         <div class="chart-panel">
-            <h2>Mood Distribution</h2>
+            <h2 data-tooltip="Histogram of how often each mood score (1–10) was recorded. Bars are coloured using the same red→green palette as the chip selector and calendar.">Mood Distribution</h2>
             <div class="chart-wrap"><canvas id="moodDistChart"></canvas></div>
             {% macro mood_bucket(label, summary, klass, color, tip) %}
                 <div class="hist-bucket mood-bucket {{ klass }}" data-tooltip="{{ tip }}">
@@ -1693,21 +1761,15 @@
             </div>
         </div>
         <div class="chart-panel">
-            <h2>Avg Mood by Day of Week</h2>
+            <h2 data-tooltip="Average mood score per weekday across all recorded days. Best day is highlighted; the footer shows how far above the weekly average it sits.">Avg Mood by Day of Week</h2>
             <div class="chart-wrap"><canvas id="moodDowChart"></canvas></div>
             {% if data.stats.mood_dow_best %}
-                <div class="dow-best">
-                    <span class="dow-best-star">⭐</span>
-                    <div class="dow-best-text">
-                        <div><strong>Best day:</strong> {{ data.stats.mood_dow_best.name }}</div>
-                        <div class="dow-best-sub">{{ "%.1f"|format(data.stats.mood_dow_best.delta) }} points above weekly average</div>
-                    </div>
-                </div>
+                {{ dow_best_footer(data.stats.mood_dow_best, "%.1f points above weekly average"|format(data.stats.mood_dow_best.delta)) }}
             {% endif %}
         </div>
         <div class="chart-panel">
             <div class="panel-header">
-                <h2 id="mood-cal-title">Mood Calendar</h2>
+                <h2 id="mood-cal-title" data-tooltip="Month-view calendar; each day is coloured by mood score (red→green) with the score centred on the cell. Use ‹/›/dropdown to jump months.">Mood Calendar</h2>
                 <div class="range-controls" id="mood-cal-nav">
                     <button class="range-btn" id="mood-cal-prev" aria-label="Previous month">‹</button>
                     <select id="mood-cal-select" class="mood-cal-select" aria-label="Jump to month"></select>
@@ -1912,26 +1974,57 @@
         });
         applyRecentRange('90');
 
-        // Day-of-week bar chart
+        // Chart.js plugin factory: paints each bar's value above its top edge.
+        // Used by every per-day-of-week chart (steps/water/sleep score/mood)
+        // for a consistent look. `bestVal` is highlighted in `highlightColor`.
+        function makeBarValuePlugin({ id, bestVal, format, highlightColor }) {
+            return {
+                id,
+                afterDatasetsDraw(chart) {
+                    const { ctx, data: chartData } = chart;
+                    const meta = chart.getDatasetMeta(0);
+                    ctx.save();
+                    ctx.font = '600 12px system-ui, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'bottom';
+                    chartData.datasets[0].data.forEach((value, i) => {
+                        if (!value) return;
+                        const bar = meta.data[i];
+                        ctx.fillStyle = value === bestVal ? highlightColor : '#cfd2da';
+                        ctx.fillText(format(value), bar.x, bar.y - 4);
+                    });
+                    ctx.restore();
+                }
+            };
+        }
+
+        // Steps Day-of-week bar chart
+        const dowVals = charts.dow.values;
+        const dowBest = Math.max(...dowVals);
         new Chart(document.getElementById('dowChart'), {
             type: 'bar',
             data: {
                 labels: charts.dow.labels,
                 datasets: [{
                     label: 'Avg steps',
-                    data: charts.dow.values,
-                    backgroundColor: charts.dow.labels.map((_, i) =>
-                        i === charts.dow.values.indexOf(Math.max(...charts.dow.values)) ? accent : accent2
-                    ),
+                    data: dowVals,
+                    backgroundColor: dowVals.map(v => v === dowBest && v > 0 ? accent : accent2),
                     borderRadius: 6
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                layout: { padding: { top: 18 } },
                 plugins: { legend: { display: false } },
                 scales: gridOpts()
-            }
+            },
+            plugins: [makeBarValuePlugin({
+                id: 'dowDataLabels',
+                bestVal: dowBest,
+                format: v => v.toLocaleString(),
+                highlightColor: accent,
+            })],
         });
 
         // Histogram
@@ -2418,23 +2511,33 @@
                 }
             });
 
+            const hydDowVals = charts.hyd_dow.values;
+            const hydDowBest = Math.max(...hydDowVals);
+            const hydDim = '#4a5570';
             new Chart(document.getElementById('hydDowChart'), {
                 type: 'bar',
                 data: {
                     labels: charts.hyd_dow.labels,
                     datasets: [{
                         label: 'Avg ml',
-                        data: charts.hyd_dow.values,
-                        backgroundColor: hyd,
+                        data: hydDowVals,
+                        backgroundColor: hydDowVals.map(v => v === hydDowBest && v > 0 ? hyd : hydDim),
                         borderRadius: 6
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    layout: { padding: { top: 18 } },
                     plugins: { legend: { display: false } },
                     scales: gridOpts()
-                }
+                },
+                plugins: [makeBarValuePlugin({
+                    id: 'hydDowDataLabels',
+                    bestVal: hydDowBest,
+                    format: v => v.toLocaleString(),
+                    highlightColor: hyd,
+                })],
             });
 
             new Chart(document.getElementById('hydScatterChart'), {
@@ -2603,7 +2706,15 @@
             });
 
             // Sleep by day-of-week — hours (left axis) + score (right axis)
-            // as side-by-side bars per weekday.
+            // as side-by-side bars per weekday. Best-hours weekday is
+            // highlighted; the rest dimmed so the focal day stands out, same
+            // visual idiom as the other DoW charts on the dashboard.
+            const sleepDowVals = charts.sleep_dow.values;
+            const sleepDowBest = Math.max(...sleepDowVals);
+            const sleepDimColor = '#4a5570';
+            const sleepHoursColors = sleepDowVals.map(v =>
+                v === sleepDowBest && v > 0 ? sleepColor : sleepDimColor
+            );
             new Chart(document.getElementById('sleepDowChart'), {
                 type: 'bar',
                 data: {
@@ -2611,8 +2722,8 @@
                     datasets: [
                         {
                             label: 'Avg hours',
-                            data: charts.sleep_dow.values,
-                            backgroundColor: sleepColor,
+                            data: sleepDowVals,
+                            backgroundColor: sleepHoursColors,
                             borderRadius: 6,
                             yAxisID: 'yHours',
                         },
@@ -3033,24 +3144,12 @@
             const moodDowNonzero = moodDowVals.filter(v => v > 0);
             const moodDowBestVal = moodDowNonzero.length ? Math.max(...moodDowNonzero) : 0;
             const moodDowColors = moodDowVals.map(v => v === moodDowBestVal && v > 0 ? '#7cdda5' : '#4a5570');
-            const moodDowDataLabels = {
+            const moodDowDataLabels = makeBarValuePlugin({
                 id: 'moodDowDataLabels',
-                afterDatasetsDraw(chart) {
-                    const { ctx, data: chartData } = chart;
-                    const meta = chart.getDatasetMeta(0);
-                    ctx.save();
-                    ctx.font = '600 12px system-ui, sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'bottom';
-                    chartData.datasets[0].data.forEach((value, i) => {
-                        if (!value) return;
-                        const bar = meta.data[i];
-                        ctx.fillStyle = value === moodDowBestVal ? '#7cdda5' : '#cfd2da';
-                        ctx.fillText(value.toFixed(1), bar.x, bar.y - 4);
-                    });
-                    ctx.restore();
-                }
-            };
+                bestVal: moodDowBestVal,
+                format: v => v.toFixed(1),
+                highlightColor: '#7cdda5',
+            });
             new Chart(document.getElementById('moodDowChart'), {
                 type: 'bar',
                 data: {

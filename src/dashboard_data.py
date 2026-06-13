@@ -56,6 +56,27 @@ def _build_dow_averages(entries, value_getter, precision=None):
     ]
 
 
+def _build_dow_best(dow_avgs, precision=2):
+    """Return the best weekday + its delta vs the average of recorded weekdays.
+
+    Used by the DoW-chart "Best day" footer on every metric page. Returns
+    None when there are no non-zero buckets (i.e. no data yet for that
+    metric).
+    """
+    nonzero = [value for value in dow_avgs if value]
+    if not nonzero:
+        return None
+    best_value = max(nonzero)
+    best_index = dow_avgs.index(best_value)
+    weekly_avg = sum(nonzero) / len(nonzero)
+    return {
+        "name": DOW_NAMES[best_index],
+        "name_full": DOW_NAMES_FULL[best_index],
+        "value": best_value,
+        "delta": round(best_value - weekly_avg, precision),
+    }
+
+
 def _build_time_series(entries, value_getter, transform=None, *, exclude_zero=False):
     labels = []
     values = []
@@ -250,6 +271,7 @@ def build_dashboard_data():
 
     dow_avgs = _build_dow_averages(entries, lambda entry: entry.step_count)
     dow_best = DOW_NAMES[dow_avgs.index(max(dow_avgs))] if total_days else "—"
+    steps_dow_best = _build_dow_best(dow_avgs, precision=0)
 
     today = datetime.now().date()
     yesterday = today - timedelta(days=1)
@@ -334,6 +356,7 @@ def build_dashboard_data():
     hyd_dow_avgs = _build_dow_averages(
         hyd_entries, lambda entry: entry.water_consumed_ml
     )
+    hyd_dow_best = _build_dow_best(hyd_dow_avgs, precision=0)
     hyd_heatmap = _build_heatmap(
         heatmap_start,
         today,
@@ -377,9 +400,11 @@ def build_dashboard_data():
         lambda entry: entry.sleep_total_seconds / 3600,
         precision=2,
     )
+    sleep_dow_best = _build_dow_best(sleep_dow_avgs, precision=2)
     sleep_score_dow_avgs = _build_dow_averages(
         sleep_scored, lambda entry: entry.sleep_score, precision=1
     )
+    sleep_score_dow_best = _build_dow_best(sleep_score_dow_avgs, precision=1)
     sleep_scatter = [
         {"x": round(entry.sleep_total_seconds / 3600, 2), "y": entry.sleep_score}
         for entry in sleep_entries
@@ -454,20 +479,7 @@ def build_dashboard_data():
     mood_dow_avgs = _build_dow_averages(
         mood_entries, lambda entry: entry.mood_score, precision=1
     )
-
-    mood_dow_nonzero = [value for value in mood_dow_avgs if value]
-    if mood_dow_nonzero:
-        best_value = max(mood_dow_nonzero)
-        best_index = mood_dow_avgs.index(best_value)
-        weekly_avg = sum(mood_dow_nonzero) / len(mood_dow_nonzero)
-        mood_dow_best = {
-            "name": DOW_NAMES[best_index],
-            "name_full": DOW_NAMES_FULL[best_index],
-            "value": best_value,
-            "delta": round(best_value - weekly_avg, 2),
-        }
-    else:
-        mood_dow_best = None
+    mood_dow_best = _build_dow_best(mood_dow_avgs, precision=2)
 
     step_histogram = _build_step_histogram(entries, total_days)
 
@@ -481,12 +493,14 @@ def build_dashboard_data():
             "total_floors": int(total_floors),
             "total_distance_km": round(total_distance_km, 1),
             "dow_best": dow_best,
+            "steps_dow_best": steps_dow_best,
             "num_streaks": len(streaks),
             "hyd_total_days": hyd_total_days,
             "hyd_avg_ml": hyd_avg_ml,
             "hyd_goal_days": hyd_goal_days,
             "hyd_goal_pct": hyd_goal_pct,
             "hyd_total_liters": round(hyd_total_ml / 1000, 1),
+            "hyd_dow_best": hyd_dow_best,
             "sleep_total_days": sleep_total_days,
             "sleep_avg_hours_str": (
                 f"{sleep_avg_seconds // 3600}h {(sleep_avg_seconds % 3600) // 60:02d}m"
@@ -496,6 +510,8 @@ def build_dashboard_data():
             "sleep_total_hours": sleep_total_hours,
             "sleep_avg_score": sleep_avg_score,
             "sleep_scored_days": len(sleep_scored),
+            "sleep_dow_best": sleep_dow_best,
+            "sleep_score_dow_best": sleep_score_dow_best,
             "hist_summary": step_histogram["summary"],
             "weekly_comparison": weekly_comparison,
             "hyd_weekly_comparison": hyd_weekly_comparison,
