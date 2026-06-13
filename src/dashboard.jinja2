@@ -2046,6 +2046,93 @@
             };
         }
 
+        // Chart.js plugin factory: paints each bar's value above its top edge.
+        // Used by every per-day-of-week chart (steps/water/sleep score/mood)
+        // for a consistent look. `bestVal` is highlighted in `highlightColor`.
+        function makeBarValuePlugin({ id, bestVal, format, highlightColor }) {
+            return {
+                id,
+                afterDatasetsDraw(chart) {
+                    const { ctx, data: chartData } = chart;
+                    const meta = chart.getDatasetMeta(0);
+                    ctx.save();
+                    ctx.font = '600 12px system-ui, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'bottom';
+                    chartData.datasets[0].data.forEach((value, i) => {
+                        if (!value) return;
+                        const bar = meta.data[i];
+                        ctx.fillStyle = value === bestVal ? highlightColor : '#cfd2da';
+                        ctx.fillText(format(value), bar.x, bar.y - 4);
+                    });
+                    ctx.restore();
+                }
+            };
+        }
+
+        // -------- Insight-row mini visualisations (steps/water/sleep) --------
+        // Sparkline helper + mini DoW bar helper. Cards that need a per-day
+        // pass/fail strip use the Jinja `pass_fail_strip` macro instead, so
+        // those don't require JS. Called from the owning tab's initializer.
+        function makeSparkline(canvasId, series, color) {
+            const el = document.getElementById(canvasId);
+            if (!el || !series || !series.length) return;
+            new Chart(el, {
+                type: 'line',
+                data: {
+                    labels: series.map((_, i) => i),
+                    datasets: [{
+                        data: series,
+                        borderColor: color,
+                        backgroundColor: hexToRgba(color, 0.15),
+                        borderWidth: 1.5,
+                        pointRadius: 0,
+                        tension: 0.35,
+                        fill: true,
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                    scales: {
+                        x: { display: false },
+                        y: { display: false, beginAtZero: false },
+                    },
+                },
+            });
+        }
+        function makeDowMini(canvasId, dowSrc, highlightColor) {
+            const el = document.getElementById(canvasId);
+            if (!el || !dowSrc) return;
+            const vals = dowSrc.values;
+            const best = Math.max(...vals);
+            new Chart(el, {
+                type: 'bar',
+                data: {
+                    labels: dowSrc.labels,
+                    datasets: [{
+                        data: vals,
+                        backgroundColor: vals.map(v => v === best && v > 0 ? highlightColor : '#3a4258'),
+                        borderRadius: 2,
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                    scales: { x: { display: false }, y: { display: false, beginAtZero: true } },
+                },
+            });
+        }
+
+        // ---- Steps tab ----
+        // Created on first activation of the Steps tab (the default tab, so
+        // this still runs at startup). Holds every chart + control binding
+        // that lives on the Steps panel.
+        function initStepsTab() {
         // Recent steps with rolling averages
         const recentChart = new Chart(document.getElementById('recentChart'), {
             type: 'line',
@@ -2130,94 +2217,10 @@
         });
         applyRecentRange('90');
 
-        // Chart.js plugin factory: paints each bar's value above its top edge.
-        // Used by every per-day-of-week chart (steps/water/sleep score/mood)
-        // for a consistent look. `bestVal` is highlighted in `highlightColor`.
-        function makeBarValuePlugin({ id, bestVal, format, highlightColor }) {
-            return {
-                id,
-                afterDatasetsDraw(chart) {
-                    const { ctx, data: chartData } = chart;
-                    const meta = chart.getDatasetMeta(0);
-                    ctx.save();
-                    ctx.font = '600 12px system-ui, sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'bottom';
-                    chartData.datasets[0].data.forEach((value, i) => {
-                        if (!value) return;
-                        const bar = meta.data[i];
-                        ctx.fillStyle = value === bestVal ? highlightColor : '#cfd2da';
-                        ctx.fillText(format(value), bar.x, bar.y - 4);
-                    });
-                    ctx.restore();
-                }
-            };
-        }
-
-        // -------- Insight-row mini visualisations (steps/water/sleep) --------
-        // Sparkline helper + mini DoW bar helper. Cards that need a per-day
-        // pass/fail strip use the Jinja `pass_fail_strip` macro instead, so
-        // those don't require JS.
-        function makeSparkline(canvasId, series, color) {
-            const el = document.getElementById(canvasId);
-            if (!el || !series || !series.length) return;
-            new Chart(el, {
-                type: 'line',
-                data: {
-                    labels: series.map((_, i) => i),
-                    datasets: [{
-                        data: series,
-                        borderColor: color,
-                        backgroundColor: hexToRgba(color, 0.15),
-                        borderWidth: 1.5,
-                        pointRadius: 0,
-                        tension: 0.35,
-                        fill: true,
-                    }],
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: false,
-                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
-                    scales: {
-                        x: { display: false },
-                        y: { display: false, beginAtZero: false },
-                    },
-                },
-            });
-        }
-        function makeDowMini(canvasId, dowSrc, highlightColor) {
-            const el = document.getElementById(canvasId);
-            if (!el || !dowSrc) return;
-            const vals = dowSrc.values;
-            const best = Math.max(...vals);
-            new Chart(el, {
-                type: 'bar',
-                data: {
-                    labels: dowSrc.labels,
-                    datasets: [{
-                        data: vals,
-                        backgroundColor: vals.map(v => v === best && v > 0 ? highlightColor : '#3a4258'),
-                        borderRadius: 2,
-                    }],
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: false,
-                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
-                    scales: { x: { display: false }, y: { display: false, beginAtZero: true } },
-                },
-            });
-        }
+        // Steps insight-row minis (sparkline + DoW). Water/Sleep have their
+        // own calls inside their tab initializers.
         makeSparkline('stepsAvgSparkline', charts.steps_sparkline, accent);
-        makeSparkline('hydAvgSparkline',   charts.hyd_sparkline,   hyd);
-        makeSparkline('sleepAvgSparkline', charts.sleep_sparkline, sleepColor);
-        makeSparkline('sleepScoreSparkline', charts.sleep_score_sparkline, accent);
-        makeDowMini('stepsDowMini', charts.dow,       accent);
-        makeDowMini('hydDowMini',   charts.hyd_dow,   hyd);
-        makeDowMini('sleepDowMini', charts.sleep_dow, sleepColor);
+        makeDowMini('stepsDowMini', charts.dow, accent);
 
         // Steps Day-of-week bar chart
         const dowVals = charts.dow.values;
@@ -2693,10 +2696,16 @@
             cell.style.gridRow = d.weekday + 1;
             heatmapEl.appendChild(cell);
         });
+        } // end initStepsTab
 
-        // Hydration charts (only render if hydration data exists)
-        const hydTimelineEl = document.getElementById('hydTimelineChart');
-        if (hydTimelineEl) {
+        // ---- Water tab ----
+        // Hydration charts (only render if hydration data exists).
+        function initWaterTab() {
+            makeSparkline('hydAvgSparkline', charts.hyd_sparkline, hyd);
+            makeDowMini('hydDowMini', charts.hyd_dow, hyd);
+
+            const hydTimelineEl = document.getElementById('hydTimelineChart');
+            if (!hydTimelineEl) return;
             new Chart(hydTimelineEl, {
                 type: 'bar',
                 data: {
@@ -2802,11 +2811,17 @@
                     hydHeatmapEl.appendChild(cell);
                 });
             }
-        }
+        } // end initWaterTab
 
-        // Sleep charts (only render if sleep data exists)
-        const sleepTimelineEl = document.getElementById('sleepTimelineChart');
-        if (sleepTimelineEl) {
+        // ---- Sleep tab ----
+        // Sleep charts (only render if sleep data exists).
+        function initSleepTab() {
+            makeSparkline('sleepAvgSparkline', charts.sleep_sparkline, sleepColor);
+            makeSparkline('sleepScoreSparkline', charts.sleep_score_sparkline, accent);
+            makeDowMini('sleepDowMini', charts.sleep_dow, sleepColor);
+
+            const sleepTimelineEl = document.getElementById('sleepTimelineChart');
+            if (!sleepTimelineEl) return;
             // Convert seconds to hours for the duration display
             const sleepHours = charts.sleep_timeline.totals.map(
                 v => v == null ? null : +(v / 3600).toFixed(2)
@@ -3012,11 +3027,12 @@
                     }
                 }
             });
-        }
+        } // end initSleepTab
 
         // Mood palette: deep red (1) → light green (10). Used by mood chips,
         // mood calendar cells, and any future mood visualisation that needs a
-        // single source of truth for score → colour mapping.
+        // single source of truth for score → colour mapping. Top-level because
+        // the Day tab's mood chips (rendered eagerly) need it too.
         const MOOD_COLORS = [
             '#d98079', '#cc8c7f', '#c09885', '#b3a58b', '#a7b190',
             '#9bbe96', '#8eca9c', '#82d7a2', '#69f0ae', '#75e3a8'
@@ -3028,9 +3044,11 @@
             return `rgba(${r},${g},${b},${alpha})`;
         }
 
+        // ---- Mood tab ----
         // -------- Mood charts --------
-        const moodTimelineEl = document.getElementById('moodTimelineChart');
-        if (moodTimelineEl && charts.mood_timeline) {
+        function initMoodTab() {
+            const moodTimelineEl = document.getElementById('moodTimelineChart');
+            if (!(moodTimelineEl && charts.mood_timeline)) return;
             // Average-mood hue (#9bbe96, the score-6 swatch) — keeps the
             // mood graphs visually anchored to the palette instead of leaning
             // on --accent-2's purple, which has no place on the 1-10 scale.
@@ -3405,6 +3423,26 @@
                 plugins: [moodDowDataLabels],
             });
 
+        } // end initMoodTab
+
+        // -------- Lazy chart initialization --------
+        // Each tab's charts are built the first time the tab becomes active.
+        // The Day tab has no chart-init function here: its non-chart controls
+        // are wired up eagerly below and its sleep-stage chart is created
+        // on-demand inside renderDaySleepStages().
+        const tabInitializers = {
+            steps: initStepsTab,
+            water: initWaterTab,
+            sleep: initSleepTab,
+            mood: initMoodTab,
+        };
+        const tabInitState = {
+            steps: false, water: false, sleep: false, mood: false,
+        };
+        function ensureTabInitialized(name) {
+            if (tabInitState[name]) return;
+            tabInitState[name] = true;        // set first so a thrown init can't loop
+            tabInitializers[name]?.();
         }
 
         // -------- Tab switching --------
@@ -3413,6 +3451,9 @@
         const tabPanels = document.querySelectorAll('.tab-panel');
 
         function activateTab(name) {
+            // Build this tab's charts on first open, before the resize/replay
+            // loop below tries to find them.
+            ensureTabInitialized(name);
             tabButtons.forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.tab === name);
             });
@@ -3951,15 +3992,24 @@
             saveMood(null);
         });
 
-        // Restore last-selected tab if it still exists. Must come AFTER the
-        // day-view init so an `activateTab('day')` from restore can read
+        // Restore last-selected tab if it still exists, otherwise fall back to
+        // the tab marked active in the HTML (Steps). Either way activateTab
+        // runs once on load so the active tab's charts get lazily created.
+        // Must come AFTER the day-view init so an `activateTab('day')` can read
         // dayLoadedFor / dayPicker without hitting the TDZ.
-        try {
-            const saved = localStorage.getItem(TAB_STORAGE_KEY);
-            if (saved && document.querySelector(`.tab-panel[data-tab="${saved}"]`)) {
-                activateTab(saved);
+        (function initialTab() {
+            let target = null;
+            try {
+                const saved = localStorage.getItem(TAB_STORAGE_KEY);
+                if (saved && document.querySelector(`.tab-panel[data-tab="${saved}"]`)) {
+                    target = saved;
+                }
+            } catch (_) {}
+            if (!target) {
+                target = document.querySelector('.tab-panel.active')?.dataset.tab || 'steps';
             }
-        } catch (_) {}
+            activateTab(target);
+        })();
 
         // -------- Debug panel (toggle with ?) --------
         const debugBackdrop = document.getElementById('debug-backdrop');
