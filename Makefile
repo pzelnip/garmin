@@ -18,6 +18,10 @@ run-server: ## Run the Flask server
 test: ## Run the test suite with pytest
 	uv run pytest
 
+.PHONY: test-coverage
+test-coverage: ## Run the test suite and generate an HTML coverage report
+	uv run pytest --cov=src --cov-report=html --cov-report=term
+
 .PHONY: ruff
 ruff: ## Lint the Python code with ruff
 	uv run ruff check src
