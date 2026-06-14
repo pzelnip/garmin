@@ -90,10 +90,10 @@ restart on the Pi.
 
 ## Conventions worth knowing
 
-- **No tests.** This is a personal project. Verification is "does it
+- **No frontend tests.** This is a personal project. Verification is "does it
   render correctly in the browser" and "does the cron job's
-  healthcheck still ping". Don't propose adding a test framework
-  unless the user asks.
+  healthcheck still ping". There is a pytest suite for the python
+  code, but it's minimal.
 - **Comments are sparse.** Only comment the *why* when it's
   non-obvious — never the what.
 - **Don't run `garmin.py` locally** — it writes to the production DB.
@@ -120,5 +120,4 @@ templates per the `misc_scripts/README.md` convention.
 - Writing back to Garmin — the library is read-only and the user
   doesn't want that anyway.
 - ORM migration frameworks — manual SQL is fine at this scale.
-- A test suite — not requested.
 - Build pipelines / bundling — CDN-loaded Chart.js, inline JS.
