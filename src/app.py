@@ -6,7 +6,7 @@ from datetime import datetime
 from functools import cache
 from importlib.metadata import PackageNotFoundError, version
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, redirect, render_template, request, url_for
 from jinja2 import select_autoescape
 from sqlmodel import select
 
@@ -76,6 +76,11 @@ def _diagnostics():
         "DEBUG mode": "on" if DEBUG else "off",
         "Server started": SERVER_STARTED,
     }
+
+
+@app.route("/")
+def index():
+    return redirect(url_for("dashboard"))
 
 
 @app.route("/dashboard")
