@@ -29,7 +29,7 @@ ruff: ## Lint the Python code with ruff
 
 .PHONY: pylint
 pylint: ## Lint the Python code with pylint
-	uv run pylint src
+	uv run pylint src tests
 
 .PHONY: lint
 lint: ruff pylint ## Lint the Python code with ruff & pylint

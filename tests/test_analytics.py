@@ -41,7 +41,7 @@ def test_extract_streaks_ignores_unmet_days():
 
     streaks = Streak.extract_streaks(given)
 
-    assert streaks == []
+    assert not streaks
 
 
 def test_extract_streaks_sorts_by_length_descending():

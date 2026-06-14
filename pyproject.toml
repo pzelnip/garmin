@@ -32,6 +32,11 @@ testpaths = ["tests"]
 # src/ is the import root (modules import each other as `from db import ...`)
 source-roots = ["src"]
 
+# Put src/ on sys.path so files outside it (e.g. tests/) also resolve
+# `from db import ...`. source-roots alone doesn't cover test files when the
+# editor lints them individually.
+init-hook = "import sys; sys.path.insert(0, 'src')"
+
 # Analyse import fallback blocks. This can be used to support both Python 2 and 3
 # compatible code, which means that the block might have code that exists only in
 # one or another interpreter, leading to false positives when analysed.
@@ -392,6 +397,7 @@ disable = [
     "logging-fstring-interpolation",
     "missing-function-docstring",
     "missing-module-docstring",
+    "too-few-public-methods",
 ]
 
 # Enable the message, report, category or checker with the given id(s). You can
