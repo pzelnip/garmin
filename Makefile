@@ -1,6 +1,7 @@
 .PHONY: update-dependencies
 update-dependencies: ## Upgrade locked dependencies
 	uv lock --upgrade
+	uv sync
 
 .PHONY: db-session
 db-session: ## Start a database session
@@ -8,11 +9,11 @@ db-session: ## Start a database session
 
 .PHONY: pull-and-post
 pull-and-post: ## Pull data from Garmin into the DB
-	cd src && python garmin.py $(ARGS)
+	uv run python src/garmin.py $(ARGS)
 
 .PHONY: run-server
 run-server: ## Run the Flask server
-	cd src && python app.py
+	uv run python src/app.py
 
 .PHONY: test
 test: ## Run the test suite with pytest
