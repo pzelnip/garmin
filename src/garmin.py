@@ -10,7 +10,7 @@ from time import sleep
 
 from garminconnect import Garmin
 
-from db import DayStats, db_session, get_steps_per_day_from_db, Source
+from db import DayStats, Source, db_session, get_steps_per_day_from_db
 from inputs import date_picker, number_picker, yes_no
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -49,9 +49,9 @@ def get_from_garmin(day: date, session) -> DayStats:
         sleep_data = {}
 
     sleep_dto = sleep_data.get("dailySleepDTO") or {}
-    sleep_score = (
-        (sleep_dto.get("sleepScores") or {}).get("overall") or {}
-    ).get("value")
+    sleep_score = ((sleep_dto.get("sleepScores") or {}).get("overall") or {}).get(
+        "value"
+    )
 
     # UPSERT: may already exist as a manual-entry stub created from the
     # dashboard's notes/mood panel for today, before the sync ran. In that
@@ -59,8 +59,9 @@ def get_from_garmin(day: date, session) -> DayStats:
     # and mood_score. Otherwise insert a fresh row.
     daystats = get_steps_per_day_from_db(orig_day, session)
     if daystats is None:
-        daystats = DayStats(day=orig_day, step_count=0, daily_step_goal=0,
-                            source=Source.garmin)
+        daystats = DayStats(
+            day=orig_day, step_count=0, daily_step_goal=0, source=Source.garmin
+        )
         session.add(daystats)
 
     daystats.step_count = entry["totalSteps"]
@@ -102,7 +103,7 @@ def initialize_api():
     API = Garmin(os.getenv("GARMIN_EMAIL"), os.getenv("GARMIN_PASSWORD"))
     if not API.login():
         logging.exception("failed to log in, aborting")
-        exit(1)
+        sys.exit(1)
     logging.info("Logged in")
 
 
@@ -165,4 +166,4 @@ def main():
 
 
 if __name__ == "__main__":
-    exit(main())
+    sys.exit(main())

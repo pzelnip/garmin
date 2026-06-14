@@ -5,6 +5,7 @@
 # * use rich/textual for prettiness
 
 import contextlib
+import sys
 from datetime import date, datetime, timedelta
 from itertools import groupby
 from typing import List
@@ -100,4 +101,4 @@ def top_10(prompt, entries):
 
 
 if __name__ == "__main__":
-    exit(main())
+    sys.exit(main())

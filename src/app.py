@@ -1,12 +1,13 @@
 import json
 import os
+import platform
 import subprocess
 from datetime import datetime
 from functools import cache
+from importlib.metadata import PackageNotFoundError, version
 
 from flask import Flask, jsonify, render_template, request
 from jinja2 import select_autoescape
-
 from sqlmodel import select
 
 from dashboard_data import get_dashboard_data_cached, invalidate_dashboard_cache
@@ -58,11 +59,6 @@ def _diagnostics():
     """Collect runtime version/environment info for the debug panel."""
     # Like `_git_info`, this is process-lifetime data in production and only
     # potentially stale during long-lived local debug sessions.
-    import platform  # pylint: disable=import-outside-toplevel
-    from importlib.metadata import (
-        PackageNotFoundError,
-        version,
-    )  # pylint: disable=import-outside-toplevel
 
     def _pkg(name):
         try:
@@ -257,7 +253,9 @@ def force_update():
     if not os.path.isfile(script):
         return jsonify({"error": f"script not found at {script}"}), 500
     try:
-        subprocess.Popen(
+        # Fire-and-forget: detached so the pull+restart outlives this request.
+        # `with` would wait on / close the process, defeating the purpose.
+        subprocess.Popen(  # pylint: disable=consider-using-with
             ["/usr/bin/env", "bash", script],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,

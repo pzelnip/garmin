@@ -12,9 +12,21 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["black", "freezegun", "pytest"]
+dev = ["black", "freezegun", "isort", "pytest", "pylint", "ruff"]
+
+[tool.black]
+# Pin target to the interpreter we run under; an open `requires-python = ">=3.14"`
+# otherwise makes black target 3.15 and fail its AST safety check on 3.14.
+target-version = ["py314"]
+
+[tool.isort]
+# Match black's import wrapping so the two don't reformat each other's output.
+profile = "black"
 
 [tool.pylint.main]
+# src/ is the import root (modules import each other as `from db import ...`)
+source-roots = ["src"]
+
 # Analyse import fallback blocks. This can be used to support both Python 2 and 3
 # compatible code, which means that the block might have code that exists only in
 # one or another interpreter, leading to false positives when analysed.
@@ -276,7 +288,7 @@ min-public-methods = 2
 
 [tool.pylint.exceptions]
 # Exceptions that will emit a warning when caught.
-overgeneral-exceptions = ["BaseException", "Exception"]
+overgeneral-exceptions = ["builtins.BaseException", "builtins.Exception"]
 
 [tool.pylint.format]
 # Expected format of line ending, e.g. empty (any line ending), LF or CRLF.

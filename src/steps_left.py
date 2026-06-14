@@ -2,8 +2,9 @@
 
 import sys
 from datetime import datetime, timedelta
-from last_day_for_weekly_post import last_day
+
 from db import db_session, get_day_stats_for_date_range
+from last_day_for_weekly_post import last_day
 
 GOALS = list(range(100_000, 130_000, 5_000))
 
@@ -13,7 +14,8 @@ def from_goal(so_far, target, days_left):
     per_day = remaining / days_left if days_left else remaining
     print(f"From {so_far:,} steps to {target:,} steps in {days_left} days:")
     print(
-        f"{remaining:,} steps left to reach {target:,} steps in {days_left} days {round(per_day):,} steps per day"
+        f"{remaining:,} steps left to reach {target:,} steps in {days_left} days "
+        f"{round(per_day):,} steps per day"
     )
     print("-" * 80)
 
@@ -32,4 +34,4 @@ def main():
 
 
 if __name__ == "__main__":
-    exit(main())
+    sys.exit(main())

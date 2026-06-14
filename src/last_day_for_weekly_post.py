@@ -1,4 +1,5 @@
-from datetime import datetime, date, timedelta
+import sys
+from datetime import date, datetime, timedelta
 
 import pytest
 from freezegun import freeze_time
@@ -34,4 +35,4 @@ def main():
 
 
 if __name__ == "__main__":
-    exit(main())
+    sys.exit(main())

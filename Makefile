@@ -13,3 +13,25 @@ pull-and-post: ## Pull data from Garmin into the DB
 .PHONY: run-server
 run-server: ## Run the Flask server
 	cd src && python app.py
+
+.PHONY: ruff
+ruff: ## Lint the Python code with ruff
+	uv run ruff check src
+
+.PHONY: pylint
+pylint: ## Lint the Python code with pylint
+	uv run pylint src
+
+.PHONY: lint
+lint: ruff pylint ## Lint the Python code with ruff & pylint
+
+.PHONY: black
+black: ## Format the Python code with black
+	uv run black src
+
+.PHONY: isort
+isort: ## Format the Python code with isort
+	uv run isort src
+
+.PHONY: format
+format: black isort ## Format the Python code with black & isort
