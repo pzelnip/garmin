@@ -227,7 +227,6 @@ dependencies = [
     { name = "garminconnect" },
     { name = "jinja2" },
     { name = "psycopg2-binary" },
-    { name = "requests" },
     { name = "sqlmodel" },
 ]
 
@@ -245,7 +244,6 @@ requires-dist = [
     { name = "garminconnect" },
     { name = "jinja2" },
     { name = "psycopg2-binary" },
-    { name = "requests" },
     { name = "sqlmodel" },
 ]
 

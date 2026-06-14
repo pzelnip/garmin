@@ -8,7 +8,6 @@ dependencies = [
     "garminconnect",
     "Jinja2",
     "psycopg2-binary",
-    "requests",
     "sqlmodel",
 ]
 
@@ -383,20 +382,6 @@ disable = [
 # multiple time (only on the command line, not in the configuration file where it
 # should appear only once). See also the "--disable" option for examples.
 enable = ["c-extension-no-member"]
-
-[tool.pylint.method_args]
-# List of qualified names (i.e., library.method) which require a timeout
-# parameter e.g. 'requests.api.get,requests.api.post'
-timeout-methods = [
-    "requests.api.delete",
-    "requests.api.get",
-    "requests.api.head",
-    "requests.api.options",
-    "requests.api.patch",
-    "requests.api.post",
-    "requests.api.put",
-    "requests.api.request",
-]
 
 [tool.pylint.miscellaneous]
 # List of note tags to take in consideration, separated by a comma.
