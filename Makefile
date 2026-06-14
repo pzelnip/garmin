@@ -14,6 +14,10 @@ pull-and-post: ## Pull data from Garmin into the DB
 run-server: ## Run the Flask server
 	cd src && python app.py
 
+.PHONY: test
+test: ## Run the test suite with pytest
+	uv run pytest
+
 .PHONY: ruff
 ruff: ## Lint the Python code with ruff
 	uv run ruff check src

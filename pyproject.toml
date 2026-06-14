@@ -23,6 +23,11 @@ target-version = ["py314"]
 # Match black's import wrapping so the two don't reformat each other's output.
 profile = "black"
 
+[tool.pytest.ini_options]
+# src/ is the import root, so tests import modules (analytics, db, ...) directly.
+pythonpath = ["src"]
+testpaths = ["tests"]
+
 [tool.pylint.main]
 # src/ is the import root (modules import each other as `from db import ...`)
 source-roots = ["src"]
