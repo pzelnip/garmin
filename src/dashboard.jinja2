@@ -2068,6 +2068,31 @@
             };
         }
 
+        // Draws a soft glow behind the best bar of dataset 0 so it reads as
+        // the focal point beyond just its fill colour. Runs before the bars
+        // are drawn (beforeDatasetsDraw) so the shadow sits underneath them.
+        function makeBestBarGlowPlugin({ id, bestVal, glowColor }) {
+            return {
+                id,
+                beforeDatasetsDraw(chart) {
+                    const { ctx } = chart;
+                    const meta = chart.getDatasetMeta(0);
+                    const vals = chart.data.datasets[0].data;
+                    vals.forEach((value, i) => {
+                        if (!value || value !== bestVal) return;
+                        const bar = meta.data[i];
+                        const { x, y, base, width } = bar.getProps(['x', 'y', 'base', 'width'], true);
+                        ctx.save();
+                        ctx.shadowColor = glowColor;
+                        ctx.shadowBlur = 16;
+                        ctx.fillStyle = glowColor;
+                        ctx.fillRect(x - width / 2, y, width, base - y);
+                        ctx.restore();
+                    });
+                }
+            };
+        }
+
         // -------- Insight-row mini visualisations (steps/water/sleep) --------
         // Sparkline helper + mini DoW bar helper. Cards that need a per-day
         // pass/fail strip use the Jinja `pass_fail_strip` macro instead, so
@@ -2740,7 +2765,9 @@
 
             const hydDowVals = charts.hyd_dow.values;
             const hydDowBest = Math.max(...hydDowVals);
-            const hydDim = '#4a5570';
+            // All bars share a light cyan; the best day gets the brighter
+            // brand cyan so it stays the focal point.
+            const hydDim = '#7dd3fc';   // light cyan
             new Chart(document.getElementById('hydDowChart'), {
                 type: 'bar',
                 data: {
@@ -2759,12 +2786,19 @@
                     plugins: { legend: { display: false } },
                     scales: gridOpts()
                 },
-                plugins: [makeBarValuePlugin({
-                    id: 'hydDowDataLabels',
-                    bestVal: hydDowBest,
-                    format: v => v.toLocaleString(),
-                    highlightColor: hyd,
-                })],
+                plugins: [
+                    makeBestBarGlowPlugin({
+                        id: 'hydDowGlow',
+                        bestVal: hydDowBest,
+                        glowColor: hyd,
+                    }),
+                    makeBarValuePlugin({
+                        id: 'hydDowDataLabels',
+                        bestVal: hydDowBest,
+                        format: v => v.toLocaleString(),
+                        highlightColor: hyd,
+                    }),
+                ],
             });
 
             new Chart(document.getElementById('hydScatterChart'), {
@@ -2943,9 +2977,12 @@
             // visual idiom as the other DoW charts on the dashboard.
             const sleepDowVals = charts.sleep_dow.values;
             const sleepDowBest = Math.max(...sleepDowVals);
-            const sleepDimColor = '#4a5570';
+            // All bars share the light purple; the best day gets a brighter,
+            // more saturated violet so it still reads as the focal point.
+            const sleepDimColor = sleepColor;        // #a78bfa
+            const sleepBestColor = '#7c3aed';        // brighter violet
             const sleepHoursColors = sleepDowVals.map(v =>
-                v === sleepDowBest && v > 0 ? sleepColor : sleepDimColor
+                v === sleepDowBest && v > 0 ? sleepBestColor : sleepDimColor
             );
             new Chart(document.getElementById('sleepDowChart'), {
                 type: 'bar',
@@ -2971,6 +3008,7 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    layout: { padding: { top: 18 } },  // headroom for value labels
                     plugins: { legend: { labels: { color: '#e6e8ec' } } },
                     scales: {
                         x: { grid: { color: grid }, ticks: { color: '#8a92a6' } },
@@ -2991,7 +3029,40 @@
                             min: 0, max: 100,
                         }
                     }
-                }
+                },
+                plugins: [
+                    makeBestBarGlowPlugin({
+                        id: 'sleepDowGlow',
+                        bestVal: sleepDowBest,
+                        glowColor: sleepBestColor,
+                    }),
+                    makeBarValuePlugin({
+                        id: 'sleepDowDataLabels',
+                        bestVal: sleepDowBest,
+                        format: v => v.toFixed(1),
+                        highlightColor: sleepBestColor,
+                    }),
+                    // Score bars (dataset 1) get plain value labels in the
+                    // score colour — makeBarValuePlugin only covers dataset 0.
+                    {
+                        id: 'sleepScoreDowDataLabels',
+                        afterDatasetsDraw(chart) {
+                            const { ctx } = chart;
+                            const meta = chart.getDatasetMeta(1);
+                            ctx.save();
+                            ctx.font = '600 12px system-ui, sans-serif';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'bottom';
+                            ctx.fillStyle = accent;
+                            chart.data.datasets[1].data.forEach((value, i) => {
+                                if (!value) return;
+                                const bar = meta.data[i];
+                                ctx.fillText(Math.round(value), bar.x, bar.y - 4);
+                            });
+                            ctx.restore();
+                        }
+                    },
+                ],
             });
 
             // Sleep duration vs score scatter
@@ -3372,18 +3443,21 @@
                 plugins: [moodDistDataLabels],
             });
 
-            // Highlight the best weekday in the average-mood-by-DoW chart;
-            // dim the rest so the best day reads as the focal point. The
-            // inline plugin paints each bar's value above its top edge.
+            // All bars share a light green; the best weekday gets a brighter,
+            // more saturated green plus a glow so it reads as the focal point,
+            // matching the water/sleep DoW charts. The inline plugin paints
+            // each bar's value above its top edge.
             const moodDowVals = charts.mood_dow.values;
             const moodDowNonzero = moodDowVals.filter(v => v > 0);
             const moodDowBestVal = moodDowNonzero.length ? Math.max(...moodDowNonzero) : 0;
-            const moodDowColors = moodDowVals.map(v => v === moodDowBestVal && v > 0 ? '#7cdda5' : '#4a5570');
+            const moodDimColor = '#7cdda5';   // light green
+            const moodBestColor = '#34d399';  // brighter emerald
+            const moodDowColors = moodDowVals.map(v => v === moodDowBestVal && v > 0 ? moodBestColor : moodDimColor);
             const moodDowDataLabels = makeBarValuePlugin({
                 id: 'moodDowDataLabels',
                 bestVal: moodDowBestVal,
                 format: v => v.toFixed(1),
-                highlightColor: '#7cdda5',
+                highlightColor: moodBestColor,
             });
             new Chart(document.getElementById('moodDowChart'), {
                 type: 'bar',
@@ -3418,7 +3492,14 @@
                         }
                     }
                 },
-                plugins: [moodDowDataLabels],
+                plugins: [
+                    makeBestBarGlowPlugin({
+                        id: 'moodDowGlow',
+                        bestVal: moodDowBestVal,
+                        glowColor: moodBestColor,
+                    }),
+                    moodDowDataLabels,
+                ],
             });
 
         } // end initMoodTab
