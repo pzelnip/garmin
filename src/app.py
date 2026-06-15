@@ -110,6 +110,51 @@ def _parse_iso_date(iso_date):
         return None
 
 
+@app.route("/api/notes/search")
+def search_notes():
+    """Case-insensitive substring search across the notes field. Returns
+    matching days (newest first) with a small snippet around the match.
+    """
+    query = (request.args.get("q") or "").strip()
+    if not query:
+        return jsonify({"query": "", "results": []})
+
+    with db_session() as session:
+        # ilike for case-insensitive substring match; escape SQL wildcards
+        # in the query so a literal % / _ doesn't match unexpectedly.
+        escaped = query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        stmt = (
+            select(DayStats)
+            .where(DayStats.notes.ilike(f"%{escaped}%", escape="\\"))
+            .order_by(DayStats.day.desc())
+        )
+        rows = list(session.exec(stmt))
+
+    lower_query = query.lower()
+    snippet_radius = 60
+    results = []
+    for row in rows:
+        idx = row.notes.lower().find(lower_query)
+        if idx < 0:
+            continue
+        start = max(0, idx - snippet_radius)
+        end = min(len(row.notes), idx + len(query) + snippet_radius)
+        snippet = row.notes[start:end]
+        if start > 0:
+            snippet = "…" + snippet
+        if end < len(row.notes):
+            snippet = snippet + "…"
+        results.append(
+            {
+                "day": row.day.isoformat(),
+                "snippet": snippet,
+                "match_start": idx - start + (1 if start > 0 else 0),
+                "match_len": len(query),
+            }
+        )
+    return jsonify({"query": query, "results": results})
+
+
 @app.route("/api/day/<iso_date>")
 def day_detail(iso_date):
     """Return one day's DayStats fields as JSON for the Day-view tab."""

@@ -507,6 +507,88 @@
             font-style: italic;
         }
         .day-grid .panel .stat-sub.muted { color: #4a5570; }
+        .notes-search-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .notes-search-row label {
+            color: var(--text-dim);
+            font-size: 13px;
+        }
+        .notes-search-row input {
+            flex: 1;
+            max-width: 360px;
+            padding: 6px 10px;
+            background: var(--panel);
+            color: var(--text);
+            border: 1px solid var(--grid);
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .notes-search-row input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        .notes-search-clear {
+            background: transparent;
+            color: var(--text-dim);
+            border: 1px solid var(--grid);
+            border-radius: 6px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .notes-search-clear:hover { color: var(--text); border-color: var(--text-dim); }
+        .notes-search-count {
+            color: var(--text-dim);
+            font-size: 12px;
+            font-style: italic;
+        }
+        .notes-search-results {
+            background: var(--panel);
+            border: 1px solid var(--grid);
+            border-radius: 12px;
+            margin-bottom: 16px;
+            max-height: 360px;
+            overflow-y: auto;
+        }
+        .notes-search-result {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--grid);
+            cursor: pointer;
+            display: flex;
+            gap: 12px;
+            align-items: baseline;
+        }
+        .notes-search-result:last-child { border-bottom: none; }
+        .notes-search-result:hover { background: var(--panel-2); }
+        .notes-search-result .nsr-date {
+            color: var(--accent);
+            font-variant-numeric: tabular-nums;
+            font-size: 13px;
+            white-space: nowrap;
+            min-width: 90px;
+        }
+        .notes-search-result .nsr-snippet {
+            color: var(--text-dim);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .notes-search-result .nsr-snippet mark {
+            background: var(--accent);
+            color: var(--bg);
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+        .notes-search-empty {
+            padding: 14px;
+            color: var(--text-dim);
+            font-size: 13px;
+            font-style: italic;
+            text-align: center;
+        }
         .day-notes-panel {
             background: var(--panel);
             border: 1px solid var(--grid);
@@ -1938,6 +2020,13 @@
 
     <!-- ============================ DAY TAB ============================ -->
     <div class="tab-panel" data-tab="day">
+        <div class="notes-search-row">
+            <label for="notes-search">Search notes:</label>
+            <input type="search" id="notes-search" placeholder="case-insensitive substring…" autocomplete="off" />
+            <button type="button" id="notes-search-clear" class="notes-search-clear" style="display: none;">Clear</button>
+            <span id="notes-search-count" class="notes-search-count"></span>
+        </div>
+        <div id="notes-search-results" class="notes-search-results" style="display: none;"></div>
         <div class="day-picker-row">
             <label for="day-picker">Day:</label>
             <button type="button" id="day-prev" class="day-nav-btn" aria-label="Previous day" title="Previous day">‹</button>
@@ -3842,6 +3931,76 @@
                 dayLoadedFor = dayPicker.value;
             }
         }
+
+        // Notes search — debounced fetch against /api/notes/search, click a
+        // result to jump the day picker to that day.
+        const notesSearchInput = document.getElementById('notes-search');
+        const notesSearchClear = document.getElementById('notes-search-clear');
+        const notesSearchCount = document.getElementById('notes-search-count');
+        const notesSearchResults = document.getElementById('notes-search-results');
+        let notesSearchTimer = null;
+        function escapeHtml(s) {
+            return s.replace(/[&<>"']/g, ch => (
+                { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]
+            ));
+        }
+        function renderSearchResults(payload) {
+            const results = payload.results || [];
+            if (!payload.query) {
+                notesSearchResults.style.display = 'none';
+                notesSearchResults.innerHTML = '';
+                notesSearchCount.textContent = '';
+                notesSearchClear.style.display = 'none';
+                return;
+            }
+            notesSearchClear.style.display = '';
+            notesSearchCount.textContent = `${results.length} match${results.length === 1 ? '' : 'es'}`;
+            notesSearchResults.style.display = '';
+            if (results.length === 0) {
+                notesSearchResults.innerHTML = '<div class="notes-search-empty">No notes match that query.</div>';
+                return;
+            }
+            notesSearchResults.innerHTML = results.map(r => {
+                const before = escapeHtml(r.snippet.slice(0, r.match_start));
+                const hit = escapeHtml(r.snippet.slice(r.match_start, r.match_start + r.match_len));
+                const after = escapeHtml(r.snippet.slice(r.match_start + r.match_len));
+                return `<div class="notes-search-result" data-day="${r.day}">`
+                    + `<span class="nsr-date">${r.day}</span>`
+                    + `<span class="nsr-snippet">${before}<mark>${hit}</mark>${after}</span>`
+                    + `</div>`;
+            }).join('');
+        }
+        async function runNotesSearch(query) {
+            const trimmed = query.trim();
+            if (!trimmed) {
+                renderSearchResults({ query: '', results: [] });
+                return;
+            }
+            try {
+                const res = await fetch(`/api/notes/search?q=${encodeURIComponent(trimmed)}`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const payload = await res.json();
+                renderSearchResults(payload);
+            } catch (ex) {
+                notesSearchResults.style.display = '';
+                notesSearchResults.innerHTML = `<div class="notes-search-empty">Search failed: ${escapeHtml(ex.message)}</div>`;
+                notesSearchCount.textContent = '';
+            }
+        }
+        notesSearchInput.addEventListener('input', () => {
+            if (notesSearchTimer) clearTimeout(notesSearchTimer);
+            notesSearchTimer = setTimeout(() => runNotesSearch(notesSearchInput.value), 200);
+        });
+        notesSearchClear.addEventListener('click', () => {
+            notesSearchInput.value = '';
+            renderSearchResults({ query: '', results: [] });
+            notesSearchInput.focus();
+        });
+        notesSearchResults.addEventListener('click', evt => {
+            const row = evt.target.closest('.notes-search-result');
+            if (!row) return;
+            setDay(row.dataset.day);
+        });
 
         // Save handler for the per-day notes textarea. PUTs the current
         // textarea contents to /api/day/<date>/notes.
