@@ -3954,6 +3954,12 @@
                 return;
             }
             notesSearchClear.style.display = '';
+            if (payload.too_short) {
+                notesSearchCount.textContent = 'Type at least 3 characters';
+                notesSearchResults.style.display = 'none';
+                notesSearchResults.innerHTML = '';
+                return;
+            }
             notesSearchCount.textContent = `${results.length} match${results.length === 1 ? '' : 'es'}`;
             notesSearchResults.style.display = '';
             if (results.length === 0) {
@@ -3976,6 +3982,10 @@
                 renderSearchResults({ query: '', results: [] });
                 return;
             }
+            if (trimmed.length < 3) {
+                renderSearchResults({ query: trimmed, results: [], too_short: true });
+                return;
+            }
             try {
                 const res = await fetch(`/api/notes/search?q=${encodeURIComponent(trimmed)}`);
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -3989,7 +3999,7 @@
         }
         notesSearchInput.addEventListener('input', () => {
             if (notesSearchTimer) clearTimeout(notesSearchTimer);
-            notesSearchTimer = setTimeout(() => runNotesSearch(notesSearchInput.value), 200);
+            notesSearchTimer = setTimeout(() => runNotesSearch(notesSearchInput.value), 400);
         });
         notesSearchClear.addEventListener('click', () => {
             notesSearchInput.value = '';

@@ -116,8 +116,8 @@ def search_notes():
     matching days (newest first) with a small snippet around the match.
     """
     query = (request.args.get("q") or "").strip()
-    if not query:
-        return jsonify({"query": "", "results": []})
+    if len(query) < 3:
+        return jsonify({"query": query, "results": [], "too_short": True})
 
     with db_session() as session:
         # ilike for case-insensitive substring match; escape SQL wildcards
