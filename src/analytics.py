@@ -54,7 +54,7 @@ class Streak:
         return len(self.entries)
 
     def __str__(self) -> str:
-        return f"Streak from {self.start} to {self.end} ({self.days} days){' (current streak)' if self.is_current() else ''}"  # pylint: disable=line-too-long
+        return f"Streak from {self.start} to {self.end} ({self.days} days){' (current streak)' if self.is_current() else ''}"
 
     def is_current(self):
         yesterday = datetime.now().date() - timedelta(days=1)

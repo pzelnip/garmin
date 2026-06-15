@@ -27,12 +27,8 @@ test-coverage: ## Run the test suite and generate an HTML coverage report
 ruff: ## Lint the Python code with ruff
 	uv run ruff check src
 
-.PHONY: pylint
-pylint: ## Lint the Python code with pylint
-	uv run pylint src tests
-
 .PHONY: lint
-lint: ruff pylint ## Lint the Python code with ruff & pylint
+lint: ruff ## Run all linters
 
 .PHONY: black
 black: ## Format the Python code with black

@@ -38,13 +38,13 @@ def get_from_garmin(day: date, session) -> DayStats:
 
     try:
         hydration = API.get_hydration_data(day) or {}
-    except Exception as ex:  # pylint: disable=broad-except
+    except Exception as ex:
         logging.warning(f"Could not fetch hydration for {day}: {ex}")
         hydration = {}
 
     try:
         sleep_data = API.get_sleep_data(day) or {}
-    except Exception as ex:  # pylint: disable=broad-except
+    except Exception as ex:
         logging.warning(f"Could not fetch sleep for {day}: {ex}")
         sleep_data = {}
 
@@ -97,7 +97,7 @@ def get_from_garmin(day: date, session) -> DayStats:
 
 
 def initialize_api():
-    global API  # pylint: disable=global-statement
+    global API
 
     logging.info("Logging in with garmin...")
     API = Garmin(os.getenv("GARMIN_EMAIL"), os.getenv("GARMIN_PASSWORD"))

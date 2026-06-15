@@ -48,7 +48,7 @@ def main():
             try:
                 data = api.get_lifestyle_logging_data(day_str)
                 _dump(f"get_lifestyle_logging_data({day_str})", data)
-            except Exception as ex:  # pylint: disable=broad-except
+            except Exception as ex:
                 logging.warning(f"{day_str}: get_lifestyle_logging_data failed: {ex}")
 
         # Speculative siblings — these may not exist; 404s expected, just want to see.
@@ -63,7 +63,7 @@ def main():
             try:
                 data = api.connectapi(url)
                 _dump(f"connectapi({url})", data)
-            except Exception as ex:  # pylint: disable=broad-except
+            except Exception as ex:
                 logging.warning(f"connectapi({url}) failed: {ex}")
 
 

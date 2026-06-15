@@ -45,7 +45,7 @@ def _git_info():
         raw_sha, raw_date = out.stdout.strip().split("\t", maxsplit=1)
         commit_date = datetime.strptime(raw_date, "%Y-%m-%d %H:%M:%S %z")
         return raw_sha, commit_date.strftime("%Y-%m-%d %H:%M")
-    except Exception:  # pylint: disable=broad-except
+    except Exception:
         return None, None
 
 
@@ -305,14 +305,14 @@ def force_update():
     try:
         # Fire-and-forget: detached so the pull+restart outlives this request.
         # `with` would wait on / close the process, defeating the purpose.
-        subprocess.Popen(  # pylint: disable=consider-using-with
+        subprocess.Popen(
             ["/usr/bin/env", "bash", script],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             start_new_session=True,
         )
         return jsonify({"started": True})
-    except Exception as ex:  # pylint: disable=broad-except
+    except Exception as ex:
         return jsonify({"error": str(ex)}), 500
 
 

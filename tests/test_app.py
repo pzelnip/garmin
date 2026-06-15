@@ -1,6 +1,3 @@
-# pylint: disable=redefined-outer-name
-# Pytest fixtures are passed as parameters that shadow the fixture name —
-# pylint flags this on every test that takes a fixture; not actionable here.
 from datetime import date
 
 import pytest

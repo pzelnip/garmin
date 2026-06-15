@@ -26,9 +26,9 @@ class Source(enum.Enum):
     backfilled rows from authoritative device data.
     """
 
-    manual_entry = 0  # pylint: disable=invalid-name
-    garmin = 1  # pylint: disable=invalid-name
-    fitbit = 2  # pylint: disable=invalid-name
+    manual_entry = 0
+    garmin = 1
+    fitbit = 2
 
 
 class DayStats(SQLModel, table=True):
@@ -112,7 +112,7 @@ class DayStats(SQLModel, table=True):
 
 
 def _init_db():
-    global ENGINE  # pylint: disable=global-statement
+    global ENGINE
     if not ENGINE:
         logging.info("Init DB Engine")
         ENGINE = create_engine(os.getenv("CONN_STR", ""), pool_pre_ping=True)

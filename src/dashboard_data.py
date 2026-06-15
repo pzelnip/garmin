@@ -253,7 +253,7 @@ def _build_step_histogram(entries, total_days):
 
 
 # Cohesive aggregator: assembles the full dashboard payload in one pass.
-def build_dashboard_data():  # pylint: disable=too-many-locals,too-many-statements
+def build_dashboard_data():
     entries = get_all_entries(include_notes=False)
     streaks = build_streaks(entries)
     current_streak = find_current_streak(streaks)

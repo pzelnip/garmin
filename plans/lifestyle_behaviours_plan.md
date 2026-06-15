@@ -207,7 +207,7 @@ new try/except block alongside the existing hydration and sleep ones:
 ```python
 try:
     lifestyle = API.get_lifestyle_logging_data(day) or {}
-except Exception as ex:  # pylint: disable=broad-except
+except Exception as ex:
     logging.warning(f"Could not fetch lifestyle for {day}: {ex}")
     lifestyle = {}
 

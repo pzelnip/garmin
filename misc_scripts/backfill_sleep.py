@@ -58,7 +58,7 @@ def main():
 
                 try:
                     sleep_data = api.get_sleep_data(day_iso) or {}
-                except Exception as ex:  # pylint: disable=broad-except
+                except Exception as ex:
                     logging.warning(f"{day_iso}: fetch failed: {ex}")
                     failed += 1
                     continue
