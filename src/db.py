@@ -110,6 +110,19 @@ class DayStats(SQLModel, table=True):
             return False
         return self.water_consumed_ml >= self.water_goal_ml
 
+    def match_snippet(self, query, radius=60):
+        """Returns a snippet of the notes around the first match of the query, case-insensitively."""
+
+        idx = self.notes.lower().find(query)
+        start = max(0, idx - radius)
+        end = min(len(self.notes), idx + len(query) + radius)
+        snippet = (
+            ("…" if start > 0 else "")
+            + self.notes[start:end]
+            + ("…" if end < len(self.notes) else "")
+        )
+        return snippet, idx - start + (1 if start > 0 else 0)
+
 
 def _init_db():
     global ENGINE

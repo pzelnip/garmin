@@ -130,8 +130,24 @@ def test_search_match_offsets_point_at_query_within_snippet(client):
     result = body["results"][0]
     snippet = result["snippet"]
     start = result["match_start"]
-    end = start + result["match_len"]
+    end = start + body["match_len"]
     assert snippet[start:end] == "keyword"
+
+
+def test_search_returns_match_len_at_response_root_not_per_result(client):
+    seed(
+        {
+            date(2026, 1, 1): "yoga session",
+            date(2026, 1, 2): "more yoga today",
+        }
+    )
+
+    response = client.get("/api/notes/search?q=yoga")
+
+    body = response.get_json()
+    assert body["match_len"] == len("yoga")
+    for result in body["results"]:
+        assert "match_len" not in result
 
 
 def test_search_truncates_long_notes_with_ellipsis(client):

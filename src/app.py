@@ -115,7 +115,16 @@ def search_notes():
     """Case-insensitive substring search across the notes field. Returns
     matching days (newest first) with a small snippet around the match.
     """
-    query = (request.args.get("q") or "").strip()
+
+    def process_row(row):
+        snippet, match_start = row.match_snippet(query)
+        return {
+            "day": row.day.isoformat(),
+            "snippet": snippet,
+            "match_start": match_start,
+        }
+
+    query = (request.args.get("q") or "").strip().lower()
     if len(query) < 3:
         return jsonify({"query": query, "results": [], "too_short": True})
 
@@ -128,31 +137,9 @@ def search_notes():
             .where(DayStats.notes.ilike(f"%{escaped}%", escape="\\"))
             .order_by(DayStats.day.desc())
         )
-        rows = list(session.exec(stmt))
+        results = [process_row(row) for row in session.exec(stmt)]
 
-    lower_query = query.lower()
-    snippet_radius = 60
-    results = []
-    for row in rows:
-        idx = row.notes.lower().find(lower_query)
-        if idx < 0:
-            continue
-        start = max(0, idx - snippet_radius)
-        end = min(len(row.notes), idx + len(query) + snippet_radius)
-        snippet = row.notes[start:end]
-        if start > 0:
-            snippet = "…" + snippet
-        if end < len(row.notes):
-            snippet = snippet + "…"
-        results.append(
-            {
-                "day": row.day.isoformat(),
-                "snippet": snippet,
-                "match_start": idx - start + (1 if start > 0 else 0),
-                "match_len": len(query),
-            }
-        )
-    return jsonify({"query": query, "results": results})
+    return jsonify({"query": query, "results": results, "match_len": len(query)})
 
 
 @app.route("/api/day/<iso_date>")

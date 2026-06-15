@@ -3966,10 +3966,11 @@
                 notesSearchResults.innerHTML = '<div class="notes-search-empty">No notes match that query.</div>';
                 return;
             }
+            const matchLen = payload.match_len;
             notesSearchResults.innerHTML = results.map(r => {
                 const before = escapeHtml(r.snippet.slice(0, r.match_start));
-                const hit = escapeHtml(r.snippet.slice(r.match_start, r.match_start + r.match_len));
-                const after = escapeHtml(r.snippet.slice(r.match_start + r.match_len));
+                const hit = escapeHtml(r.snippet.slice(r.match_start, r.match_start + matchLen));
+                const after = escapeHtml(r.snippet.slice(r.match_start + matchLen));
                 return `<div class="notes-search-result" data-day="${r.day}">`
                     + `<span class="nsr-date">${r.day}</span>`
                     + `<span class="nsr-snippet">${before}<mark>${hit}</mark>${after}</span>`
