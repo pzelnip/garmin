@@ -2067,9 +2067,6 @@
             </div>
             <textarea id="day-notes" rows="4" placeholder="Notes for this day… (Markdown supported).  Things like workouts, notable meals, medications, etc."></textarea>
             <div id="day-notes-preview" class="day-notes-preview" style="display: none;"></div>
-            <div class="day-notes-actions">
-                <button type="button" id="day-notes-save" class="day-notes-save">Save</button>
-            </div>
         </div>
         <div id="day-mood-panel" class="day-notes-panel" style="display: none;">
             <div class="day-notes-header">
@@ -2087,8 +2084,8 @@
                 <span class="mood-range-label" style="grid-column: span 3; text-align: right;">Great day</span>
             </div>
             <div class="day-notes-actions">
-                <button type="button" id="day-mood-clear" class="day-notes-clear">Clear</button>
-                <button type="button" id="day-mood-save" class="day-notes-save">Save</button>
+                <button type="button" id="day-mood-clear" class="day-notes-clear">Clear mood</button>
+                <button type="button" id="day-save" class="day-notes-save">Save notes &amp; mood</button>
             </div>
         </div>
         <div id="day-grid" class="grid day-grid"></div>
@@ -4013,9 +4010,8 @@
             setDay(row.dataset.day);
         });
 
-        // Save handler for the per-day notes textarea. PUTs the current
-        // textarea contents to /api/day/<date>/notes.
-        const notesSaveBtn = document.getElementById('day-notes-save');
+        // Per-day notes textarea. The combined save handler below PUTs the
+        // textarea contents to /api/day/<date>/notes alongside the mood score.
         const notesField = document.getElementById('day-notes');
         const notesStatus = document.getElementById('day-notes-status');
         let notesStatusTimer = null;
@@ -4023,29 +4019,6 @@
             notesStatus.textContent = text;
             notesStatus.className = 'day-notes-status' + (cls ? ' ' + cls : '');
         }
-        notesSaveBtn.addEventListener('click', async () => {
-            if (notesStatusTimer) {
-                clearTimeout(notesStatusTimer);
-                notesStatusTimer = null;
-            }
-            notesSaveBtn.disabled = true;
-            setNotesStatus('Saving…', '');
-            try {
-                const res = await fetch(`/api/day/${dayPicker.value}/notes`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ notes: notesField.value }),
-                });
-                const body = await res.json().catch(() => ({}));
-                if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
-                setNotesStatus('Saved', 'saved');
-                notesStatusTimer = setTimeout(() => setNotesStatus('', ''), 2000);
-            } catch (e) {
-                setNotesStatus(`Failed: ${e.message}`, 'error');
-            } finally {
-                notesSaveBtn.disabled = false;
-            }
-        });
 
         // Write/Preview toggle for the notes field. Preview renders the
         // current textarea contents as Markdown; output is sanitized with
@@ -4159,12 +4132,12 @@
             else if (key === 'i') { e.preventDefault(); MD_ACTIONS.italic(); }
         });
 
-        // Mood score panel: 1–10 chips with save + clear handlers.
+        // Mood score panel: 1–10 chips. Saving is handled by the combined
+        // Save button at the bottom of the panel; Clear only deselects locally
+        // (the next Save persists the cleared mood alongside the notes).
         const moodScale = document.getElementById('day-mood-scale');
-        const moodSaveBtn = document.getElementById('day-mood-save');
         const moodClearBtn = document.getElementById('day-mood-clear');
         const moodStatus = document.getElementById('day-mood-status');
-        let moodStatusTimer = null;
         let moodSelected = null;  // currently-selected score, or null
 
         function setMoodStatus(text, cls) {
@@ -4201,44 +4174,53 @@
                 moodScale.appendChild(chip);
             }
         }
-        async function saveMood(score) {
-            if (moodStatusTimer) {
-                clearTimeout(moodStatusTimer);
-                moodStatusTimer = null;
+        moodClearBtn.addEventListener('click', () => {
+            renderMoodChips(null);
+        });
+
+        // Combined save handler — PUTs notes and mood in parallel so neither
+        // is lost when the user only edited one before hitting Save.
+        const daySaveBtn = document.getElementById('day-save');
+        daySaveBtn.addEventListener('click', async () => {
+            if (notesStatusTimer) {
+                clearTimeout(notesStatusTimer);
+                notesStatusTimer = null;
             }
-            moodSaveBtn.disabled = true;
+            daySaveBtn.disabled = true;
             moodClearBtn.disabled = true;
-            setMoodStatus(score == null ? 'Clearing…' : 'Saving…', '');
-            try {
-                const res = await fetch(`/api/day/${dayPicker.value}/mood`, {
+            setNotesStatus('Saving…', '');
+            setMoodStatus(moodSelected == null ? 'Clearing…' : 'Saving…', '');
+            const iso = dayPicker.value;
+            async function put(url, payload) {
+                const res = await fetch(url, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ mood_score: score }),
+                    body: JSON.stringify(payload),
                 });
                 const body = await res.json().catch(() => ({}));
                 if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
-                const savedMsg = score == null
+            }
+            const [notesResult, moodResult] = await Promise.allSettled([
+                put(`/api/day/${iso}/notes`, { notes: notesField.value }),
+                put(`/api/day/${iso}/mood`, { mood_score: moodSelected }),
+            ]);
+            if (notesResult.status === 'fulfilled') {
+                setNotesStatus('Saved', 'saved');
+                notesStatusTimer = setTimeout(() => setNotesStatus('', ''), 2000);
+            } else {
+                setNotesStatus(`Failed: ${notesResult.reason.message}`, 'error');
+            }
+            if (moodResult.status === 'fulfilled') {
+                const savedMsg = moodSelected == null
                     ? 'Cleared — mood score removed'
-                    : `Mood score: ${score}/10 — thanks for tracking!`;
+                    : `Mood score: ${moodSelected}/10 — thanks for tracking!`;
                 setMoodStatus(savedMsg, 'saved');
-                moodStatusTimer = setTimeout(() => setMoodStatus('', ''), 3000);
-            } catch (e) {
-                setMoodStatus(`Failed: ${e.message}`, 'error');
-            } finally {
-                moodSaveBtn.disabled = false;
-                moodClearBtn.disabled = false;
+                setTimeout(() => setMoodStatus('', ''), 3000);
+            } else {
+                setMoodStatus(`Failed: ${moodResult.reason.message}`, 'error');
             }
-        }
-        moodSaveBtn.addEventListener('click', () => {
-            if (moodSelected == null) {
-                setMoodStatus('Pick a score (1–10) first', 'error');
-                return;
-            }
-            saveMood(moodSelected);
-        });
-        moodClearBtn.addEventListener('click', () => {
-            renderMoodChips(null);
-            saveMood(null);
+            daySaveBtn.disabled = false;
+            moodClearBtn.disabled = false;
         });
 
         // Restore last-selected tab if it still exists, otherwise fall back to
