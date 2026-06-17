@@ -90,10 +90,14 @@ restart on the Pi.
 
 ## Conventions worth knowing
 
-- **No frontend tests.** This is a personal project. Verification is "does it
-  render correctly in the browser" and "does the cron job's
-  healthcheck still ping". There is a pytest suite for the python
-  code, but it's minimal.
+- **No in-browser JS tests.** This is a personal project. Verification of
+  client-side behaviour is "does it render correctly in the browser" and "does
+  the cron job's healthcheck still ping". There *is* a pytest layer that
+  renders `/dashboard` and asserts the data → template contract
+  (`tests/test_dashboard_render.py`); see
+  [docs/testing-dashboard-ui.md](docs/testing-dashboard-ui.md). A real-browser
+  (Playwright) layer is documented there but intentionally left unimplemented.
+  The pytest suite is otherwise minimal.
 - **Comments are sparse.** Only comment the *why* when it's
   non-obvious — never the what.
 - **Don't run `garmin.py` locally** — it writes to the production DB.

@@ -1,44 +1,15 @@
 from datetime import date
 
 import pytest
+from helpers import make_day
 from sqlalchemy import inspect
 
 from db import (
-    DayStats,
-    Source,
     db_session,
     get_all_entries,
     get_day_stats_for_date_range,
     get_steps_per_day_from_db,
 )
-
-
-def make_day(
-    day=date(2026, 1, 1),
-    step_count=0,
-    daily_step_goal=0,
-    notes=None,
-    floors_climbed=None,
-    floors_climbed_goal=None,
-    weight_grams=None,
-    water_consumed_ml=None,
-    water_goal_ml=None,
-):
-    """Build an unsaved DayStats instance. Required model fields default to
-    zero/empty; everything else is None unless overridden.
-    """
-    return DayStats(
-        day=day,
-        step_count=step_count,
-        daily_step_goal=daily_step_goal,
-        notes=notes if notes is not None else "",
-        floors_climbed=floors_climbed,
-        floors_climbed_goal=floors_climbed_goal,
-        weight_grams=weight_grams,
-        water_consumed_ml=water_consumed_ml,
-        water_goal_ml=water_goal_ml,
-        source=Source.garmin,
-    )
 
 
 def test_get_day_stats_for_date_range_is_inclusive_of_both_bounds(session):

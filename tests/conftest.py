@@ -23,3 +23,23 @@ def session():
     with Session(engine) as sess:
         yield sess
     engine.dispose()  # close pooled sqlite connections (avoids ResourceWarning)
+
+
+@pytest.fixture
+def client(monkeypatch):
+    """Flask test client backed by a fresh in-memory SQLite engine.
+
+    Points db.ENGINE at the throwaway engine so route code that opens a
+    db_session() reads/writes this DB instead of production Postgres. Use the
+    seed helpers below to populate it before issuing requests.
+    """
+    from app import app
+
+    engine = create_engine("sqlite://")
+    SQLModel.metadata.create_all(engine)
+    monkeypatch.setattr(db, "ENGINE", engine)
+
+    with app.test_client() as test_client:
+        yield test_client
+
+    engine.dispose()

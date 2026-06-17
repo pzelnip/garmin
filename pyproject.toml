@@ -12,7 +12,15 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["black", "freezegun", "isort", "pytest", "pytest-cov", "ruff"]
+dev = [
+    "beautifulsoup4",
+    "black",
+    "freezegun",
+    "isort",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+]
 
 [tool.black]
 # Pin target to the interpreter we run under; an open `requires-python = ">=3.14"`

@@ -1,42 +1,13 @@
 from datetime import date
 
-import pytest
-from sqlmodel import SQLModel, create_engine, select
+from helpers import add_day, seed
+from sqlmodel import select
 
 import db
-from app import app
-from db import DayStats, Source
+from db import DayStats
 
-
-@pytest.fixture
-def client(monkeypatch):
-    engine = create_engine("sqlite://")
-    SQLModel.metadata.create_all(engine)
-    monkeypatch.setattr(db, "ENGINE", engine)
-
-    with app.test_client() as test_client:
-        yield test_client
-
-    engine.dispose()
-
-
-def add_day(session, day, notes="", step_count=10_000):
-    session.add(
-        DayStats(
-            day=day,
-            step_count=step_count,
-            daily_step_goal=10_000,
-            notes=notes,
-            source=Source.garmin,
-        )
-    )
-
-
-def seed(notes_by_day):
-    with db.Session(db.ENGINE) as session:
-        for day, notes in notes_by_day.items():
-            add_day(session, day, notes=notes)
-        session.commit()
+# The `client` fixture lives in tests/conftest.py; the seed helpers live in
+# tests/helpers.py so the render tests can share them.
 
 
 # ------------- Tests for search ------------
@@ -207,3 +178,201 @@ def test_search_is_safe_from_sql_injection(client):
     assert body["results"] == []
     with db.Session(db.ENGINE) as session:
         assert len(list(session.exec(select(DayStats)))) == 2
+
+
+# ------------- Tests for day detail (GET /api/day/<iso>) ------------
+
+
+def test_day_detail_returns_found_false_for_unseeded_day(client):
+    response = client.get("/api/day/2026-01-01")
+
+    body = response.get_json()
+    assert response.status_code == 200
+    assert body["found"] is False
+    assert body["day"] == "2026-01-01"
+
+
+def test_day_detail_returns_full_fields_for_seeded_day(client):
+    with db.Session(db.ENGINE) as session:
+        add_day(
+            session,
+            date(2026, 1, 1),
+            step_count=12_345,
+            water_consumed_ml=2000,
+            water_goal_ml=2500,
+            sleep_total_seconds=27_000,
+            sleep_score=84,
+            mood_score=7,
+            notes="felt good",
+        )
+        session.commit()
+
+    response = client.get("/api/day/2026-01-01")
+
+    body = response.get_json()
+    assert response.status_code == 200
+    assert body["found"] is True
+    assert body["steps"] == 12_345
+    assert body["water_consumed_ml"] == 2000
+    assert body["water_goal_met"] is False
+    assert body["sleep_total_h"] == 7.5
+    assert body["sleep_score"] == 84
+    assert body["mood_score"] == 7
+    assert body["notes"] == "felt good"
+
+
+def test_day_detail_rejects_malformed_date(client):
+    response = client.get("/api/day/not-a-date")
+
+    assert response.status_code == 400
+    assert "error" in response.get_json()
+
+
+# ------------- Tests for notes update (PUT /api/day/<iso>/notes) ------------
+
+
+def test_update_notes_persists_for_existing_day(client):
+    with db.Session(db.ENGINE) as session:
+        add_day(session, date(2026, 1, 1), notes="old")
+        session.commit()
+
+    response = client.put("/api/day/2026-01-01/notes", json={"notes": "new text"})
+
+    body = response.get_json()
+    assert response.status_code == 200
+    assert body["saved"] is True
+    assert body["notes"] == "new text"
+    with db.Session(db.ENGINE) as session:
+        row = session.exec(
+            select(DayStats).where(DayStats.day == date(2026, 1, 1))
+        ).first()
+        assert row.notes == "new text"
+
+
+def test_update_notes_creates_stub_row_for_today(client):
+    today = date.today()
+
+    response = client.put(f"/api/day/{today.isoformat()}/notes", json={"notes": "hi"})
+
+    assert response.status_code == 200
+    with db.Session(db.ENGINE) as session:
+        row = session.exec(select(DayStats).where(DayStats.day == today)).first()
+        assert row is not None
+        assert row.notes == "hi"
+
+
+def test_update_notes_404_for_missing_past_day(client):
+    response = client.put("/api/day/2020-01-01/notes", json={"notes": "hi"})
+
+    assert response.status_code == 404
+
+
+def test_update_notes_rejects_non_string(client):
+    with db.Session(db.ENGINE) as session:
+        add_day(session, date(2026, 1, 1))
+        session.commit()
+
+    response = client.put("/api/day/2026-01-01/notes", json={"notes": 123})
+
+    assert response.status_code == 400
+
+
+def test_update_notes_invalidates_dashboard_cache(client, monkeypatch):
+    import app as app_module
+
+    calls = []
+    monkeypatch.setattr(
+        app_module, "invalidate_dashboard_cache", lambda: calls.append(True)
+    )
+    with db.Session(db.ENGINE) as session:
+        add_day(session, date(2026, 1, 1))
+        session.commit()
+
+    client.put("/api/day/2026-01-01/notes", json={"notes": "x"})
+
+    assert calls == [True]
+
+
+# ------------- Tests for mood update (PUT /api/day/<iso>/mood) ------------
+
+
+def test_update_mood_sets_score(client):
+    with db.Session(db.ENGINE) as session:
+        add_day(session, date(2026, 1, 1))
+        session.commit()
+
+    response = client.put("/api/day/2026-01-01/mood", json={"mood_score": 8})
+
+    body = response.get_json()
+    assert response.status_code == 200
+    assert body["mood_score"] == 8
+    with db.Session(db.ENGINE) as session:
+        row = session.exec(
+            select(DayStats).where(DayStats.day == date(2026, 1, 1))
+        ).first()
+        assert row.mood_score == 8
+
+
+def test_update_mood_clears_score_with_null(client):
+    with db.Session(db.ENGINE) as session:
+        add_day(session, date(2026, 1, 1), mood_score=5)
+        session.commit()
+
+    response = client.put("/api/day/2026-01-01/mood", json={"mood_score": None})
+
+    assert response.status_code == 200
+    with db.Session(db.ENGINE) as session:
+        row = session.exec(
+            select(DayStats).where(DayStats.day == date(2026, 1, 1))
+        ).first()
+        assert row.mood_score is None
+
+
+def test_update_mood_rejects_out_of_range(client):
+    with db.Session(db.ENGINE) as session:
+        add_day(session, date(2026, 1, 1))
+        session.commit()
+
+    response = client.put("/api/day/2026-01-01/mood", json={"mood_score": 11})
+
+    assert response.status_code == 400
+
+
+def test_update_mood_rejects_boolean(client):
+    with db.Session(db.ENGINE) as session:
+        add_day(session, date(2026, 1, 1))
+        session.commit()
+
+    response = client.put("/api/day/2026-01-01/mood", json={"mood_score": True})
+
+    assert response.status_code == 400
+
+
+# ------------- Tests for force-update (POST /api/force-update) ------------
+
+
+def test_force_update_spawns_script_without_running_it(client, monkeypatch):
+    import app as app_module
+
+    spawned = []
+    monkeypatch.setattr(app_module.os.path, "isfile", lambda path: True)
+    monkeypatch.setattr(
+        app_module.subprocess, "Popen", lambda *args, **kwargs: spawned.append(args)
+    )
+
+    response = client.post("/api/force-update")
+
+    assert response.status_code == 200
+    assert response.get_json() == {"started": True}
+    assert len(spawned) == 1
+
+
+def test_force_update_500_when_script_missing(client, monkeypatch):
+    import app as app_module
+
+    monkeypatch.setattr(app_module.os.path, "isfile", lambda path: False)
+
+    response = client.post("/api/force-update")
+
+    assert response.status_code == 500
+    assert "error" in response.get_json()
