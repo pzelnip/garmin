@@ -74,31 +74,3 @@ def find_current_streak(streaks=None):
     with contextlib.suppress(StopIteration):
         current_streak = next(s for s in streaks if s.is_current())
     return current_streak
-
-
-def main():
-    entries = get_all_entries()
-    streaks = build_streaks(entries)
-    max_steps = sorted(entries, key=lambda x: x.step_count, reverse=True)
-    min_steps = sorted(entries, key=lambda x: x.step_count)
-
-    for streak in streaks:
-        print(streak)
-
-    top_10("Top 10 step totals:", max_steps)
-    top_10("Bottom 10 step totals:", min_steps)
-
-    if current_streak := find_current_streak(streaks):
-        print(f"\nOn current streak: {current_streak}")
-
-
-def top_10(prompt, entries):
-    print()
-    print(prompt)
-    print()
-    for entry in entries[:10]:
-        print(f"{entry.day} - {entry.step_count}")
-
-
-if __name__ == "__main__":
-    sys.exit(main())
