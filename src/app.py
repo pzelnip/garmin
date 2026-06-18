@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import platform
 import subprocess
@@ -292,6 +293,9 @@ def force_update():
     try:
         # Fire-and-forget: detached so the pull+restart outlives this request.
         # `with` would wait on / close the process, defeating the purpose.
+        logging.info(
+            f"{datetime.now().isoformat()} — force-update triggered, spawning {script}"
+        )
         subprocess.Popen(
             ["/usr/bin/env", "bash", script],
             stdout=subprocess.DEVNULL,
