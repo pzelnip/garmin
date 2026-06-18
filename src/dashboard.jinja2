@@ -43,6 +43,30 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
+        .title-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 0 0 8px;
+        }
+        .title-row h1 { margin: 0; }
+        .debug-open-btn {
+            margin-left: auto;
+            background: var(--panel);
+            color: var(--text-dim);
+            border: 1px solid var(--grid);
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 16px;
+            line-height: 1;
+            cursor: pointer;
+            transition: color 0.15s, border-color 0.15s, background 0.15s;
+        }
+        .debug-open-btn:hover {
+            color: var(--text);
+            border-color: var(--text-dim);
+            background: var(--panel-2);
+        }
         .subtitle { color: var(--text-dim); margin-bottom: 28px; }
         h2 { font-weight: 600; font-size: 18px; margin: 0 0 16px; color: var(--text); }
         .grid {
@@ -1328,7 +1352,12 @@
         {% endif %}
     </div>
 
-    <h1>Health Dashboard</h1>
+    <div class="title-row">
+        <h1>Health Dashboard</h1>
+        <button type="button" id="debug-open-btn" class="debug-open-btn"
+                aria-label="Open debug panel"
+                title="Open debug panel (also: ? key)">🐞</button>
+    </div>
     <div class="subtitle">{{ data.stats.total_days }} days tracked · {{ "{:,}".format(data.stats.total_steps) }} total steps · {{ "{:,}".format(data.stats.hyd_total_liters) }} L water · {{ "{:,}".format(data.stats.sleep_total_hours) }} h sleep</div>
 
     <!-- Tabs -->
@@ -4270,6 +4299,10 @@
 
         // Click on backdrop closes (clicking the panel itself doesn't propagate).
         debugBackdrop.addEventListener('click', closeDebug);
+
+        // Tap-to-open button in the title row — primary trigger on touch
+        // devices (where the `?` key isn't available).
+        document.getElementById('debug-open-btn').addEventListener('click', openDebug);
 
         function setDebugStatus(text, kind) {
             debugStatus.textContent = text;
