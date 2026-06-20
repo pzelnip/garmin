@@ -2649,6 +2649,34 @@
                 (_, i) => PACE_PALETTE[i % PACE_PALETTE.length]
             );
 
+            // Per-bar steps/day average, formatted to match the tooltip.
+            const paceAvg = paceDays.map(d => MILESTONE_STEP / d);
+            const fmtAvg = (v) => `${v.toLocaleString(undefined, {
+                minimumFractionDigits: 1, maximumFractionDigits: 1,
+            })} steps/day`;
+
+            // Draws the steps/day average at the end of each horizontal bar.
+            // Sits just inside the bar tip when there's room, else just past
+            // it (short bars), so the label never runs off the plot edge.
+            const paceBarLabels = {
+                id: 'paceBarLabels',
+                afterDatasetsDraw(chart) {
+                    const { ctx } = chart;
+                    const meta = chart.getDatasetMeta(0);
+                    ctx.save();
+                    ctx.font = '600 11px system-ui, sans-serif';
+                    ctx.textBaseline = 'middle';
+                    meta.data.forEach((bar, i) => {
+                        const label = fmtAvg(paceAvg[i]);
+                        const inside = bar.width > ctx.measureText(label).width + 16;
+                        ctx.textAlign = inside ? 'right' : 'left';
+                        ctx.fillStyle = inside ? '#1a1d29' : '#cfd2da';
+                        ctx.fillText(label, bar.x + (inside ? -8 : 6), bar.y);
+                    });
+                    ctx.restore();
+                }
+            };
+
             new Chart(document.getElementById('milestonePaceChart'), {
                 type: 'bar',
                 data: {
@@ -2660,6 +2688,7 @@
                         borderRadius: 2,
                     }]
                 },
+                plugins: [paceBarLabels],
                 options: {
                     indexAxis: 'y',
                     responsive: true,
@@ -2670,6 +2699,7 @@
                             callbacks: {
                                 label: (ctx) => [
                                     `${ctx.parsed.x} days`,
+                                    fmtAvg(MILESTONE_STEP / ctx.parsed.x),
                                     paceTooltipExtras[ctx.dataIndex],
                                 ],
                             }
