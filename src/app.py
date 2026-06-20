@@ -102,6 +102,7 @@ def dashboard():
 # scripts/force-update.sh detached so it survives the systemctl restart
 # that kills this process.
 FORCE_UPDATE_SCRIPT = os.path.join(REPO_ROOT, "scripts", "force-update.sh")
+FORCE_UPDATE_LOG = os.path.join(REPO_ROOT, "force-update.log")
 
 
 def _parse_iso_date(iso_date):
@@ -296,10 +297,17 @@ def force_update():
         logging.info(
             f"{datetime.now().isoformat()} — force-update triggered, spawning {script}"
         )
+        # Capture the script's output to a log file rather than discarding it:
+        # the restart kills this process, so a silent failure (e.g. a sudoers
+        # mismatch) would otherwise leave no trace. The fd intentionally stays
+        # open for the detached child to inherit.
+        logfile = open(FORCE_UPDATE_LOG, "a")
+        logfile.write(f"\n=== {datetime.now().isoformat()} force-update ===\n")
+        logfile.flush()
         subprocess.Popen(
             ["/usr/bin/env", "bash", script],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+            stdout=logfile,
+            stderr=subprocess.STDOUT,
             start_new_session=True,
         )
         return jsonify({"started": True})

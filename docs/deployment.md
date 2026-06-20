@@ -92,8 +92,19 @@ cron-driven update script can call `sudo systemctl restart`.
 Edit with `sudo visudo` and add:
 
 ```text
-pi ALL=NOPASSWD: /bin/systemctl restart garmin.service
+pi ALL=NOPASSWD: /usr/bin/systemctl restart --no-block garmin.service, /usr/bin/systemctl restart garmin.service
 ```
+
+The binary path **must match what `which systemctl` reports** (here
+`/usr/bin/systemctl`) and the rule **must list the exact arguments** the
+caller uses — sudoers matches the resolved path + argv literally. The
+debug-panel "Force update" button runs `force-update.sh` under the systemd
+service's minimal `PATH`, where `systemctl` resolves to `/usr/bin/systemctl`
+and the command is `restart --no-block garmin.service`. A rule pinned to
+`/bin/systemctl` or omitting `--no-block` silently falls through to a password
+prompt the detached script can't answer, so the restart never fires. Both the
+`--no-block` and bare forms are listed so manual `sudo systemctl restart
+garmin.service` keeps working too.
 
 ---
 

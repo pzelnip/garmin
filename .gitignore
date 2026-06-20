@@ -7,5 +7,6 @@ dailysteps.json
 .venv
 .vscode/settings.json
 cron.log
+force-update.log
 .coverage
 htmlcov/
