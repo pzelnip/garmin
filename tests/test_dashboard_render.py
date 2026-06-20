@@ -145,6 +145,19 @@ def test_seeded_step_values_flow_into_charts(client):
     assert charts["recent"]["steps"] == expected_steps
 
 
+def test_milestone_projection_bar_is_in_template(client):
+    # The projection bar is computed in client-side JS (no JS execution here),
+    # so assert the projection logic ships in the rendered page rather than its
+    # computed output. Pins that the feature isn't accidentally dropped.
+    seed_representative_week()
+
+    response = client.get("/dashboard")
+
+    html = response.get_data(as_text=True)
+    assert "(proj.)" in html
+    assert "daysSinceLast" in html
+
+
 def test_notes_are_not_rendered_unescaped(client):
     with db.Session(db.ENGINE) as session:
         add_day(

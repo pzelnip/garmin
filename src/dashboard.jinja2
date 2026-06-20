@@ -2598,6 +2598,7 @@
         if (milestones.length >= 1) {
             const paceLabels = [];
             const paceDays = [];
+            const paceAvg = [];           // steps/day for each bar
             const paceTooltipExtras = [];
 
             // 0 → 5M from the first recorded day (charts.cumulative.labels[0]).
@@ -2609,6 +2610,7 @@
             );
             paceLabels.push(`0M → ${firstM}M`);
             paceDays.push(firstDays);
+            paceAvg.push(MILESTONE_STEP / firstDays);
             paceTooltipExtras.push(
                 `${firstDay} → ${first.label} (${(firstDays / 7).toFixed(1)} weeks)`
             );
@@ -2624,9 +2626,46 @@
                 );
                 paceLabels.push(`${prevM}M → ${currM}M`);
                 paceDays.push(days);
+                paceAvg.push(MILESTONE_STEP / days);
                 paceTooltipExtras.push(
                     `${prev.label} → ${curr.label} (${(days / 7).toFixed(1)} weeks)`
                 );
+            }
+
+            // Projection bar: extrapolate to the next 5M milestone using the
+            // pace *since the last crossing*. Based on the last recorded day
+            // (charts.cumulative) rather than the browser clock so it's
+            // deterministic. Skipped if we can't form a positive daily pace.
+            const lastMilestone = milestones[milestones.length - 1];
+            const current = charts.cumulative.values[charts.cumulative.values.length - 1];
+            const currentDay = charts.cumulative.labels[charts.cumulative.labels.length - 1];
+            const daysSinceLast = Math.round(
+                (new Date(currentDay) - new Date(lastMilestone.label)) / 86400000
+            );
+            const stepsSinceLast = current - lastMilestone.value;
+            let projectionBar = null;
+            if (daysSinceLast > 0 && stepsSinceLast > 0) {
+                const projAvg = stepsSinceLast / daysSinceLast;
+                const nextTarget = lastMilestone.value + MILESTONE_STEP;
+                const stepsLeft = nextTarget - current;
+                const projDaysLeft = Math.round(stepsLeft / projAvg);
+                // Bar spans the full last-milestone → projected-next window so
+                // it's comparable to the historical milestone-to-milestone bars.
+                const totalSpan = daysSinceLast + projDaysLeft;
+                const eta = new Date(new Date(currentDay).getTime() + projDaysLeft * 86400000);
+                const etaIso = eta.toISOString().slice(0, 10);
+                const prevM = (lastMilestone.value / 1_000_000).toFixed(0);
+                const nextM = (nextTarget / 1_000_000).toFixed(0);
+                projectionBar = {
+                    label: `${prevM}M → ${nextM}M (proj.)`,
+                    days: totalSpan,
+                    avg: projAvg,
+                    tooltip: `${projDaysLeft} days left · proj. ${nextM}M on ${etaIso}`,
+                };
+                paceLabels.push(projectionBar.label);
+                paceDays.push(totalSpan);
+                paceAvg.push(projAvg);
+                paceTooltipExtras.push(projectionBar.tooltip);
             }
 
             // Distinct colour per milestone — cycles through a palette that
@@ -2648,9 +2687,19 @@
             const paceColors = paceDays.map(
                 (_, i) => PACE_PALETTE[i % PACE_PALETTE.length]
             );
+            // Projection bar reads as an estimate: translucent fill + dashed
+            // border, distinct from the solid historical bars.
+            const paceBorderColors = paceColors.map(() => 'transparent');
+            const paceBorderWidths = paceColors.map(() => 0);
+            const paceBorderDashes = paceColors.map(() => []);
+            if (projectionBar) {
+                const pi = paceColors.length - 1;
+                paceColors[pi] = hexToRgba(PACE_PALETTE[pi % PACE_PALETTE.length], 0.28);
+                paceBorderColors[pi] = PACE_PALETTE[pi % PACE_PALETTE.length];
+                paceBorderWidths[pi] = 1.5;
+                paceBorderDashes[pi] = [6, 4];
+            }
 
-            // Per-bar steps/day average, formatted to match the tooltip.
-            const paceAvg = paceDays.map(d => MILESTONE_STEP / d);
             const fmtAvg = (v) => `${v.toLocaleString(undefined, {
                 minimumFractionDigits: 1, maximumFractionDigits: 1,
             })} steps/day`;
@@ -2667,10 +2716,13 @@
                     ctx.font = '600 11px system-ui, sans-serif';
                     ctx.textBaseline = 'middle';
                     meta.data.forEach((bar, i) => {
+                        const isProj = projectionBar && i === meta.data.length - 1;
                         const label = fmtAvg(paceAvg[i]);
                         const inside = bar.width > ctx.measureText(label).width + 16;
                         ctx.textAlign = inside ? 'right' : 'left';
-                        ctx.fillStyle = inside ? '#1a1d29' : '#cfd2da';
+                        // Projection bar has a translucent fill, so dark
+                        // inside-text would be unreadable — keep it light.
+                        ctx.fillStyle = (inside && !isProj) ? '#1a1d29' : '#cfd2da';
                         ctx.fillText(label, bar.x + (inside ? -8 : 6), bar.y);
                     });
                     ctx.restore();
@@ -2685,6 +2737,9 @@
                         label: 'Days between milestones',
                         data: paceDays,
                         backgroundColor: paceColors,
+                        borderColor: paceBorderColors,
+                        borderWidth: paceBorderWidths,
+                        borderDash: paceBorderDashes,
                         borderRadius: 2,
                     }]
                 },
@@ -2699,7 +2754,7 @@
                             callbacks: {
                                 label: (ctx) => [
                                     `${ctx.parsed.x} days`,
-                                    fmtAvg(MILESTONE_STEP / ctx.parsed.x),
+                                    fmtAvg(paceAvg[ctx.dataIndex]),
                                     paceTooltipExtras[ctx.dataIndex],
                                 ],
                             }
