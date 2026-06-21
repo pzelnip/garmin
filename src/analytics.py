@@ -5,7 +5,6 @@
 # * use rich/textual for prettiness
 
 import contextlib
-import sys
 from datetime import date, datetime, timedelta
 from itertools import groupby
 from typing import List

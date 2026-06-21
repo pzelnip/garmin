@@ -10,7 +10,7 @@ from time import sleep
 
 from garminconnect import Garmin
 
-from db import DayStats, db_session, get_steps_per_day_from_db, Source
+from db import DayStats, Source, db_session, get_steps_per_day_from_db
 from inputs import date_picker, number_picker, yes_no
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
