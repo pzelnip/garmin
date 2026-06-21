@@ -107,6 +107,7 @@ restart on the Pi.
 - **Migrations are manual.** Append to `sql/migrations.sql` with a
   `-- YYYY-MM:` comment header matching the existing entries. Don't
   introduce Alembic or any migration framework unless asked
+- **Pylint is not used on this project** Don't add any pylint exception messages
 
 ## Probe scripts and discovery work
 

@@ -3,7 +3,7 @@ import logging
 import os
 import platform
 import subprocess
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import cache
 from importlib.metadata import PackageNotFoundError, version
 
@@ -151,14 +151,23 @@ def day_detail(iso_date):
     if target is None:
         return jsonify({"error": "expected YYYY-MM-DD"}), 400
 
-    is_today = target == datetime.now().date()
+    today = datetime.now().date()
+    is_today = target == today
     with db_session() as session:
         row = session.exec(select(DayStats).where(DayStats.day == target)).first()
         if row is None:
-            # Today is special: the Garmin sync hasn't necessarily run yet,
-            # but the user may still want to record notes / mood — surface
-            # is_today so the front-end can render those panels.
-            return jsonify({"day": iso_date, "found": False, "is_today": is_today})
+            # Today and yesterday are special: the morning Garmin sync ends at
+            # yesterday, so until it runs  both can legitimately lack a row
+            # while the user still wants to record notes / mood. Surface
+            # `annotatable` so the front-end renders those panels.
+            return jsonify(
+                {
+                    "day": iso_date,
+                    "found": False,
+                    "is_today": is_today,
+                    "annotatable": today - timedelta(days=1) <= target <= today,
+                }
+            )
 
         sleep_total = row.sleep_total_seconds
         return jsonify(
@@ -210,16 +219,21 @@ def day_detail(iso_date):
 
 def _get_or_create_day(session, target):
     """Fetch the DayStats row for `target`, creating an empty stub if it
-    doesn't exist *and* the target is today. Returns (row, created) — or
-    (None, False) if the day doesn't exist and isn't today.
+    doesn't exist *and* the target is today or yesterday. Returns
+    (row, created) — or (None, False) otherwise.
 
-    The stub uses step_count=0 / daily_step_goal=0 / source=manual_entry as
-    placeholders; the morning Garmin sync will UPSERT real values onto it.
+    Yesterday is allowed (not just today) so notes / mood can be recorded
+    in the window between midnight and the Garmin sync, when the day
+    that just ended has no row yet. The stub uses step_count=0 /
+    daily_step_goal=0 / source=manual_entry as placeholders; the morning
+    sync (which covers the last 7 days, ending yesterday) UPSERTs real
+    values onto it, so the stub self-heals.
     """
     row = session.exec(select(DayStats).where(DayStats.day == target)).first()
     if row is not None:
         return row, False
-    if target != datetime.now().date():
+    today = datetime.now().date()
+    if not (today - timedelta(days=1) <= target <= today):
         return None, False
     row = DayStats(
         day=target,
