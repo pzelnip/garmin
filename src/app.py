@@ -244,46 +244,33 @@ def _get_or_create_day(session, target):
     return row, True
 
 
-@app.route("/api/day/<iso_date>/notes", methods=["PUT"])
-def update_day_notes(iso_date):
-    """Replace the `notes` field on a DayStats row. Creates a stub row for
-    today if none exists yet (so the user can record notes before the Garmin
-    sync has run)."""
-    target = _parse_iso_date(iso_date)
-    if target is None:
-        return jsonify({"error": "expected YYYY-MM-DD"}), 400
+@app.route("/api/day/<iso_date>", methods=["PUT"])
+def update_day(iso_date):
+    """Update the manual fields (`notes` and/or `mood_score`) on a DayStats
+    row in a single request. Either field may be omitted; only the supplied
+    ones are written, so the same endpoint serves "save notes", "save mood",
+    or "save both". Creates a stub row for today/yesterday if none exists yet
+    (so entries can be recorded before the Garmin sync has run).
 
-    payload = request.get_json(silent=True) or {}
-    notes = payload.get("notes")
-    if not isinstance(notes, str):
-        return jsonify({"error": "notes must be a string"}), 400
-
-    with db_session() as session:
-        row, _ = _get_or_create_day(session, target)
-        if row is None:
-            return jsonify({"error": "no DayStats row for that day"}), 404
-        row.notes = notes
-        session.add(row)
-        session.commit()
-        invalidate_dashboard_cache()
-        return jsonify({"day": iso_date, "notes": notes, "saved": True})
-
-
-@app.route("/api/day/<iso_date>/mood", methods=["PUT"])
-def update_day_mood(iso_date):
-    """Set or clear the `mood_score` field on a DayStats row. Creates a stub
-    row for today if none exists yet (so the user can record their mood
-    before the Garmin sync has run).
-
-    Accepts {"mood_score": 1..10} or {"mood_score": null} (to clear).
+    Body: {"notes": str, "mood_score": 1..10 | null}. A present `mood_score`
+    of null clears the score; an absent key leaves the field untouched.
     """
     target = _parse_iso_date(iso_date)
     if target is None:
         return jsonify({"error": "expected YYYY-MM-DD"}), 400
 
     payload = request.get_json(silent=True) or {}
+    has_notes = "notes" in payload
+    has_mood = "mood_score" in payload
+    if not (has_notes or has_mood):
+        return jsonify({"error": "expected notes and/or mood_score"}), 400
+
+    notes = payload.get("notes")
+    if has_notes and not isinstance(notes, str):
+        return jsonify({"error": "notes must be a string"}), 400
+
     score = payload.get("mood_score")
-    if score is not None:
+    if has_mood and score is not None:
         if not isinstance(score, int) or isinstance(score, bool):
             return jsonify({"error": "mood_score must be an int or null"}), 400
         if not 1 <= score <= 10:
@@ -293,11 +280,21 @@ def update_day_mood(iso_date):
         row, _ = _get_or_create_day(session, target)
         if row is None:
             return jsonify({"error": "no DayStats row for that day"}), 404
-        row.mood_score = score
+        if has_notes:
+            row.notes = notes
+        if has_mood:
+            row.mood_score = score
         session.add(row)
         session.commit()
         invalidate_dashboard_cache()
-        return jsonify({"day": iso_date, "mood_score": score, "saved": True})
+        return jsonify(
+            {
+                "day": iso_date,
+                "notes": row.notes,
+                "mood_score": row.mood_score,
+                "saved": True,
+            }
+        )
 
 
 @app.route("/api/force-update", methods=["POST"])

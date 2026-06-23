@@ -228,15 +228,15 @@ def test_day_detail_rejects_malformed_date(client):
     assert "error" in response.get_json()
 
 
-# ------------- Tests for notes update (PUT /api/day/<iso>/notes) ------------
+# ------------- Tests for day update (PUT /api/day/<iso>) ------------
 
 
-def test_update_notes_persists_for_existing_day(client):
+def test_update_day_persists_notes_for_existing_day(client):
     with db.Session(db.ENGINE) as session:
         add_day(session, date(2026, 1, 1), notes="old")
         session.commit()
 
-    response = client.put("/api/day/2026-01-01/notes", json={"notes": "new text"})
+    response = client.put("/api/day/2026-01-01", json={"notes": "new text"})
 
     body = response.get_json()
     assert response.status_code == 200
@@ -249,59 +249,12 @@ def test_update_notes_persists_for_existing_day(client):
         assert row.notes == "new text"
 
 
-def test_update_notes_creates_stub_row_for_today(client):
-    today = date.today()
-
-    response = client.put(f"/api/day/{today.isoformat()}/notes", json={"notes": "hi"})
-
-    assert response.status_code == 200
-    with db.Session(db.ENGINE) as session:
-        row = session.exec(select(DayStats).where(DayStats.day == today)).first()
-        assert row is not None
-        assert row.notes == "hi"
-
-
-def test_update_notes_404_for_missing_past_day(client):
-    response = client.put("/api/day/2020-01-01/notes", json={"notes": "hi"})
-
-    assert response.status_code == 404
-
-
-def test_update_notes_rejects_non_string(client):
+def test_update_day_sets_mood_score(client):
     with db.Session(db.ENGINE) as session:
         add_day(session, date(2026, 1, 1))
         session.commit()
 
-    response = client.put("/api/day/2026-01-01/notes", json={"notes": 123})
-
-    assert response.status_code == 400
-
-
-def test_update_notes_invalidates_dashboard_cache(client, monkeypatch):
-    import app as app_module
-
-    calls = []
-    monkeypatch.setattr(
-        app_module, "invalidate_dashboard_cache", lambda: calls.append(True)
-    )
-    with db.Session(db.ENGINE) as session:
-        add_day(session, date(2026, 1, 1))
-        session.commit()
-
-    client.put("/api/day/2026-01-01/notes", json={"notes": "x"})
-
-    assert calls == [True]
-
-
-# ------------- Tests for mood update (PUT /api/day/<iso>/mood) ------------
-
-
-def test_update_mood_sets_score(client):
-    with db.Session(db.ENGINE) as session:
-        add_day(session, date(2026, 1, 1))
-        session.commit()
-
-    response = client.put("/api/day/2026-01-01/mood", json={"mood_score": 8})
+    response = client.put("/api/day/2026-01-01", json={"mood_score": 8})
 
     body = response.get_json()
     assert response.status_code == 200
@@ -313,12 +266,50 @@ def test_update_mood_sets_score(client):
         assert row.mood_score == 8
 
 
-def test_update_mood_clears_score_with_null(client):
+def test_update_day_writes_notes_and_mood_together(client):
+    with db.Session(db.ENGINE) as session:
+        add_day(session, date(2026, 1, 1))
+        session.commit()
+
+    response = client.put(
+        "/api/day/2026-01-01", json={"notes": "ran 5k", "mood_score": 9}
+    )
+
+    body = response.get_json()
+    assert response.status_code == 200
+    assert body["notes"] == "ran 5k"
+    assert body["mood_score"] == 9
+    with db.Session(db.ENGINE) as session:
+        row = session.exec(
+            select(DayStats).where(DayStats.day == date(2026, 1, 1))
+        ).first()
+        assert row.notes == "ran 5k"
+        assert row.mood_score == 9
+
+
+def test_update_day_leaves_omitted_fields_untouched(client):
+    with db.Session(db.ENGINE) as session:
+        add_day(session, date(2026, 1, 1), notes="keep me", mood_score=5)
+        session.commit()
+
+    # Only mood supplied — notes must be preserved.
+    response = client.put("/api/day/2026-01-01", json={"mood_score": 7})
+
+    assert response.status_code == 200
+    with db.Session(db.ENGINE) as session:
+        row = session.exec(
+            select(DayStats).where(DayStats.day == date(2026, 1, 1))
+        ).first()
+        assert row.notes == "keep me"
+        assert row.mood_score == 7
+
+
+def test_update_day_clears_mood_with_null(client):
     with db.Session(db.ENGINE) as session:
         add_day(session, date(2026, 1, 1), mood_score=5)
         session.commit()
 
-    response = client.put("/api/day/2026-01-01/mood", json={"mood_score": None})
+    response = client.put("/api/day/2026-01-01", json={"mood_score": None})
 
     assert response.status_code == 200
     with db.Session(db.ENGINE) as session:
@@ -328,24 +319,81 @@ def test_update_mood_clears_score_with_null(client):
         assert row.mood_score is None
 
 
-def test_update_mood_rejects_out_of_range(client):
+def test_update_day_creates_stub_row_for_today(client):
+    today = date.today()
+
+    response = client.put(
+        f"/api/day/{today.isoformat()}", json={"notes": "hi", "mood_score": 6}
+    )
+
+    assert response.status_code == 200
+    with db.Session(db.ENGINE) as session:
+        row = session.exec(select(DayStats).where(DayStats.day == today)).first()
+        assert row is not None
+        assert row.notes == "hi"
+        assert row.mood_score == 6
+
+
+def test_update_day_404_for_missing_past_day(client):
+    response = client.put("/api/day/2020-01-01", json={"notes": "hi"})
+
+    assert response.status_code == 404
+
+
+def test_update_day_rejects_empty_payload(client):
     with db.Session(db.ENGINE) as session:
         add_day(session, date(2026, 1, 1))
         session.commit()
 
-    response = client.put("/api/day/2026-01-01/mood", json={"mood_score": 11})
+    response = client.put("/api/day/2026-01-01", json={})
 
     assert response.status_code == 400
 
 
-def test_update_mood_rejects_boolean(client):
+def test_update_day_rejects_non_string_notes(client):
     with db.Session(db.ENGINE) as session:
         add_day(session, date(2026, 1, 1))
         session.commit()
 
-    response = client.put("/api/day/2026-01-01/mood", json={"mood_score": True})
+    response = client.put("/api/day/2026-01-01", json={"notes": 123})
 
     assert response.status_code == 400
+
+
+def test_update_day_rejects_out_of_range_mood(client):
+    with db.Session(db.ENGINE) as session:
+        add_day(session, date(2026, 1, 1))
+        session.commit()
+
+    response = client.put("/api/day/2026-01-01", json={"mood_score": 11})
+
+    assert response.status_code == 400
+
+
+def test_update_day_rejects_boolean_mood(client):
+    with db.Session(db.ENGINE) as session:
+        add_day(session, date(2026, 1, 1))
+        session.commit()
+
+    response = client.put("/api/day/2026-01-01", json={"mood_score": True})
+
+    assert response.status_code == 400
+
+
+def test_update_day_invalidates_dashboard_cache(client, monkeypatch):
+    import app as app_module
+
+    calls = []
+    monkeypatch.setattr(
+        app_module, "invalidate_dashboard_cache", lambda: calls.append(True)
+    )
+    with db.Session(db.ENGINE) as session:
+        add_day(session, date(2026, 1, 1))
+        session.commit()
+
+    client.put("/api/day/2026-01-01", json={"notes": "x"})
+
+    assert calls == [True]
 
 
 # ------------- Tests for force-update (POST /api/force-update) ------------

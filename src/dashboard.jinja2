@@ -4310,8 +4310,8 @@
             renderMoodChips(null);
         });
 
-        // Combined save handler — PUTs notes and mood in parallel so neither
-        // is lost when the user only edited one before hitting Save.
+        // Combined save handler — notes and mood are written in a single PUT
+        // so they share one DayStats row/transaction (no create-row race).
         const daySaveBtn = document.getElementById('day-save');
         daySaveBtn.addEventListener('click', async () => {
             if (notesStatusTimer) {
@@ -4323,33 +4323,27 @@
             setNotesStatus('Saving…', '');
             setMoodStatus(moodSelected == null ? 'Clearing…' : 'Saving…', '');
             const iso = dayPicker.value;
-            async function put(url, payload) {
-                const res = await fetch(url, {
+            try {
+                const res = await fetch(`/api/day/${iso}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload),
+                    body: JSON.stringify({
+                        notes: notesField.value,
+                        mood_score: moodSelected,
+                    }),
                 });
                 const body = await res.json().catch(() => ({}));
                 if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
-            }
-            const [notesResult, moodResult] = await Promise.allSettled([
-                put(`/api/day/${iso}/notes`, { notes: notesField.value }),
-                put(`/api/day/${iso}/mood`, { mood_score: moodSelected }),
-            ]);
-            if (notesResult.status === 'fulfilled') {
                 setNotesStatus('Saved', 'saved');
                 notesStatusTimer = setTimeout(() => setNotesStatus('', ''), 2000);
-            } else {
-                setNotesStatus(`Failed: ${notesResult.reason.message}`, 'error');
-            }
-            if (moodResult.status === 'fulfilled') {
                 const savedMsg = moodSelected == null
                     ? 'Cleared — mood score removed'
                     : `Mood score: ${moodSelected}/10 — thanks for tracking!`;
                 setMoodStatus(savedMsg, 'saved');
                 setTimeout(() => setMoodStatus('', ''), 3000);
-            } else {
-                setMoodStatus(`Failed: ${moodResult.reason.message}`, 'error');
+            } catch (err) {
+                setNotesStatus(`Failed: ${err.message}`, 'error');
+                setMoodStatus(`Failed: ${err.message}`, 'error');
             }
             daySaveBtn.disabled = false;
             moodClearBtn.disabled = false;
