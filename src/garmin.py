@@ -53,37 +53,44 @@ def get_from_garmin(day: date, session) -> DayStats:
         "value"
     )
 
-    daystats = DayStats(
-        day=orig_day,
-        step_count=entry["totalSteps"],
-        bmi=entry["bmi"],
-        body_fat=entry["bodyFat"],
-        body_water=entry["bodyWater"],
-        bone_mass=entry["boneMass"],
-        muscle_mass=entry["muscleMass"],
-        weight_grams=entry["weight"],
-        daily_step_goal=entry["dailyStepGoal"],
-        distance_traveled_metres=entry["totalDistanceMeters"],
-        floors_climbed_goal=entry["userFloorsAscendedGoal"],
-        floors_climbed=entry["floorsAscended"],
-        floors_descended=entry["floorsDescended"],
-        max_heart_rate=entry["maxHeartRate"],
-        min_heart_rate=entry["minHeartRate"],
-        max_stress=entry["maxStressLevel"],
-        resting_heart_rate=entry["restingHeartRate"],
-        stress=entry["averageStressLevel"],
-        water_consumed_ml=_round_or_none(hydration.get("valueInML")),
-        water_goal_ml=_round_or_none(hydration.get("goalInML")),
-        sleep_total_seconds=sleep_dto.get("sleepTimeSeconds"),
-        sleep_deep_seconds=sleep_dto.get("deepSleepSeconds"),
-        sleep_light_seconds=sleep_dto.get("lightSleepSeconds"),
-        sleep_rem_seconds=sleep_dto.get("remSleepSeconds"),
-        sleep_awake_seconds=sleep_dto.get("awakeSleepSeconds"),
-        sleep_score=sleep_score,
-        source=Source.garmin,
-    )
+    # UPSERT: may already exist as a manual-entry stub created from the
+    # dashboard's notes/mood panel for today, before the sync ran. In that
+    # case we update the Garmin-sourced fields onto it and preserve notes
+    # and mood_score. Otherwise insert a fresh row.
+    daystats = get_steps_per_day_from_db(orig_day, session)
+    if daystats is None:
+        daystats = DayStats(
+            day=orig_day, step_count=0, daily_step_goal=0, source=Source.garmin
+        )
+        session.add(daystats)
 
-    session.add(daystats)
+    daystats.step_count = entry["totalSteps"]
+    daystats.bmi = entry["bmi"]
+    daystats.body_fat = entry["bodyFat"]
+    daystats.body_water = entry["bodyWater"]
+    daystats.bone_mass = entry["boneMass"]
+    daystats.muscle_mass = entry["muscleMass"]
+    daystats.weight_grams = entry["weight"]
+    daystats.daily_step_goal = entry["dailyStepGoal"]
+    daystats.distance_traveled_metres = entry["totalDistanceMeters"]
+    daystats.floors_climbed_goal = entry["userFloorsAscendedGoal"]
+    daystats.floors_climbed = entry["floorsAscended"]
+    daystats.floors_descended = entry["floorsDescended"]
+    daystats.max_heart_rate = entry["maxHeartRate"]
+    daystats.min_heart_rate = entry["minHeartRate"]
+    daystats.max_stress = entry["maxStressLevel"]
+    daystats.resting_heart_rate = entry["restingHeartRate"]
+    daystats.stress = entry["averageStressLevel"]
+    daystats.water_consumed_ml = _round_or_none(hydration.get("valueInML"))
+    daystats.water_goal_ml = _round_or_none(hydration.get("goalInML"))
+    daystats.sleep_total_seconds = sleep_dto.get("sleepTimeSeconds")
+    daystats.sleep_deep_seconds = sleep_dto.get("deepSleepSeconds")
+    daystats.sleep_light_seconds = sleep_dto.get("lightSleepSeconds")
+    daystats.sleep_rem_seconds = sleep_dto.get("remSleepSeconds")
+    daystats.sleep_awake_seconds = sleep_dto.get("awakeSleepSeconds")
+    daystats.sleep_score = sleep_score
+    daystats.source = Source.garmin  # flips from manual_entry on upsert
+
     session.commit()
     logging.info(f"Got {daystats.step_count} steps for {day}")
     return daystats
@@ -109,10 +116,15 @@ def garmin_api():
 def process_range(start_date: date, days: int):
     dates = {start_date + timedelta(days=i): None for i in range(days)}
 
-    # grab any existing values from the DB
+    # grab any existing values from the DB. Manual-entry stubs (created by
+    # the dashboard's notes/mood panel before the Garmin sync ran) don't
+    # count as "already have Garmin data" — leave them for the fetch loop
+    # below so the upsert lands the real values.
     with db_session() as session:
         for day in dates:
-            dates[day] = get_steps_per_day_from_db(day, session)
+            existing = get_steps_per_day_from_db(day, session)
+            if existing is not None and existing.source != Source.manual_entry:
+                dates[day] = existing
 
         # any unknown values read from Garmin
         if remaining_days := [k for k, count in dates.items() if not count]:
