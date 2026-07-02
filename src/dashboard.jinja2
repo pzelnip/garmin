@@ -425,6 +425,14 @@
             text-shadow: 0 1px 3px rgba(0,0,0,0.45);
             letter-spacing: -0.02em;
         }
+        .mood-cal-avg {
+            font-size: 13px;
+            color: var(--text-dim);
+            font-variant-numeric: tabular-nums;
+            margin-left: 10px;
+            margin-right: auto;
+            font-weight: 600;
+        }
         .mood-cal-select {
             background: transparent;
             color: var(--text);
@@ -2029,6 +2037,7 @@
         <div class="chart-panel">
             <div class="panel-header">
                 <h2 id="mood-cal-title" data-tooltip="Month-view calendar; each day is coloured by mood score (red→green) with the score centred on the cell. Use ‹/›/dropdown to jump months.">Mood Calendar</h2>
+                <span id="mood-cal-avg" class="mood-cal-avg"></span>
                 <div class="range-controls" id="mood-cal-nav">
                     <button class="range-btn" id="mood-cal-prev" aria-label="Previous month">‹</button>
                     <select id="mood-cal-select" class="mood-cal-select" aria-label="Jump to month"></select>
@@ -3520,6 +3529,7 @@
             const calPrev = document.getElementById('mood-cal-prev');
             const calNext = document.getElementById('mood-cal-next');
             const calSelect = document.getElementById('mood-cal-select');
+            const calAvg = document.getElementById('mood-cal-avg');
             const MONTH_NAMES = ['January','February','March','April','May','June',
                                  'July','August','September','October','November','December'];
 
@@ -3545,6 +3555,13 @@
                 const firstDow = new Date(year, month - 1, 1).getDay();   // 0=Sun
                 const daysInMonth = new Date(year, month, 0).getDate();
                 const monthScores = moodByMonth.get(ym) || new Map();
+                const scoreVals = Array.from(monthScores.values());
+                if (scoreVals.length) {
+                    const avg = scoreVals.reduce((a, b) => a + b, 0) / scoreVals.length;
+                    calAvg.textContent = `avg ${avg.toFixed(1)} · ${scoreVals.length} day${scoreVals.length === 1 ? '' : 's'}`;
+                } else {
+                    calAvg.textContent = '';
+                }
                 const cells = [];
                 for (let i = 0; i < firstDow; i++) {
                     cells.push('<div class="mood-cal-cell empty"></div>');
