@@ -1399,15 +1399,18 @@
         <div class="panel mood-avg-panel"
              data-tooltip="All-time daily step average across {{ data.stats.total_days }} recorded days. Sparkline shows the last 30 days; delta compares them against your overall baseline.">
             <div class="stat-label">Avg Steps / Day (All-Time)</div>
-            <div class="mood-avg-row" style="flex-direction: column; align-items: flex-start; gap: 6px;">
-                <div class="stat-value accent">{{ "{:,}".format(data.stats.avg_steps) }}</div>
-                {% if data.stats.steps_30d_delta is not none %}
-                    {% set d = data.stats.steps_30d_delta %}
-                    <div class="mood-avg-delta {{ 'delta-up' if d > 0 else ('delta-down' if d < 0 else 'delta-flat') }}">
-                        {% if d > 0 %}▲{% elif d < 0 %}▼{% else %}■{% endif %}
-                        {{ "{:,}".format(d|abs) }} over previous 30 days
-                    </div>
-                {% endif %}
+            <div class="ki-row">
+                <div class="ki-icon ki-icon-great">👟</div>
+                <div class="mood-avg-row" style="flex-direction: column; align-items: flex-start; gap: 6px;">
+                    <div class="stat-value accent">{{ "{:,}".format(data.stats.avg_steps) }}</div>
+                    {% if data.stats.steps_30d_delta is not none %}
+                        {% set d = data.stats.steps_30d_delta %}
+                        <div class="mood-avg-delta {{ 'delta-up' if d > 0 else ('delta-down' if d < 0 else 'delta-flat') }}">
+                            {% if d > 0 %}▲{% elif d < 0 %}▼{% else %}■{% endif %}
+                            {{ "{:,}".format(d|abs) }} over previous 30 days
+                        </div>
+                    {% endif %}
+                </div>
             </div>
             <div class="ki-viz"><canvas id="stepsAvgSparkline"></canvas></div>
         </div>
@@ -1415,10 +1418,13 @@
         <div class="panel mood-avg-panel"
              data-tooltip="Total steps so far this week, from Monday through today. Bars show each day's steps.">
             <div class="stat-label">Steps This Week (Mon–Today)</div>
-            <div class="mood-avg-row" style="flex-direction: column; align-items: flex-start; gap: 6px;">
-                <div class="stat-value accent">{{ "{:,}".format(data.stats.week_steps_total) }}</div>
-                <div class="mood-avg-delta delta-flat">
-                    {{ data.stats.week_days_logged }} day{{ '' if data.stats.week_days_logged == 1 else 's' }} logged
+            <div class="ki-row">
+                <div class="ki-icon ki-icon-great">📅</div>
+                <div class="mood-avg-row" style="flex-direction: column; align-items: flex-start; gap: 6px;">
+                    <div class="stat-value accent">{{ "{:,}".format(data.stats.week_steps_total) }}</div>
+                    <div class="mood-avg-delta delta-flat">
+                        {{ data.stats.week_days_logged }} day{{ '' if data.stats.week_days_logged == 1 else 's' }} logged
+                    </div>
                 </div>
             </div>
             <div class="ki-viz"><canvas id="stepsWeekMini"></canvas></div>
