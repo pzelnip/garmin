@@ -1399,7 +1399,7 @@
         <div class="panel mood-avg-panel"
              data-tooltip="All-time daily step average across {{ data.stats.total_days }} recorded days. Sparkline shows the last 30 days; delta compares them against your overall baseline.">
             <div class="stat-label">Avg Steps / Day (All-Time)</div>
-            <div class="mood-avg-row">
+            <div class="mood-avg-row" style="flex-direction: column; align-items: flex-start; gap: 6px;">
                 <div class="stat-value accent">{{ "{:,}".format(data.stats.avg_steps) }}</div>
                 {% if data.stats.steps_30d_delta is not none %}
                     {% set d = data.stats.steps_30d_delta %}
@@ -1410,6 +1410,18 @@
                 {% endif %}
             </div>
             <div class="ki-viz"><canvas id="stepsAvgSparkline"></canvas></div>
+        </div>
+
+        <div class="panel mood-avg-panel"
+             data-tooltip="Total steps so far this week, from Monday through today. Bars show each day's steps.">
+            <div class="stat-label">Steps This Week (Mon–Today)</div>
+            <div class="mood-avg-row" style="flex-direction: column; align-items: flex-start; gap: 6px;">
+                <div class="stat-value accent">{{ "{:,}".format(data.stats.week_steps_total) }}</div>
+                <div class="mood-avg-delta delta-flat">
+                    {{ data.stats.week_days_logged }} day{{ '' if data.stats.week_days_logged == 1 else 's' }} logged
+                </div>
+            </div>
+            <div class="ki-viz"><canvas id="stepsWeekMini"></canvas></div>
         </div>
 
         {% if data.stats.steps_dow_best %}
@@ -2275,6 +2287,34 @@
             });
         }
 
+        // Mini bar chart of the current week (Mon..Sun). Bar height is that
+        // day's step count; logged days are green, days not yet logged (0)
+        // render as short grey stubs via minBarLength.
+        function makeWeekBars(canvasId, src, loggedColor) {
+            const el = document.getElementById(canvasId);
+            if (!el || !src) return;
+            const vals = src.values;
+            new Chart(el, {
+                type: 'bar',
+                data: {
+                    labels: src.labels,
+                    datasets: [{
+                        data: vals,
+                        backgroundColor: vals.map(v => v > 0 ? loggedColor : '#3a4258'),
+                        borderRadius: 2,
+                        minBarLength: 4,
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                    scales: { x: { display: false }, y: { display: false, beginAtZero: true } },
+                },
+            });
+        }
+
         // ---- Steps tab ----
         // Created on first activation of the Steps tab (the default tab, so
         // this still runs at startup). Holds every chart + control binding
@@ -2368,6 +2408,7 @@
         // own calls inside their tab initializers.
         makeSparkline('stepsAvgSparkline', charts.steps_sparkline, accent);
         makeDowMini('stepsDowMini', charts.dow, accent);
+        makeWeekBars('stepsWeekMini', charts.week_steps, accent);
 
         // Steps Day-of-week bar chart
         const dowVals = charts.dow.values;

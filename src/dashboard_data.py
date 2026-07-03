@@ -312,6 +312,24 @@ def build_dashboard_data():
 
     today = datetime.now().date()
     yesterday = today - timedelta(days=1)
+
+    # Current-week step total, Monday → today (weekday() is 0 for Monday).
+    # Count only days with real step data — today's row is often a 0-step
+    # manual stub until the morning Garmin sync lands.
+    week_start = today - timedelta(days=today.weekday())
+    week_entries = [
+        entry
+        for entry in entries
+        if week_start <= entry.day <= today and entry.step_count > 0
+    ]
+    week_steps_total = sum(entry.step_count for entry in week_entries)
+    week_days_logged = len(week_entries)
+    # Per-weekday steps for the current week (Mon..Sun), 0 for days with no
+    # data yet — feeds the mini bar chart on the "Steps This Week" panel.
+    week_steps_by_dow = [0] * 7
+    for entry in week_entries:
+        week_steps_by_dow[entry.day.weekday()] = entry.step_count
+
     last_365_cutoff = today - timedelta(days=365)
     last_90_cutoff = today - timedelta(days=90)
     heatmap_start = today - timedelta(days=364)
@@ -590,6 +608,8 @@ def build_dashboard_data():
             "dow_best": dow_best,
             "steps_dow_best": steps_dow_best,
             "steps_30d_delta": steps_30d_delta,
+            "week_steps_total": week_steps_total,
+            "week_days_logged": week_days_logged,
             "steps_recent_30_goal_pct": steps_recent_30_goal_pct,
             "steps_recent_30_goal_strip": steps_recent_30_goal_strip,
             "num_streaks": len(streaks),
@@ -634,6 +654,7 @@ def build_dashboard_data():
         "bottom_step_days": _serialize_step_days(bottom_step_days),
         "charts": {
             "dow": {"labels": DOW_NAMES, "values": dow_avgs},
+            "week_steps": {"labels": DOW_NAMES, "values": week_steps_by_dow},
             "recent": {
                 "labels": recent_labels,
                 "steps": recent_steps,
