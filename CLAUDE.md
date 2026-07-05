@@ -14,6 +14,13 @@ owner's Mac (local dev).
   Water, Sleep, Day, plus per-day notes / mood / lifestyle-logging).
 - **`src/dashboard.jinja2`** — the single big template that drives the
   dashboard. CSS, HTML, and inline JS all live in this one file.
+- **`goals.json`** — repo-root data file for the Goals tab's training
+  "ladder" (milestones: date / title / status `done|current|future`,
+  plus the summit). `_load_goals` in `app.py` reads it *fresh on every
+  request* and derives the progress totals, so the ladder can be updated
+  by hand-editing this file on the Pi with no code change / restart /
+  redeploy — just refresh the browser. Edit it *only on the Pi* to avoid
+  merge conflicts on the daily cron `git pull`.
 
 ## Architecture cheat-sheet
 

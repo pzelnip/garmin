@@ -2353,10 +2353,11 @@
     <!-- /DAY TAB -->
 
     <!-- ============================ GOALS TAB ============================ -->
-    {# Static, hand-maintained. When a milestone lands: change its rung's
-       class from `future` to `done`, move the climber (`current` class +
-       the .rider span) up to the next rung, and bump the count + fill width
-       in .goals-progress. No data flows in from the DB. #}
+    {# The ladder is data-driven from goals.json (see _load_goals in app.py),
+       read fresh on every request — so milestones can be updated by hand-
+       editing that file on the Pi (no code change / commit / redeploy).
+       Each rung has status "done" | "current" | "future"; the summit and the
+       progress totals (done / total / pct) are derived server-side. #}
     <div class="tab-panel" data-tab="goals">
         <div class="goals-intro">
             <p>The training ladder I built with my physio. The bottom rung is
@@ -2366,175 +2367,51 @@
             <p class="goals-tagline">Every rung climbed makes the next one possible.</p>
         </div>
 
+        {% if goals %}
         <div class="goals-progress">
-            <div class="goals-progress-num">4<small>&nbsp;/&nbsp;20</small></div>
+            <div class="goals-progress-num">{{ goals.done }}<small>&nbsp;/&nbsp;{{ goals.total }}</small></div>
             <div class="goals-progress-bar">
-                <div class="goals-progress-fill" style="width: 20%;"></div>
+                <div class="goals-progress-fill" style="width: {{ goals.pct }}%;"></div>
             </div>
-            <div class="goals-progress-label">4 rungs climbed</div>
+            <div class="goals-progress-label">{{ goals.done }} rung{{ '' if goals.done == 1 else 's' }} climbed</div>
         </div>
+
+        {% macro rung(r) %}
+            <div class="rung {{ r.status }}">
+                <div class="rung-track">
+                    <div class="bar"></div>
+                    {% if r.status == 'current' %}<span class="rider">🧗</span>{% endif %}
+                </div>
+                <div class="rung-body">
+                    <div class="rung-date">{% if r.status == 'done' %}✓ {% endif %}{{ r.date }}</div>
+                    <div class="rung-title">{{ r.title }}</div>
+                    {% if r.note %}<div class="rung-note">{{ r.note }}</div>{% endif %}
+                </div>
+            </div>
+        {% endmacro %}
 
         <div class="ladder">
             <div class="rail left"></div>
             <div class="rail right"></div>
 
-            <!-- ---- The summit: ultimate goal ---- -->
+            {% if goals.summit %}
             <div class="rung summit">
                 <div class="rung-track"><div class="bar"></div><span class="rider">🏆</span></div>
                 <div class="rung-body">
-                    <div class="rung-date">April 2028</div>
-                    <div class="rung-title">TC 10K — personal best (&lt; 56:26)</div>
+                    <div class="rung-date">{{ goals.summit.date }}</div>
+                    <div class="rung-title">{{ goals.summit.title }}</div>
                 </div>
             </div>
+            {% endif %}
 
-            <div class="ladder-phase">Racing fast</div>
-
-            <div class="rung future">
-                <div class="rung-track"><div class="bar"></div></div>
-                <div class="rung-body">
-                    <div class="rung-date">Jan 2028</div>
-                    <div class="rung-title">Run a fast 10K (&lt; 60 min)</div>
-                </div>
-            </div>
-            <div class="rung future">
-                <div class="rung-track"><div class="bar"></div></div>
-                <div class="rung-body">
-                    <div class="rung-date">Aug 2027</div>
-                    <div class="rung-title">Run a fast 5K (&lt; 30 min)</div>
-                </div>
-            </div>
-            <div class="rung future">
-                <div class="rung-track"><div class="bar"></div></div>
-                <div class="rung-body">
-                    <div class="rung-date">April 2027</div>
-                    <div class="rung-title">TC 10K without walking</div>
-                    <div class="rung-note">No time goal — just finish running.</div>
-                </div>
-            </div>
-            <div class="rung future">
-                <div class="rung-track"><div class="bar"></div></div>
-                <div class="rung-body">
-                    <div class="rung-date">April 2027</div>
-                    <div class="rung-title">First 10K without walking</div>
-                    <div class="rung-note">Not focussed on time.</div>
-                </div>
-            </div>
-            <div class="rung future">
-                <div class="rung-track"><div class="bar"></div></div>
-                <div class="rung-body">
-                    <div class="rung-date">Feb 2027</div>
-                    <div class="rung-title">First 5K without walking</div>
-                </div>
-            </div>
-
-            <div class="ladder-phase">Learning to run</div>
-
-            <div class="rung future">
-                <div class="rung-track"><div class="bar"></div></div>
-                <div class="rung-body">
-                    <div class="rung-date">October 2026</div>
-                    <div class="rung-title">Start the run/walk training program</div>
-                </div>
-            </div>
-            <div class="rung future">
-                <div class="rung-track"><div class="bar"></div></div>
-                <div class="rung-body">
-                    <div class="rung-date">Before October 2026</div>
-                    <div class="rung-title">Running a bit — run/walk intervals</div>
-                </div>
-            </div>
-            <div class="rung future">
-                <div class="rung-track"><div class="bar"></div></div>
-                <div class="rung-body">
-                    <div class="rung-date">Before October 2026</div>
-                    <div class="rung-title">Walk into the gym by myself</div>
-                </div>
-            </div>
-
-            <div class="ladder-phase">Building step volume</div>
-
-            <div class="rung future">
-                <div class="rung-track"><div class="bar"></div></div>
-                <div class="rung-body">
-                    <div class="rung-date">August 31, 2026</div>
-                    <div class="rung-title">110K step week</div>
-                </div>
-            </div>
-            <div class="rung future">
-                <div class="rung-track"><div class="bar"></div></div>
-                <div class="rung-body">
-                    <div class="rung-date">August 18, 2026 · physio appt</div>
-                    <div class="rung-title">90% of days since June 2nd hit the step goal</div>
-                </div>
-            </div>
-            <div class="rung future">
-                <div class="rung-track"><div class="bar"></div></div>
-                <div class="rung-body">
-                    <div class="rung-date">August 18, 2026 · physio appt</div>
-                    <div class="rung-title">Research &amp; decide on a gym membership</div>
-                </div>
-            </div>
-            <div class="rung future">
-                <div class="rung-track"><div class="bar"></div></div>
-                <div class="rung-body">
-                    <div class="rung-date">Aug 15 / 16, 2026</div>
-                    <div class="rung-title">20K steps both days</div>
-                    <div class="rung-note">2nd day before Lauren.</div>
-                </div>
-            </div>
-            <div class="rung future">
-                <div class="rung-track"><div class="bar"></div></div>
-                <div class="rung-body">
-                    <div class="rung-date">Jul 25 / 26, 2026</div>
-                    <div class="rung-title">20K steps both days</div>
-                </div>
-            </div>
-            <div class="rung future">
-                <div class="rung-track"><div class="bar"></div></div>
-                <div class="rung-body">
-                    <div class="rung-date">Jul 20, 2026</div>
-                    <div class="rung-title">100K step week</div>
-                </div>
-            </div>
-            <div class="rung current">
-                <div class="rung-track"><div class="bar"></div><span class="rider">🧗</span></div>
-                <div class="rung-body">
-                    <div class="rung-date">Jul 6, 2026</div>
-                    <div class="rung-title">90K step week</div>
-                    <div class="rung-note">You are here — the rung you're climbing now.</div>
-                </div>
-            </div>
-            <div class="ladder-phase">Already climbed</div>
-
-            <div class="rung done">
-                <div class="rung-track"><div class="bar"></div></div>
-                <div class="rung-body">
-                    <div class="rung-date">✓ Jul 4, 2026</div>
-                    <div class="rung-title">20K steps on a weekend day</div>
-                </div>
-            </div>
-            <div class="rung done">
-                <div class="rung-track"><div class="bar"></div></div>
-                <div class="rung-body">
-                    <div class="rung-date">✓ Jun 2, 2026</div>
-                    <div class="rung-title">30-day step-goal streak</div>
-                </div>
-            </div>
-            <div class="rung done">
-                <div class="rung-track"><div class="bar"></div></div>
-                <div class="rung-body">
-                    <div class="rung-date">✓ Jun 29, 2026</div>
-                    <div class="rung-title">85K step week</div>
-                </div>
-            </div>
-            <div class="rung done">
-                <div class="rung-track"><div class="bar"></div></div>
-                <div class="rung-body">
-                    <div class="rung-date">✓ Jun 22, 2026</div>
-                    <div class="rung-title">80K step week</div>
-                </div>
-            </div>
+            {% for phase in goals.phases %}
+            <div class="ladder-phase">{{ phase.name }}</div>
+            {% for r in phase.rungs %}{{ rung(r) }}{% endfor %}
+            {% endfor %}
         </div>
+        {% else %}
+        <div class="empty-state">Couldn't load the goals ladder — goals.json is missing or invalid.</div>
+        {% endif %}
 
         <div class="goals-footer">
             <p><strong>Progress isn't measured in speed.</strong></p>

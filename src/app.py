@@ -79,6 +79,33 @@ def _diagnostics():
     }
 
 
+# The Goals-tab ladder is data-driven from a hand-edited JSON file rather than
+# baked into the template, so milestones can be updated on the Pi (edit the
+# file, refresh the browser) without a code change / commit / redeploy.
+GOALS_PATH = os.path.join(REPO_ROOT, "goals.json")
+
+
+def _load_goals():
+    """Read the goals-ladder milestones from goals.json fresh on every request
+    (deliberately un-cached so Pi hand-edits show up on the next refresh).
+    Returns the parsed structure augmented with progress totals — `done`,
+    `total`, `pct` — or None if the file is missing / malformed, in which case
+    the template renders an empty state instead of the ladder.
+    """
+    try:
+        with open(GOALS_PATH, encoding="utf-8") as fh:
+            goals = json.load(fh)
+    except (OSError, ValueError):
+        return None
+    rungs = [r for phase in goals.get("phases", []) for r in phase.get("rungs", [])]
+    total = len(rungs) + (1 if goals.get("summit") else 0)
+    done = sum(1 for r in rungs if r.get("status") == "done")
+    goals["done"] = done
+    goals["total"] = total
+    goals["pct"] = round(done / total * 100) if total else 0
+    return goals
+
+
 @app.route("/")
 def index():
     return redirect(url_for("dashboard"))
@@ -92,6 +119,7 @@ def dashboard():
         "dashboard.jinja2",
         data=data,
         charts_json=json.dumps(data["charts"]),
+        goals=_load_goals(),
         git_sha=git_sha,
         git_commit_date=git_commit_date,
         diagnostics=_diagnostics(),

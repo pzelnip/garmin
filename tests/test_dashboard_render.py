@@ -113,6 +113,25 @@ def test_dashboard_has_all_tabs(client):
     assert panels == TAB_NAMES
 
 
+def test_goals_ladder_progress_matches_done_rungs(client):
+    """The Goals tab is driven by goals.json (read fresh per request). The
+    rendered progress count must equal the number of `done` rungs actually
+    shown on the ladder, and the summit rung must be present."""
+    seed_representative_week()
+
+    response = client.get("/dashboard")
+
+    soup = BeautifulSoup(response.data, "html.parser")
+    goals_panel = soup.select_one('.tab-panel[data-tab="goals"]')
+    done_rungs = goals_panel.select(".rung.done")
+    progress_num = goals_panel.select_one(".goals-progress-num")
+
+    assert goals_panel.select_one(".rung.summit") is not None
+    assert done_rungs, "expected at least one completed rung"
+    # The big number before the "/ total" reflects the done count.
+    assert progress_num.get_text().strip().startswith(str(len(done_rungs)))
+
+
 def test_steps_tab_is_active_by_default(client):
     seed_representative_week()
 
