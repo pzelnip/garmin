@@ -1293,116 +1293,116 @@
             background: linear-gradient(90deg, var(--accent), var(--warn));
         }
         .goals-progress-label { color: var(--text-dim); font-size: 13px; white-space: nowrap; }
+        .goals-tagline { font-style: italic; color: var(--text); }
 
-        /* The ladder: a vertical rail with rungs, summit at the top,
-           today's starting point at the bottom. Rendered top-to-bottom in
-           source order (summit first) so the ultimate goal sits up top. */
+        /* The ladder: two vertical rails with horizontal rungs between them,
+           a climber on the current rung, summit at the top. Rendered
+           top-to-bottom in source order (summit first). The rung labels sit
+           to the right of the ladder so dates + notes stay legible. The
+           `--rail-l` / `--rail-r` / `--track` widths are shared between the
+           rails and each rung's bar so they always line up. */
         .ladder {
+            --track: 132px;   /* width of the ladder graphic column */
+            --rail-l: 30px;   /* left edge of the left rail */
+            --rail-r: 93px;   /* left edge of the right rail */
+            --rail-w: 9px;    /* rail thickness */
             position: relative;
-            max-width: 760px;
+            max-width: 820px;
             margin: 0 auto;
-            padding: 8px 0 8px 0;
+            padding: 22px 0;
         }
-        /* The rail runs vertically through every marker. */
-        .ladder::before {
-            content: "";
+        /* The two rails run the full height of the ladder. */
+        .rail {
             position: absolute;
-            left: 27px;
-            top: 24px;
-            bottom: 24px;
-            width: 4px;
-            border-radius: 2px;
-            background: linear-gradient(to top,
-                var(--accent) 0%,
-                var(--accent) 18%,
-                var(--grid) 32%,
-                var(--grid) 100%);
+            top: 10px;
+            bottom: 10px;
+            width: var(--rail-w);
+            border-radius: 5px;
+            background: linear-gradient(to bottom, #4a5578, #2f3650);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
         }
+        .rail.left  { left: var(--rail-l); }
+        .rail.right { left: var(--rail-r); }
+
         .rung {
             position: relative;
             display: flex;
-            align-items: stretch;
-            gap: 18px;
-            margin-bottom: 12px;
+            align-items: center;
+            min-height: 60px;
         }
-        .rung-marker {
+        /* The slice of ladder holding this rung's horizontal bar. */
+        .rung-track {
             position: relative;
-            z-index: 1;
             flex-shrink: 0;
-            width: 58px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            width: var(--track);
+            align-self: stretch;
         }
-        .rung-dot {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            background: var(--panel-2);
-            border: 2px solid var(--grid);
-            box-shadow: 0 0 0 4px var(--bg);
+        /* The horizontal rung, spanning between the two rails. */
+        .bar {
+            position: absolute;
+            top: 50%;
+            left: calc(var(--rail-l) + 2px);
+            right: calc(var(--track) - var(--rail-r) - var(--rail-w) + 2px);
+            height: 9px;
+            transform: translateY(-50%);
+            border-radius: 4px;
+            background: #3a4258;
+            z-index: 1;
         }
-        .rung-card {
+        /* Climber / trophy perched on top of the current + summit bars. */
+        .rider {
+            position: absolute;
+            left: calc((var(--rail-l) + var(--rail-r) + var(--rail-w)) / 2);
+            top: 50%;
+            transform: translate(-50%, -95%);
+            font-size: 30px;
+            line-height: 1;
+            z-index: 2;
+            filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.55));
+        }
+        .rung-body {
             flex: 1;
-            background: var(--panel);
-            border: 1px solid var(--grid);
-            border-radius: 10px;
-            padding: 12px 16px;
-            transition: transform 0.12s, border-color 0.12s;
+            padding: 6px 4px 6px 20px;
         }
-        .rung-card:hover { transform: translateX(2px); }
         .rung-date {
             font-size: 11px;
-            font-weight: 600;
+            font-weight: 700;
             letter-spacing: 0.04em;
             text-transform: uppercase;
             color: var(--text-dim);
-            margin-bottom: 3px;
+            margin-bottom: 2px;
         }
-        .rung-title { font-size: 15px; font-weight: 600; line-height: 1.35; }
-        .rung-note { font-size: 12px; color: var(--text-dim); margin-top: 3px; }
+        .rung-title { font-size: 15px; font-weight: 600; line-height: 1.3; }
+        .rung-note { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
 
-        /* Completed rungs: green dot with a check, brighter card. */
-        .rung.done .rung-dot {
-            background: rgba(94, 234, 212, 0.15);
-            border-color: var(--accent);
-            color: var(--accent);
+        /* Completed rungs: green bar, lit. */
+        .rung.done .bar {
+            background: var(--accent);
+            box-shadow: 0 0 8px rgba(94, 234, 212, 0.5);
         }
-        .rung.done .rung-card { border-color: rgba(94, 234, 212, 0.4); }
         .rung.done .rung-date { color: var(--accent); }
 
-        /* The current position: a pulsing "you are here" rung. */
-        .rung.here .rung-dot {
+        /* The current rung: amber bar the climber sits on. */
+        .rung.current .bar {
             background: var(--warn);
-            border-color: var(--warn);
-            color: #1a1200;
-            box-shadow: 0 0 0 4px var(--bg), 0 0 16px var(--warn);
+            height: 11px;
+            box-shadow: 0 0 12px rgba(251, 191, 36, 0.6);
         }
-        .rung.here .rung-card {
-            border-color: var(--warn);
-            box-shadow: 0 0 0 1px var(--warn);
-        }
-        .rung.here .rung-date { color: var(--warn); }
+        .rung.current .rung-date { color: var(--warn); }
+        .rung.current .rung-title { font-weight: 700; }
+
+        /* Future rungs read as dimmer than the ones already climbed. */
+        .rung.future .rung-body { opacity: 0.72; }
 
         /* The summit — the ultimate goal at the very top. */
-        .rung.summit .rung-dot {
-            width: 48px;
-            height: 48px;
-            font-size: 24px;
-            background: rgba(251, 191, 36, 0.15);
-            border-color: var(--warn);
-        }
-        .rung.summit .rung-marker { width: 58px; }
-        .rung.summit .rung-card {
-            border-color: var(--warn);
-            background: linear-gradient(135deg, rgba(251,191,36,0.10), var(--panel));
+        .rung.summit { min-height: 78px; }
+        .rung.summit .bar {
+            height: 13px;
+            background: linear-gradient(90deg, var(--warn), var(--accent-2));
+            box-shadow: 0 0 16px rgba(251, 191, 36, 0.5);
         }
         .rung.summit .rung-title {
-            font-size: 18px;
+            font-size: 19px;
             font-weight: 800;
             background: linear-gradient(90deg, var(--warn), var(--accent-2));
             -webkit-background-clip: text;
@@ -1411,15 +1411,13 @@
         }
         .rung.summit .rung-date { color: var(--warn); }
 
-        /* Future rungs read as dimmer than the ones already climbed. */
-        .rung.future .rung-card { opacity: 0.72; }
-
-        /* A small section divider label that groups rungs by phase. */
+        /* A small section divider label that groups rungs by phase. Its left
+           margin lines up with the rung labels (past the ladder column). */
         .ladder-phase {
             display: flex;
             align-items: center;
             gap: 10px;
-            margin: 20px 0 12px 76px;
+            margin: 18px 0 10px calc(var(--track) + 20px);
             font-size: 12px;
             font-weight: 700;
             letter-spacing: 0.08em;
@@ -1433,6 +1431,15 @@
             background: var(--grid);
             flex: 1;
         }
+
+        .goals-footer {
+            max-width: 780px;
+            margin: 34px auto 0;
+            text-align: center;
+            color: var(--text-dim);
+            line-height: 1.6;
+        }
+        .goals-footer strong { color: var(--text); }
     </style>
 </head>
 <body>
@@ -2336,16 +2343,17 @@
     <!-- /DAY TAB -->
 
     <!-- ============================ GOALS TAB ============================ -->
-    {# Static, hand-maintained. When a milestone lands, change its rung's
-       class from `future` to `done` (or move the `here` marker up a rung),
-       bump the count + fill width in .goals-progress, and nudge the
-       .ladder::before gradient stops. No data flows in from the DB. #}
+    {# Static, hand-maintained. When a milestone lands: change its rung's
+       class from `future` to `done`, move the climber (`current` class +
+       the .rider span) up to the next rung, and bump the count + fill width
+       in .goals-progress. No data flows in from the DB. #}
     <div class="tab-panel" data-tab="goals">
         <div class="goals-intro">
             <p>The training ladder I built with my physio. The bottom rung is
             where I started; the summit is the ultimate goal — a
             <strong>TC 10K personal best</strong>. Each rung in between is an
-            intermediate milestone I need to hit on the way up.</p>
+            intermediate milestone on the way up.</p>
+            <p class="goals-tagline">Every rung climbed makes the next one possible.</p>
         </div>
 
         <div class="goals-progress">
@@ -2357,10 +2365,13 @@
         </div>
 
         <div class="ladder">
+            <div class="rail left"></div>
+            <div class="rail right"></div>
+
             <!-- ---- The summit: ultimate goal ---- -->
             <div class="rung summit">
-                <div class="rung-marker"><div class="rung-dot">🏆</div></div>
-                <div class="rung-card">
+                <div class="rung-track"><div class="bar"></div><span class="rider">🏆</span></div>
+                <div class="rung-body">
                     <div class="rung-date">April 2028</div>
                     <div class="rung-title">TC 10K — personal best (&lt; 56:26)</div>
                 </div>
@@ -2369,39 +2380,39 @@
             <div class="ladder-phase">Racing fast</div>
 
             <div class="rung future">
-                <div class="rung-marker"><div class="rung-dot">🏃</div></div>
-                <div class="rung-card">
+                <div class="rung-track"><div class="bar"></div></div>
+                <div class="rung-body">
                     <div class="rung-date">Jan 2028</div>
                     <div class="rung-title">Run a fast 10K (&lt; 60 min)</div>
                 </div>
             </div>
             <div class="rung future">
-                <div class="rung-marker"><div class="rung-dot">🏃</div></div>
-                <div class="rung-card">
+                <div class="rung-track"><div class="bar"></div></div>
+                <div class="rung-body">
                     <div class="rung-date">Aug 2027</div>
                     <div class="rung-title">Run a fast 5K (&lt; 30 min)</div>
                 </div>
             </div>
             <div class="rung future">
-                <div class="rung-marker"><div class="rung-dot">🏁</div></div>
-                <div class="rung-card">
+                <div class="rung-track"><div class="bar"></div></div>
+                <div class="rung-body">
                     <div class="rung-date">April 2027</div>
                     <div class="rung-title">TC 10K without walking</div>
                     <div class="rung-note">No time goal — just finish running.</div>
                 </div>
             </div>
             <div class="rung future">
-                <div class="rung-marker"><div class="rung-dot">🏃</div></div>
-                <div class="rung-card">
+                <div class="rung-track"><div class="bar"></div></div>
+                <div class="rung-body">
                     <div class="rung-date">April 2027</div>
                     <div class="rung-title">First 10K without walking</div>
                     <div class="rung-note">Not focussed on time.</div>
                 </div>
             </div>
             <div class="rung future">
-                <div class="rung-marker"><div class="rung-dot">🏃</div></div>
-                <div class="rung-card">
-                    <div class="rung-date">Feb 2026</div>
+                <div class="rung-track"><div class="bar"></div></div>
+                <div class="rung-body">
+                    <div class="rung-date">Feb 2027</div>
                     <div class="rung-title">First 5K without walking</div>
                 </div>
             </div>
@@ -2409,23 +2420,23 @@
             <div class="ladder-phase">Learning to run</div>
 
             <div class="rung future">
-                <div class="rung-marker"><div class="rung-dot">🏃</div></div>
-                <div class="rung-card">
+                <div class="rung-track"><div class="bar"></div></div>
+                <div class="rung-body">
                     <div class="rung-date">October 2026</div>
                     <div class="rung-title">Start the run/walk training program</div>
                 </div>
             </div>
             <div class="rung future">
-                <div class="rung-marker"><div class="rung-dot">🚶</div></div>
-                <div class="rung-card">
-                    <div class="rung-date">Building up</div>
-                    <div class="rung-title">Running a bit — run/walk interval program</div>
+                <div class="rung-track"><div class="bar"></div></div>
+                <div class="rung-body">
+                    <div class="rung-date">Before October 2026</div>
+                    <div class="rung-title">Running a bit — run/walk intervals</div>
                 </div>
             </div>
             <div class="rung future">
-                <div class="rung-marker"><div class="rung-dot">🏋️</div></div>
-                <div class="rung-card">
-                    <div class="rung-date">Building up</div>
+                <div class="rung-track"><div class="bar"></div></div>
+                <div class="rung-body">
+                    <div class="rung-date">Before October 2026</div>
                     <div class="rung-title">Walk into the gym by myself</div>
                 </div>
             </div>
@@ -2433,87 +2444,92 @@
             <div class="ladder-phase">Building step volume</div>
 
             <div class="rung future">
-                <div class="rung-marker"><div class="rung-dot">👟</div></div>
-                <div class="rung-card">
+                <div class="rung-track"><div class="bar"></div></div>
+                <div class="rung-body">
                     <div class="rung-date">August 31</div>
                     <div class="rung-title">110K step week</div>
                 </div>
             </div>
             <div class="rung future">
-                <div class="rung-marker"><div class="rung-dot">🎯</div></div>
-                <div class="rung-card">
+                <div class="rung-track"><div class="bar"></div></div>
+                <div class="rung-body">
                     <div class="rung-date">August 18 · physio appt</div>
                     <div class="rung-title">90% of days since June 2nd hit the step goal</div>
                 </div>
             </div>
             <div class="rung future">
-                <div class="rung-marker"><div class="rung-dot">🏋️</div></div>
-                <div class="rung-card">
+                <div class="rung-track"><div class="bar"></div></div>
+                <div class="rung-body">
                     <div class="rung-date">August 18 · physio appt</div>
                     <div class="rung-title">Research &amp; decide on a gym membership</div>
                 </div>
             </div>
             <div class="rung future">
-                <div class="rung-marker"><div class="rung-dot">👟</div></div>
-                <div class="rung-card">
+                <div class="rung-track"><div class="bar"></div></div>
+                <div class="rung-body">
                     <div class="rung-date">Aug 15 / 16</div>
                     <div class="rung-title">20K steps both days</div>
                     <div class="rung-note">2nd day before Lauren.</div>
                 </div>
             </div>
             <div class="rung future">
-                <div class="rung-marker"><div class="rung-dot">👟</div></div>
-                <div class="rung-card">
+                <div class="rung-track"><div class="bar"></div></div>
+                <div class="rung-body">
                     <div class="rung-date">Jul 25 / 26</div>
                     <div class="rung-title">20K steps both days</div>
                 </div>
             </div>
             <div class="rung future">
-                <div class="rung-marker"><div class="rung-dot">👟</div></div>
-                <div class="rung-card">
+                <div class="rung-track"><div class="bar"></div></div>
+                <div class="rung-body">
                     <div class="rung-date">Jul 20</div>
                     <div class="rung-title">100K step week</div>
                 </div>
             </div>
             <div class="rung future">
-                <div class="rung-marker"><div class="rung-dot">👟</div></div>
-                <div class="rung-card">
+                <div class="rung-track"><div class="bar"></div></div>
+                <div class="rung-body">
                     <div class="rung-date">Jul 6</div>
                     <div class="rung-title">90K step week</div>
                 </div>
             </div>
-            <div class="rung here">
-                <div class="rung-marker"><div class="rung-dot">📍</div></div>
-                <div class="rung-card">
+            <div class="rung current">
+                <div class="rung-track"><div class="bar"></div><span class="rider">🧗</span></div>
+                <div class="rung-body">
                     <div class="rung-date">Jul 4 · today</div>
                     <div class="rung-title">20K steps on a weekend day</div>
-                    <div class="rung-note">You are here — the next rung to climb.</div>
+                    <div class="rung-note">You are here — the rung you're climbing now.</div>
                 </div>
             </div>
 
             <div class="ladder-phase">Already climbed</div>
 
             <div class="rung done">
-                <div class="rung-marker"><div class="rung-dot">✓</div></div>
-                <div class="rung-card">
-                    <div class="rung-date">Jun 2</div>
+                <div class="rung-track"><div class="bar"></div></div>
+                <div class="rung-body">
+                    <div class="rung-date">✓ Jun 2</div>
                     <div class="rung-title">30-day step-goal streak</div>
                 </div>
             </div>
             <div class="rung done">
-                <div class="rung-marker"><div class="rung-dot">✓</div></div>
-                <div class="rung-card">
-                    <div class="rung-date">Jun 29</div>
+                <div class="rung-track"><div class="bar"></div></div>
+                <div class="rung-body">
+                    <div class="rung-date">✓ Jun 29</div>
                     <div class="rung-title">85K step week</div>
                 </div>
             </div>
             <div class="rung done">
-                <div class="rung-marker"><div class="rung-dot">✓</div></div>
-                <div class="rung-card">
-                    <div class="rung-date">Jun 22</div>
+                <div class="rung-track"><div class="bar"></div></div>
+                <div class="rung-body">
+                    <div class="rung-date">✓ Jun 22</div>
                     <div class="rung-title">80K step week</div>
                 </div>
             </div>
+        </div>
+
+        <div class="goals-footer">
+            <p><strong>Progress isn't measured in speed.</strong></p>
+            <p>Each rung climbed becomes the foundation for the next.</p>
         </div>
     </div>
     <!-- /GOALS TAB -->
