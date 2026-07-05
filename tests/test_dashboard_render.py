@@ -14,7 +14,7 @@ from helpers import add_day
 import dashboard_data
 import db
 
-TAB_NAMES = ["steps", "water", "sleep", "mood", "day"]
+TAB_NAMES = ["steps", "water", "sleep", "mood", "day", "goals"]
 
 # Top-level keys the template's `const charts = {...}` blob must expose. If
 # dashboard_data.py renames one, the JS silently breaks -- this list pins it.
@@ -101,7 +101,7 @@ def test_index_redirects_to_dashboard(client):
     assert response.headers["Location"].endswith("/dashboard")
 
 
-def test_dashboard_has_all_five_tabs(client):
+def test_dashboard_has_all_tabs(client):
     seed_representative_week()
 
     response = client.get("/dashboard")
