@@ -12,7 +12,7 @@ from jinja2 import select_autoescape
 from sqlmodel import select
 
 from dashboard_data import get_dashboard_data_cached, invalidate_dashboard_cache
-from db import DayStats, Source, _init_db, db_session
+from db import DayStats, Source, _init_db, db_session, get_goals_data
 
 # Set GARMIN_DASHBOARD_DEBUG=1 (or any truthy 1/true/yes) to enable Flask's
 # reloader / debugger locally. Defaults to False so the Pi runs in
@@ -79,24 +79,35 @@ def _diagnostics():
     }
 
 
-# The Goals-tab ladder is data-driven from a hand-edited JSON file rather than
-# baked into the template, so milestones can be updated on the Pi (edit the
-# file, refresh the browser) without a code change / commit / redeploy.
+# The Goals-tab ladder is data-driven, not baked into the template. The live
+# copy lives in the Neon `goals` table (published out-of-band via
+# scripts/push-goals.sh) so it can be updated without a code deploy or a
+# committed file. The in-repo goals.json is the authoring source + an offline
+# fallback if the table is empty / unreachable.
 GOALS_PATH = os.path.join(REPO_ROOT, "goals.json")
 
 
 def _load_goals():
-    """Read the goals-ladder milestones from goals.json fresh on every request
-    (deliberately un-cached so Pi hand-edits show up on the next refresh).
-    Returns the parsed structure augmented with progress totals — `done`,
-    `total`, `pct` — or None if the file is missing / malformed, in which case
-    the template renders an empty state instead of the ladder.
+    """Return the goals-ladder structure augmented with progress totals
+    (`done` / `total` / `pct`), or None if no source is available.
+
+    Read fresh on every request (deliberately un-cached, so a push to Neon
+    shows up on the next refresh). Source order: the Neon `goals` table first,
+    then the committed goals.json as a fallback — the DB read is wrapped so a
+    transient Neon issue degrades the Goals tab to the bundled copy rather
+    than erroring.
     """
+    goals = None
     try:
-        with open(GOALS_PATH, encoding="utf-8") as fh:
-            goals = json.load(fh)
-    except (OSError, ValueError):
-        return None
+        goals = get_goals_data()
+    except Exception:
+        goals = None
+    if goals is None:
+        try:
+            with open(GOALS_PATH, encoding="utf-8") as fh:
+                goals = json.load(fh)
+        except (OSError, ValueError):
+            return None
     rungs = [r for phase in goals.get("phases", []) for r in phase.get("rungs", [])]
     total = len(rungs) + (1 if goals.get("summit") else 0)
     done = sum(1 for r in rungs if r.get("status") == "done")

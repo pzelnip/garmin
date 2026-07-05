@@ -11,6 +11,10 @@ db-session: ## Start a database session
 pull-and-post: ## Pull data from Garmin into the DB
 	uv run python src/garmin.py $(ARGS)
 
+.PHONY: push-goals
+push-goals: ## Publish goals.json to the Neon goals table (Goals tab)
+	./scripts/push-goals.sh
+
 .PHONY: run-server
 run-server: ## Run the Flask server
 	uv run python src/app.py

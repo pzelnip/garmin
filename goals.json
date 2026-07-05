@@ -1,46 +1,126 @@
 {
   "summit": {
     "date": "April 2028",
-    "title": "TC 10K — my personal best (< 56:26)"
+    "title": "TC 10K — My personal best (< 56:26)"
   },
   "phases": [
     {
       "name": "Racing fast",
       "rungs": [
-        { "date": "Jan 2028", "title": "Run a fast 10K (< 60 min)", "status": "future" },
-        { "date": "Aug 2027", "title": "Run a fast 5K (< 30 min)", "status": "future" },
-        { "date": "April 2027", "title": "TC 10K without walking", "status": "future", "note": "No time goal — just finish running." },
-        { "date": "April 2027", "title": "First 10K without walking", "status": "future", "note": "Not focussed on time." },
-        { "date": "Feb 2027", "title": "First 5K without walking", "status": "future" }
+        {
+          "date": "Jan 2028",
+          "title": "Run a fast 10K (< 60 min)",
+          "status": "future"
+        },
+        {
+          "date": "Aug 2027",
+          "title": "Run a fast 5K (< 30 min)",
+          "status": "future"
+        },
+        {
+          "date": "April 2027",
+          "title": "TC 10K without walking",
+          "status": "future",
+          "note": "No time goal — just finish running."
+        },
+        {
+          "date": "April 2027",
+          "title": "First 10K without walking",
+          "status": "future",
+          "note": "Not focussed on time."
+        },
+        {
+          "date": "Feb 2027",
+          "title": "First 5K without walking",
+          "status": "future"
+        }
       ]
     },
     {
       "name": "Learning to run",
       "rungs": [
-        { "date": "October 2026", "title": "Start the run/walk training program", "status": "future" },
-        { "date": "Before October 2026", "title": "Running a bit — run/walk intervals", "status": "future" },
-        { "date": "Before October 2026", "title": "Walk into the gym by myself", "status": "future" }
+        {
+          "date": "October 2026",
+          "title": "Start the run/walk training program",
+          "status": "future"
+        },
+        {
+          "date": "Before October 2026",
+          "title": "Running a bit — run/walk intervals",
+          "status": "future"
+        },
+        {
+          "date": "Before October 2026",
+          "title": "Walk into the gym by myself",
+          "status": "future"
+        }
       ]
     },
     {
       "name": "Building step volume",
       "rungs": [
-        { "date": "August 31, 2026", "title": "110K step week", "status": "future" },
-        { "date": "August 18, 2026 · physio appt", "title": "90% of days since June 2nd hit the step goal", "status": "future" },
-        { "date": "August 18, 2026 · physio appt", "title": "Research & decide on a gym membership", "status": "future" },
-        { "date": "Aug 15 / 16, 2026", "title": "20K steps both days", "status": "future", "note": "2nd day before Lauren." },
-        { "date": "Jul 25 / 26, 2026", "title": "20K steps both days", "status": "future" },
-        { "date": "Jul 20, 2026", "title": "100K step week", "status": "future" },
-        { "date": "Jul 6, 2026", "title": "90K step week", "status": "current", "note": "You are here — the rung you're climbing now." }
+        {
+          "date": "August 31, 2026",
+          "title": "110K step week",
+          "status": "future"
+        },
+        {
+          "date": "August 18, 2026 · physio appt",
+          "title": "90% of days since June 2nd hit the step goal",
+          "status": "future"
+        },
+        {
+          "date": "August 18, 2026 · physio appt",
+          "title": "Research & decide on a gym membership",
+          "status": "future"
+        },
+        {
+          "date": "Aug 15 / 16, 2026",
+          "title": "20K steps both days",
+          "status": "future",
+          "note": "2nd day before Lauren."
+        },
+        {
+          "date": "Jul 25 / 26, 2026",
+          "title": "20K steps both days",
+          "status": "future"
+        },
+        {
+          "date": "Jul 20, 2026",
+          "title": "100K step week",
+          "status": "future"
+        },
+        {
+          "date": "Jul 6, 2026",
+          "title": "90K step week",
+          "status": "current",
+          "note": "You are here — the rung you're climbing now."
+        }
       ]
     },
     {
       "name": "Already climbed",
       "rungs": [
-        { "date": "Jul 4, 2026", "title": "20K steps on a weekend day", "status": "done" },
-        { "date": "Jun 2, 2026", "title": "30-day step-goal streak", "status": "done" },
-        { "date": "Jun 29, 2026", "title": "85K step week", "status": "done" },
-        { "date": "Jun 22, 2026", "title": "80K step week", "status": "done" }
+        {
+          "date": "Jul 4, 2026",
+          "title": "20K steps on a weekend day",
+          "status": "done"
+        },
+        {
+          "date": "Jun 2, 2026",
+          "title": "30-day step-goal streak",
+          "status": "done"
+        },
+        {
+          "date": "Jun 29, 2026",
+          "title": "85K step week",
+          "status": "done"
+        },
+        {
+          "date": "Jun 22, 2026",
+          "title": "80K step week",
+          "status": "done"
+        }
       ]
     }
   ]

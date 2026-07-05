@@ -14,13 +14,16 @@ owner's Mac (local dev).
   Water, Sleep, Day, plus per-day notes / mood / lifestyle-logging).
 - **`src/dashboard.jinja2`** — the single big template that drives the
   dashboard. CSS, HTML, and inline JS all live in this one file.
-- **`goals.json`** — repo-root data file for the Goals tab's training
-  "ladder" (milestones: date / title / status `done|current|future`,
-  plus the summit). `_load_goals` in `app.py` reads it *fresh on every
-  request* and derives the progress totals, so the ladder can be updated
-  by hand-editing this file on the Pi with no code change / restart /
-  redeploy — just refresh the browser. Edit it *only on the Pi* to avoid
-  merge conflicts on the daily cron `git pull`.
+- **Goals tab ladder** — the training "ladder" (milestones: date / title
+  / status `done|current|future`, plus the summit). The **live copy lives
+  in the Neon `goals` table** (`Goals` model, a single-row JSON blob), read
+  *fresh on every request* by `_load_goals` in `app.py`, which derives the
+  progress totals. To change it: edit the repo-root **`goals.json`**
+  (the authoring source + offline fallback) locally, then publish with
+  `./scripts/push-goals.sh` (wraps `misc_scripts/push_goals.py`, which
+  upserts the row). This deliberately writes to production Neon and needs
+  no deploy/commit/restart — so nothing is committed and there's no
+  git-pull merge-conflict risk on the Pi.
 
 ## Architecture cheat-sheet
 

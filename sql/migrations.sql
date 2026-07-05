@@ -26,3 +26,14 @@ ALTER TABLE daystats ADD COLUMN mood_score INTEGER;
 -- 2026-06: drop the StepsToday table — the intra-day "/" progress page that
 -- used it has been removed.
 DROP TABLE IF EXISTS stepstoday;
+
+-- 2026-07: goals-ladder storage for the dashboard's Goals tab. Single-row
+-- config table holding the ladder as one JSON blob, so it can be updated
+-- (via scripts/push-goals.sh) without a code deploy or a committed file that
+-- would risk a git-pull merge conflict on the Pi. The app also auto-creates
+-- this table via SQLModel create_all; this DDL is recorded for explicit apply
+-- and uses IF NOT EXISTS to stay idempotent regardless of which runs first.
+CREATE TABLE IF NOT EXISTS goals (
+    id   INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    data JSONB NOT NULL
+);

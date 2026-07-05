@@ -132,6 +132,39 @@ def test_goals_ladder_progress_matches_done_rungs(client):
     assert progress_num.get_text().strip().startswith(str(len(done_rungs)))
 
 
+def test_goals_ladder_prefers_db_row_over_bundled_file(client):
+    """When the `goals` table has a row, the Goals tab renders it (not the
+    committed goals.json fallback), and the derived progress reflects it."""
+    seed_representative_week()
+    with db.Session(db.ENGINE) as session:
+        session.add(
+            db.Goals(
+                data={
+                    "summit": {"date": "Someday", "title": "DB-sourced summit"},
+                    "phases": [
+                        {
+                            "name": "Only phase",
+                            "rungs": [
+                                {"date": "d1", "title": "DB rung one", "status": "done"},
+                                {"date": "d2", "title": "DB rung two", "status": "current"},
+                            ],
+                        }
+                    ],
+                }
+            )
+        )
+        session.commit()
+
+    response = client.get("/dashboard")
+
+    soup = BeautifulSoup(response.data, "html.parser")
+    goals_panel = soup.select_one('.tab-panel[data-tab="goals"]')
+    assert "DB-sourced summit" in goals_panel.get_text()
+    # 3 rungs total (summit + 2), 1 done -> "1 / 3".
+    assert goals_panel.select_one(".goals-progress-num").get_text().strip().startswith("1")
+    assert len(goals_panel.select(".rung.done")) == 1
+
+
 def test_steps_tab_is_active_by_default(client):
     seed_representative_week()
 

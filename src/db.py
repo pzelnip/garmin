@@ -6,7 +6,8 @@ import sys
 from datetime import date
 from typing import List, Optional
 
-from sqlalchemy import text
+from sqlalchemy import JSON, text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import defer
 from sqlmodel import Column, Enum, Field, Session, SQLModel, create_engine, select
@@ -122,6 +123,35 @@ class DayStats(SQLModel, table=True):
             + ("…" if end < len(self.notes) else "")
         )
         return snippet, idx - start + (1 if start > 0 else 0)
+
+
+class Goals(SQLModel, table=True):
+    """Single-row config table holding the Goals-tab ladder as one JSON blob.
+
+    Deliberately outside the daily-sync `DayStats` data model: the ladder is
+    hand-authored content, not device data. It lives in the DB (rather than a
+    committed file) so it can be updated without a code deploy or a git-pull
+    merge conflict on the Pi — edit the local `goals.json`, then publish it
+    with `misc_scripts/push_goals.py` (see `scripts/push-goals.sh`), which
+    upserts the single row here. Read fresh on every dashboard render.
+
+    The column is JSONB on Postgres and generic JSON on SQLite (tests), so
+    `create_all` works against both.
+    """
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    data: dict = Field(
+        sa_column=Column(JSON().with_variant(JSONB(), "postgresql"), nullable=False)
+    )
+
+
+def get_goals_data() -> dict | None:
+    """Return the goals-ladder JSON blob from the single-row `goals` table, or
+    None if the table is empty. Orders by id so a stray extra row can't shadow
+    the canonical (lowest-id) one."""
+    with db_session() as session:
+        row = session.exec(select(Goals).order_by(Goals.id)).first()
+        return row.data if row else None
 
 
 def _init_db():
