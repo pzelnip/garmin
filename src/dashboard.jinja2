@@ -1593,6 +1593,9 @@
                 <div class="ki-icon ki-icon-great">👟</div>
                 <div class="mood-avg-row" style="flex-direction: column; align-items: flex-start; gap: 6px;">
                     <div class="stat-value accent">{{ "{:,}".format(data.stats.avg_steps) }}</div>
+                    <div class="mood-avg-delta delta-flat">
+                        {{ "{:,}".format(data.stats.total_days) }} day{{ '' if data.stats.total_days == 1 else 's' }} logged
+                    </div>
                     {% if data.stats.steps_30d_delta is not none %}
                         {% set d = data.stats.steps_30d_delta %}
                         <div class="mood-avg-delta {{ 'delta-up' if d > 0 else ('delta-down' if d < 0 else 'delta-flat') }}">
@@ -1615,6 +1618,13 @@
                     <div class="mood-avg-delta delta-flat">
                         {{ data.stats.week_days_logged }} day{{ '' if data.stats.week_days_logged == 1 else 's' }} logged
                     </div>
+                    {% if data.stats.week_steps_wow_pct is not none %}
+                        {% set w = data.stats.week_steps_wow_pct %}
+                        <div class="mood-avg-delta {{ 'delta-up' if w > 0 else ('delta-down' if w < 0 else 'delta-flat') }}">
+                            {% if w > 0 %}▲{% elif w < 0 %}▼{% else %}■{% endif %}
+                            {{ w|abs }}% {{ 'more' if w > 0 else ('less' if w < 0 else 'same') }} over previous week
+                        </div>
+                    {% endif %}
                 </div>
             </div>
             <div class="ki-viz"><canvas id="stepsWeekMini"></canvas></div>

@@ -324,6 +324,24 @@ def build_dashboard_data():
     ]
     week_steps_total = sum(entry.step_count for entry in week_entries)
     week_days_logged = len(week_entries)
+    # Previous week over the *same weekdays* actually logged this week, so a
+    # mid-week comparison is like-for-like. Keying off today's weekday would be
+    # wrong when today's sync hasn't landed yet (e.g. Saturday morning still
+    # only has Mon–Fri data), pulling in a prior-week day this week lacks.
+    logged_weekdays = {entry.day.weekday() for entry in week_entries}
+    prev_week_start = week_start - timedelta(days=7)
+    prev_week_steps_total = sum(
+        entry.step_count
+        for entry in entries
+        if prev_week_start <= entry.day < week_start
+        and entry.day.weekday() in logged_weekdays
+        and entry.step_count > 0
+    )
+    week_steps_wow_pct = (
+        round((week_steps_total - prev_week_steps_total) / prev_week_steps_total * 100)
+        if prev_week_steps_total
+        else None
+    )
     # Per-weekday steps for the current week (Mon..Sun), 0 for days with no
     # data yet — feeds the mini bar chart on the "Steps This Week" panel.
     week_steps_by_dow = [0] * 7
@@ -610,6 +628,7 @@ def build_dashboard_data():
             "steps_30d_delta": steps_30d_delta,
             "week_steps_total": week_steps_total,
             "week_days_logged": week_days_logged,
+            "week_steps_wow_pct": week_steps_wow_pct,
             "steps_recent_30_goal_pct": steps_recent_30_goal_pct,
             "steps_recent_30_goal_strip": steps_recent_30_goal_strip,
             "num_streaks": len(streaks),
