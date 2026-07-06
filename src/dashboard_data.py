@@ -315,12 +315,15 @@ def build_dashboard_data():
 
     # Current-week step total, Monday → today (weekday() is 0 for Monday).
     # Count only days with real step data — today's row is often a 0-step
-    # manual stub until the morning Garmin sync lands.
-    week_start = today - timedelta(days=today.weekday())
+    # manual stub until the morning Garmin sync lands. On Monday the current
+    # week has nothing logged yet, so fall back to the completed prior week.
+    week_is_prior = today.weekday() == 0
+    week_start = today - timedelta(days=today.weekday() + (7 if week_is_prior else 0))
+    week_end = week_start + timedelta(days=6) if week_is_prior else today
     week_entries = [
         entry
         for entry in entries
-        if week_start <= entry.day <= today and entry.step_count > 0
+        if week_start <= entry.day <= week_end and entry.step_count > 0
     ]
     week_steps_total = sum(entry.step_count for entry in week_entries)
     week_days_logged = len(week_entries)
@@ -629,6 +632,7 @@ def build_dashboard_data():
             "week_steps_total": week_steps_total,
             "week_days_logged": week_days_logged,
             "week_steps_wow_pct": week_steps_wow_pct,
+            "week_is_prior": week_is_prior,
             "steps_recent_30_goal_pct": steps_recent_30_goal_pct,
             "steps_recent_30_goal_strip": steps_recent_30_goal_strip,
             "num_streaks": len(streaks),

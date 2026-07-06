@@ -1609,8 +1609,8 @@
         </div>
 
         <div class="panel mood-avg-panel"
-             data-tooltip="Total steps so far this week, from Monday through today. Bars show each day's steps.">
-            <div class="stat-label">Steps This Week (Mon–Today)</div>
+             data-tooltip="{{ 'Total steps for last week, Monday through Sunday.' if data.stats.week_is_prior else 'Total steps so far this week, from Monday through today.' }} Bars show each day's steps.">
+            <div class="stat-label">{{ 'Steps Last Week (Mon–Sun)' if data.stats.week_is_prior else 'Steps This Week (Mon–Today)' }}</div>
             <div class="ki-row">
                 <div class="ki-icon ki-icon-great">📅</div>
                 <div class="mood-avg-row" style="flex-direction: column; align-items: flex-start; gap: 6px;">
