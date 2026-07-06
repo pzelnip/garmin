@@ -71,7 +71,7 @@
         },
         {
           "date": "August 18, 2026 · physio appt",
-          "title": "Research & decide on a gym membership",
+          "title": "Finish Research & decide on a gym membership",
           "status": "future"
         },
         {
@@ -88,11 +88,6 @@
         {
           "date": "Jul 20, 2026",
           "title": "100K step week",
-          "status": "future"
-        },
-        {
-          "date": "Jul 6, 2026",
-          "title": "90K step week",
           "status": "current",
           "note": "You are here — the rung you're climbing now."
         }
@@ -101,6 +96,16 @@
     {
       "name": "Already climbed",
       "rungs": [
+        {
+          "date": "Jul 5, 2026",
+          "title": "95K step week",
+          "status": "done"
+        },
+        {
+          "date": "Jul 5, 2026",
+          "title": "90K step week",
+          "status": "done"
+        },
         {
           "date": "Jul 4, 2026",
           "title": "20K steps on a weekend day",
