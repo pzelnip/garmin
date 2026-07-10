@@ -60,6 +60,11 @@
       "name": "Building step volume",
       "rungs": [
         {
+          "date": "Jul 31, 2026",
+          "title": "Month of 390,000+ steps",
+          "status": "future"
+        },
+        {
           "date": "August 31, 2026",
           "title": "110K step week",
           "status": "future"
@@ -79,6 +84,11 @@
           "title": "20K steps both days",
           "status": "future",
           "note": "2nd day before Lauren."
+        },
+        {
+          "date": "Jul 31, 2026",
+          "title": "Month of 370,000+ steps",
+          "status": "future"
         },
         {
           "date": "Jul 25 / 26, 2026",
@@ -114,6 +124,11 @@
         {
           "date": "Jun 2, 2026",
           "title": "30-day step-goal streak",
+          "status": "done"
+        },
+        {
+          "date": "Jun 30, 2026",
+          "title": "Month of 350,000+ steps",
           "status": "done"
         },
         {
