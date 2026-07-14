@@ -42,7 +42,9 @@ class Streak:
                 streak = Streak(group_items)
                 streaks.append(streak)
 
-        streaks.sort(key=lambda x: len(x.entries), reverse=True)
+        # On a length tie, prefer the more recent streak (later end date) so a
+        # current streak beats an equal-length older one for the last top-N slot.
+        streaks.sort(key=lambda x: (len(x.entries), x.end), reverse=True)
         return streaks
 
     def day_in_streak(self, day):

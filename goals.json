@@ -91,13 +91,13 @@
           "status": "future"
         },
         {
-          "date": "Jul 25 / 26, 2026",
-          "title": "20K steps both days",
+          "date": "Jul 27, 2026",
+          "title": "100K step week",
           "status": "future"
         },
         {
-          "date": "Jul 20, 2026",
-          "title": "100K step week",
+          "date": "Jul 25 / 26, 2026",
+          "title": "20K steps both days",
           "status": "current",
           "note": "You are here — the rung you're climbing now."
         }
