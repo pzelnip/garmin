@@ -60,13 +60,13 @@
       "name": "Building step volume",
       "rungs": [
         {
-          "date": "Aug 31, 2026",
-          "title": "Month of 390,000+ steps",
+          "date": "September 3, 2026",
+          "title": "110K step week",
           "status": "future"
         },
         {
-          "date": "August 31, 2026",
-          "title": "110K step week",
+          "date": "Aug 31, 2026",
+          "title": "Month of 390,000+ steps",
           "status": "future"
         },
         {
@@ -122,11 +122,6 @@
           "status": "done"
         },
         {
-          "date": "Jun 2, 2026",
-          "title": "30-day step-goal streak",
-          "status": "done"
-        },
-        {
           "date": "Jun 30, 2026",
           "title": "Month of 350,000+ steps",
           "status": "done"
@@ -139,6 +134,11 @@
         {
           "date": "Jun 22, 2026",
           "title": "80K step week",
+          "status": "done"
+        },
+        {
+          "date": "Jun 2, 2026",
+          "title": "30-day step-goal streak",
           "status": "done"
         }
       ]
