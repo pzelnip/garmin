@@ -106,7 +106,7 @@ def _load_goals():
         try:
             with open(GOALS_PATH, encoding="utf-8") as fh:
                 goals = json.load(fh)
-        except (OSError, ValueError):
+        except OSError, ValueError:
             return None
     rungs = [r for phase in goals.get("phases", []) for r in phase.get("rungs", [])]
     total = len(rungs) + (1 if goals.get("summit") else 0)
