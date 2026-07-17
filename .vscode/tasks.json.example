@@ -34,6 +34,15 @@
       "problemMatcher": []
     },
     {
+      "label": "Edit goals",
+      "type": "shell",
+      "command": "source .envrc && make edit-goals",
+      "presentation": {
+        "focus": true
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "Run Unit Tests",
       "type": "shell",
       "group": {

@@ -11,9 +11,13 @@ db-session: ## Start a database session
 pull-and-post: ## Pull data from Garmin into the DB
 	uv run python src/garmin.py $(ARGS)
 
-.PHONY: push-goals
-push-goals: ## Publish goals.json to the Neon goals table (Goals tab)
-	./scripts/push-goals.sh
+.PHONY: edit-goals
+edit-goals: ## Edit goals.json in VS Code: validate + publish on save, commit + push on close
+	./scripts/edit-goals.sh
+
+.PHONY: validate-goals
+validate-goals: ## Validate + auto-fix goals.json (sorts rungs, canonical formatting)
+	uv run python misc_scripts/validate_goals.py --fix goals.json
 
 .PHONY: run-server
 run-server: ## Run the Flask server

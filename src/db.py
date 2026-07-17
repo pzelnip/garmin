@@ -131,9 +131,9 @@ class Goals(SQLModel, table=True):
     Deliberately outside the daily-sync `DayStats` data model: the ladder is
     hand-authored content, not device data. It lives in the DB (rather than a
     committed file) so it can be updated without a code deploy or a git-pull
-    merge conflict on the Pi — edit the local `goals.json`, then publish it
-    with `misc_scripts/push_goals.py` (see `scripts/push-goals.sh`), which
-    upserts the single row here. Read fresh on every dashboard render.
+    merge conflict on the Pi — edit the local `goals.json` with `make
+    edit-goals`, which validates it and calls `push_goals.push` to upsert the
+    single row here. Read fresh on every dashboard render.
 
     The column is JSONB on Postgres and generic JSON on SQLite (tests), so
     `create_all` works against both.

@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Goals ladder (goals.json)",
+  "description": "Structural checks VS Code enforces live as you type. Ordering, the single 'current' rung, and date-consistency are checked/auto-fixed on save by misc_scripts/validate_goals.py.",
+  "type": "object",
+  "required": ["summit", "phases"],
+  "additionalProperties": false,
+  "properties": {
+    "summit": {
+      "type": "object",
+      "required": ["date", "title"],
+      "additionalProperties": false,
+      "properties": {
+        "date": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 }
+      }
+    },
+    "phases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "rungs"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "rungs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["date", "title", "status"],
+              "additionalProperties": false,
+              "properties": {
+                "date": { "type": "string", "minLength": 1 },
+                "title": { "type": "string", "minLength": 1 },
+                "status": { "enum": ["done", "current", "future"] },
+                "note": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

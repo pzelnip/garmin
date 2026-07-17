@@ -81,9 +81,9 @@ def _diagnostics():
 
 # The Goals-tab ladder is data-driven, not baked into the template. The live
 # copy lives in the Neon `goals` table (published out-of-band via
-# scripts/push-goals.sh) so it can be updated without a code deploy or a
-# committed file. The in-repo goals.json is the authoring source + an offline
-# fallback if the table is empty / unreachable.
+# `make edit-goals`) so it can be updated without a code deploy or a committed
+# file. The in-repo goals.json is the authoring source + an offline fallback if
+# the table is empty / unreachable.
 GOALS_PATH = os.path.join(REPO_ROOT, "goals.json")
 
 

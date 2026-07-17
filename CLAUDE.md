@@ -18,12 +18,21 @@ owner's Mac (local dev).
   / status `done|current|future`, plus the summit). The **live copy lives
   in the Neon `goals` table** (`Goals` model, a single-row JSON blob), read
   *fresh on every request* by `_load_goals` in `app.py`, which derives the
-  progress totals. To change it: edit the repo-root **`goals.json`**
-  (the authoring source + offline fallback) locally, then publish with
-  `./scripts/push-goals.sh` (wraps `misc_scripts/push_goals.py`, which
-  upserts the row). This deliberately writes to production Neon and needs
-  no deploy/commit/restart — so nothing is committed and there's no
-  git-pull merge-conflict risk on the Pi.
+  progress totals. The authoring source is the repo-root **`goals.json`**
+  (also the offline fallback). The normal way to change it is
+  **`make edit-goals`** (`scripts/edit-goals.sh` → `misc_scripts/edit_goals.py`):
+  opens `goals.json` in VS Code and, on every save, runs
+  `misc_scripts/validate_goals.py` — which auto-fixes ordering (sorts each
+  phase's rungs newest-first via the free-form `date` strings) and canonical
+  formatting, then rejects a save that can't be auto-fixed (bad JSON, unknown
+  status, unreadable date, not exactly one `current`, or a status that
+  disagrees with its date). A passing save publishes to Neon immediately
+  (no deploy/commit/restart), so the change is live on the Goals tab at once;
+  closing the editor tab commits `goals.json` and pushes to `origin` (the Pi
+  picks it up on its next pull). `.vscode/settings.json` also points VS Code at
+  `schema/goals.schema.json` for live structural checks while typing. The DB
+  write itself is `push_goals.push` (called by `edit_goals.py`); `make
+  validate-goals` runs the validator/auto-fixer over `goals.json` standalone.
 
 ## Architecture cheat-sheet
 
