@@ -7,7 +7,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
@@ -1813,8 +1812,10 @@
         <div class="chart-panel">
             <div class="panel-header">
                 <h2 data-tooltip="Daily body weight (pounds). Only populated on days when the connected scale logged a measurement.">Weight (lbs)</h2>
-                <div class="range-controls">
-                    <button class="range-btn" id="weightZoomReset" title="Reset zoom">Reset zoom</button>
+                <div class="range-controls" data-canvas="weightChart">
+                    <button class="range-btn" data-days="90">90d</button>
+                    <button class="range-btn" data-days="365">365d</button>
+                    <button class="range-btn active" data-days="all">All</button>
                 </div>
             </div>
             <div class="chart-wrap"><canvas id="weightChart"></canvas></div>
@@ -3133,51 +3134,7 @@
         }
         registerRangeable('rhrChart', charts.rhr.labels, charts.rhr.values, danger);
         registerRangeable('stressChart', charts.stress.labels, charts.stress.values, warn);
-
-        const weightEl = document.getElementById('weightChart');
-        let weightChart = null;
-        if (weightEl) {
-            weightChart = new Chart(weightEl, {
-                type: 'line',
-                data: {
-                    labels: charts.weight.labels,
-                    datasets: [{
-                        data: charts.weight.values,
-                        borderColor: accent2,
-                        backgroundColor: 'transparent',
-                        borderWidth: 1.5,
-                        pointRadius: 0,
-                        tension: 0.2,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        zoom: {
-                            zoom: {
-                                drag: {
-                                    enabled: true,
-                                    backgroundColor: 'rgba(129, 140, 248, 0.2)',
-                                    borderColor: accent2,
-                                    borderWidth: 1,
-                                },
-                                mode: 'x',
-                            },
-                            // Disable wheel/pinch so only the drag gesture zooms
-                            pan: { enabled: false },
-                        }
-                    },
-                    scales: gridOpts()
-                }
-            });
-
-            const resetBtn = document.getElementById('weightZoomReset');
-            if (resetBtn) {
-                resetBtn.addEventListener('click', () => weightChart.resetZoom());
-            }
-        }
+        registerRangeable('weightChart', charts.weight.labels, charts.weight.values, accent2);
 
         function applyRange(canvasId, days) {
             const entry = rangeable[canvasId];
