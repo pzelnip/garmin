@@ -37,3 +37,15 @@ CREATE TABLE IF NOT EXISTS goals (
     id   INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     data JSONB NOT NULL
 );
+
+-- 2026-07: per-day step targets for the Step Planning tab. Keyed by day,
+-- independent of daystats (targets can exist for future days Garmin hasn't
+-- synced, and are distinct from Garmin's own daily_step_goal). Table name is
+-- `steptarget` (SQLModel derives it from the StepTarget class name, same as
+-- daystats/goals) — NOT step_targets. The app also auto-creates this via
+-- SQLModel create_all; IF NOT EXISTS keeps it idempotent.
+CREATE TABLE IF NOT EXISTS steptarget (
+    id     INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    day    DATE NOT NULL UNIQUE,
+    target INTEGER NOT NULL
+);

@@ -145,6 +145,21 @@ class Goals(SQLModel, table=True):
     )
 
 
+class StepTarget(SQLModel, table=True):
+    """A user-defined daily step target for the Step Planning tab.
+
+    One row per planned day (`day` is unique). Deliberately separate from
+    `DayStats`: targets can be set for future days that Garmin hasn't synced
+    (so no `DayStats` row exists yet), and this is a *plan*, distinct from
+    Garmin's own `daily_step_goal`. The day's actual steps always come from
+    `DayStats.step_count`; this table only holds the target.
+    """
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    day: date = Field(sa_column_kwargs={"unique": True})
+    target: int
+
+
 def get_goals_data() -> dict | None:
     """Return the goals-ladder JSON blob from the single-row `goals` table, or
     None if the table is empty. Orders by id so a stray extra row can't shadow

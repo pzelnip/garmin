@@ -14,7 +14,7 @@ from helpers import add_day
 import dashboard_data
 import db
 
-TAB_NAMES = ["steps", "water", "sleep", "mood", "day", "goals"]
+TAB_NAMES = ["steps", "water", "sleep", "mood", "day", "goals", "step-planning"]
 
 # Top-level keys the template's `const charts = {...}` blob must expose. If
 # dashboard_data.py renames one, the JS silently breaks -- this list pins it.

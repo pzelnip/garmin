@@ -12,7 +12,7 @@ from jinja2 import select_autoescape
 from sqlmodel import select
 
 from dashboard_data import get_dashboard_data_cached, invalidate_dashboard_cache
-from db import DayStats, Source, _init_db, db_session, get_goals_data
+from db import DayStats, Source, StepTarget, _init_db, db_session, get_goals_data
 
 # Set GARMIN_DASHBOARD_DEBUG=1 (or any truthy 1/true/yes) to enable Flask's
 # reloader / debugger locally. Defaults to False so the Pi runs in
@@ -334,6 +334,98 @@ def update_day(iso_date):
                 "saved": True,
             }
         )
+
+
+@app.route("/api/step-plan")
+def step_plan():
+    """Return step targets + actual steps for every day in [start, end].
+
+    Powers the Step Planning calendar. The front-end requests a range that
+    reaches ~4 weeks before the visible grid so it has enough history for the
+    per-day same-weekday lookback and the weekly-comparison figures. Targets
+    come from `steptarget`; actuals come from `DayStats.step_count`. Days
+    with neither are simply absent from the response.
+
+    Query: ?start=YYYY-MM-DD&end=YYYY-MM-DD.
+    """
+    start = _parse_iso_date(request.args.get("start", ""))
+    end = _parse_iso_date(request.args.get("end", ""))
+    if start is None or end is None:
+        return jsonify({"error": "expected start and end as YYYY-MM-DD"}), 400
+    if end < start:
+        return jsonify({"error": "end must be on or after start"}), 400
+
+    with db_session() as session:
+        targets = session.exec(
+            select(StepTarget)
+            .where(StepTarget.day >= start)
+            .where(StepTarget.day <= end)
+        )
+        target_by_day = {t.day: t.target for t in targets}
+        steps = session.exec(
+            select(DayStats.day, DayStats.step_count)
+            .where(DayStats.day >= start)
+            .where(DayStats.day <= end)
+        )
+        steps_by_day = {day: count for day, count in steps}
+
+    days = sorted(set(target_by_day) | set(steps_by_day))
+    return jsonify(
+        {
+            "days": [
+                {
+                    "day": d.isoformat(),
+                    "target": target_by_day.get(d),
+                    "steps": steps_by_day.get(d),
+                }
+                for d in days
+            ]
+        }
+    )
+
+
+@app.route("/api/step-plan/<iso_date>", methods=["PUT"])
+def set_step_target(iso_date):
+    """Set (upsert) the step target for one day. Any day may be edited,
+    including past days (so goals can be backfilled). Body: {"target": positive int}.
+    """
+    target_day = _parse_iso_date(iso_date)
+    if target_day is None:
+        return jsonify({"error": "expected YYYY-MM-DD"}), 400
+
+    payload = request.get_json(silent=True) or {}
+    value = payload.get("target")
+    if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+        return jsonify({"error": "target must be a positive integer"}), 400
+
+    with db_session() as session:
+        row = session.exec(
+            select(StepTarget).where(StepTarget.day == target_day)
+        ).first()
+        if row is None:
+            row = StepTarget(day=target_day, target=value)
+        else:
+            row.target = value
+        session.add(row)
+        session.commit()
+    return jsonify({"day": iso_date, "target": value, "saved": True})
+
+
+@app.route("/api/step-plan/<iso_date>", methods=["DELETE"])
+def clear_step_target(iso_date):
+    """Clear the step target for one day (any day, including past)."""
+    target_day = _parse_iso_date(iso_date)
+    if target_day is None:
+        return jsonify({"error": "expected YYYY-MM-DD"}), 400
+
+    with db_session() as session:
+        row = session.exec(
+            select(StepTarget).where(StepTarget.day == target_day)
+        ).first()
+        if row is not None:
+            session.delete(row)
+            session.commit()
+    return jsonify({"day": iso_date, "cleared": True})
 
 
 @app.route("/api/force-update", methods=["POST"])

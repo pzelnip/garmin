@@ -1439,6 +1439,178 @@
             line-height: 1.6;
         }
         .goals-footer strong { color: var(--text); }
+
+        /* ===================== Step Planning tab ===================== */
+        .tab-btn[data-tab="step-planning"].active {
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+        .sp-intro { max-width: 820px; margin: 0 0 18px; }
+        .sp-intro p { color: var(--text-dim); line-height: 1.55; margin: 0; }
+        .sp-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 12px;
+        }
+        .sp-header h2 { margin: 0; font-size: 20px; }
+        .sp-header .range-controls { margin-left: auto; }
+        /* 7 day columns + a trailing week-summary column. */
+        .sp-dow {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr) 150px;
+            gap: 6px;
+            font-size: 11px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 6px;
+        }
+        .sp-dow span { text-align: center; padding: 2px 0; }
+        .sp-dow .sp-dow-week { text-align: left; }
+        .sp-grid { display: flex; flex-direction: column; gap: 6px; }
+        .sp-week {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr) 150px;
+            gap: 6px;
+        }
+        .sp-cell {
+            position: relative;
+            min-height: 118px;
+            border-radius: 8px;
+            background: var(--panel-2);
+            border: 1px solid var(--grid);
+            padding: 24px 6px 6px;
+            overflow: hidden;
+        }
+        .sp-cell.sp-outside { opacity: 0.4; }
+        .sp-cell.sp-editable { cursor: pointer; }
+        .sp-cell.sp-editable:hover { border-color: var(--accent); }
+        .sp-cell.sp-today {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent);
+        }
+        .sp-daynum {
+            position: absolute;
+            top: 5px;
+            left: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .sp-cell.sp-outside .sp-daynum { color: var(--text-dim); font-weight: 500; }
+        /* The target "event" chip, coloured by state. */
+        .sp-chip {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            border-radius: 5px;
+            padding: 3px 6px;
+            margin-bottom: 4px;
+            line-height: 1.2;
+        }
+        .sp-chip small { font-weight: 500; opacity: 0.85; }
+        .sp-chip.sp-future { background: rgba(251,191,36,0.18); color: var(--warn); border: 1px solid rgba(251,191,36,0.4); }
+        .sp-chip.sp-met    { background: rgba(52,211,153,0.16); color: #34d399; border: 1px solid rgba(52,211,153,0.4); }
+        .sp-chip.sp-missed { background: rgba(248,113,113,0.16); color: var(--danger); border: 1px solid rgba(248,113,113,0.4); }
+        /* Same-weekday history: 1–4 weeks prior, goal/actual. */
+        .sp-hist { display: flex; flex-direction: column; gap: 1px; }
+        .sp-hist-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 4px;
+            font-size: 10px;
+            line-height: 1.35;
+            color: var(--text-dim);
+        }
+        .sp-hist-row .sp-hist-date { flex: 0 0 auto; }
+        .sp-hist-row .sp-hist-val { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+        .sp-hist-row.sp-met .sp-hist-val { color: #34d399; }
+        .sp-hist-row.sp-missed .sp-hist-val { color: var(--danger); }
+        /* Trailing per-week comparison column. */
+        .sp-weekcmp {
+            border-radius: 8px;
+            background: var(--panel);
+            border: 1px solid var(--grid);
+            padding: 6px 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 3px;
+        }
+        .sp-weekcmp-total { font-size: 12px; font-weight: 600; color: var(--text); }
+        .sp-weekcmp-total small { color: var(--text-dim); font-weight: 500; }
+        .sp-weekcmp-sub { font-size: 11px; font-weight: 600; color: var(--text-dim); margin-bottom: 2px; }
+        .sp-weekcmp-sub small { font-weight: 500; opacity: 0.85; }
+        .sp-weekcmp-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 6px;
+            font-size: 11px;
+            color: var(--text-dim);
+        }
+        .sp-weekcmp-row .sp-pct { font-variant-numeric: tabular-nums; font-weight: 600; }
+        .sp-pct.sp-up { color: #34d399; }
+        .sp-pct.sp-down { color: var(--danger); }
+        .sp-pct.sp-flat { color: var(--text-dim); }
+        /* Editor popover. */
+        .sp-editor-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 60;
+        }
+        .sp-editor-backdrop.open { display: flex; }
+        .sp-editor {
+            background: var(--panel);
+            border: 1px solid var(--grid);
+            border-radius: 12px;
+            padding: 20px 22px;
+            width: min(380px, 92vw);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+        }
+        .sp-editor h3 { margin: 0 0 4px; font-size: 17px; }
+        .sp-editor .sp-editor-sub { color: var(--text-dim); font-size: 13px; margin: 0 0 16px; }
+        .sp-editor label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 6px; }
+        .sp-editor input[type="number"] {
+            width: 100%;
+            background: var(--panel-2);
+            border: 1px solid var(--grid);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 18px;
+            padding: 9px 12px;
+            margin-bottom: 14px;
+        }
+        .sp-editor input[type="number"]:focus { outline: none; border-color: var(--accent); }
+        .sp-quick { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+        .sp-quick button {
+            background: var(--panel-2);
+            border: 1px solid var(--grid);
+            color: var(--text-dim);
+            border-radius: 7px;
+            padding: 6px 10px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .sp-quick button:hover:not(:disabled) { color: var(--text); border-color: var(--accent); }
+        .sp-quick button:disabled { opacity: 0.4; cursor: not-allowed; }
+        .sp-editor-actions { display: flex; justify-content: flex-end; gap: 10px; }
+        .sp-editor-actions .sp-btn {
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid var(--grid);
+        }
+        .sp-btn-save { background: var(--accent); color: #0f1419; border-color: var(--accent); }
+        .sp-btn-cancel { background: transparent; color: var(--text-dim); }
+        .sp-btn-clear { background: transparent; color: var(--danger); border-color: rgba(248,113,113,0.4); margin-right: auto; }
+        .sp-editor-err { color: var(--danger); font-size: 12px; min-height: 16px; margin: -8px 0 10px; }
     </style>
 </head>
 <body>
@@ -1578,6 +1750,10 @@
         <button class="tab-btn" data-tab="goals" role="tab"
                 data-tooltip="The training ladder — long-term physio goals from today's starting rung up to the TC 10K PB summit. Updated by hand as milestones land.">
             <span class="tab-icon" aria-hidden="true">🪜</span> Goals
+        </button>
+        <button class="tab-btn" data-tab="step-planning" role="tab"
+                data-tooltip="Plan daily step targets on a month calendar — set goals for today and future days, compare against the same weekday in prior weeks, and track week-over-week trend.">
+            <span class="tab-icon" aria-hidden="true">🗓️</span> Step Planning
         </button>
     </div>
 
@@ -2420,6 +2596,51 @@
         </div>
     </div>
     <!-- /GOALS TAB -->
+
+    <!-- ======================= STEP PLANNING TAB ======================= -->
+    <div class="tab-panel" data-tab="step-planning">
+        <div class="sp-intro">
+            <p>Plan daily step targets on a month calendar. Click any day to set
+            a target (past days too, for backfilling); each planned day shows the
+            same weekday from the previous four weeks (goal / actual) for
+            reference, and each week lists its step total vs the three prior weeks.</p>
+        </div>
+        <div class="sp-header">
+            <h2 id="sp-title">—</h2>
+            <div class="range-controls">
+                <button class="range-btn" id="sp-prev" aria-label="Previous month">‹</button>
+                <button class="range-btn" id="sp-today-btn">Today</button>
+                <button class="range-btn" id="sp-next" aria-label="Next month">›</button>
+            </div>
+        </div>
+        <div class="sp-dow">
+            <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span>
+            <span>Fri</span><span>Sat</span><span>Sun</span>
+            <span class="sp-dow-week">Week vs −1/−2/−3</span>
+        </div>
+        <div class="sp-grid" id="sp-grid"></div>
+    </div>
+
+    <div class="sp-editor-backdrop" id="sp-editor-backdrop">
+        <div class="sp-editor" role="dialog" aria-modal="true" aria-labelledby="sp-editor-title">
+            <h3 id="sp-editor-title">Step target</h3>
+            <p class="sp-editor-sub" id="sp-editor-sub"></p>
+            <label for="sp-editor-input">Target steps</label>
+            <input type="number" id="sp-editor-input" min="1" step="100" inputmode="numeric">
+            <div class="sp-editor-err" id="sp-editor-err"></div>
+            <div class="sp-quick">
+                <button id="sp-copy-goal" type="button">Copy goal from last week</button>
+                <button id="sp-copy-actual" type="button">Copy actual from last week</button>
+                <button id="sp-plus5" type="button">+5% on last week's goal</button>
+            </div>
+            <div class="sp-editor-actions">
+                <button class="sp-btn sp-btn-clear" id="sp-editor-clear" type="button">Clear</button>
+                <button class="sp-btn sp-btn-cancel" id="sp-editor-cancel" type="button">Cancel</button>
+                <button class="sp-btn sp-btn-save" id="sp-editor-save" type="button">Save</button>
+            </div>
+        </div>
+    </div>
+    <!-- /STEP PLANNING TAB -->
 
     {% if git_sha %}
     <div class="version-footer">
@@ -4043,6 +4264,7 @@
             });
             try { localStorage.setItem(TAB_STORAGE_KEY, name); } catch (_) {}
             if (name === 'day') ensureDayLoaded();
+            if (name === 'step-planning') ensureStepPlanLoaded();
         }
 
         tabButtons.forEach(btn => {
@@ -4050,9 +4272,9 @@
         });
 
         // Hotkeys: 1 = steps, 2 = water, 3 = sleep, 4 = mood, 5 = day,
-        // 6 = goals. Ignored if typing into a form field or while the debug
-        // panel is open.
-        const TAB_HOTKEYS = { '1': 'steps', '2': 'water', '3': 'sleep', '4': 'mood', '5': 'day', '6': 'goals' };
+        // 6 = goals, 7 = step planning. Ignored if typing into a form field or
+        // while the debug panel is open.
+        const TAB_HOTKEYS = { '1': 'steps', '2': 'water', '3': 'sleep', '4': 'mood', '5': 'day', '6': 'goals', '7': 'step-planning' };
         document.addEventListener('keydown', (e) => {
             if (!(e.key in TAB_HOTKEYS)) return;
             if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -4637,6 +4859,314 @@
             }
             daySaveBtn.disabled = false;
             moodClearBtn.disabled = false;
+        });
+
+        // -------- Step Planning --------
+        // Month calendar of user-defined daily step targets. Targets live in
+        // the `steptarget` table (via /api/step-plan); actual steps come
+        // from DayStats. Only today or later can be edited.
+        const spGrid = document.getElementById('sp-grid');
+        const spTitle = document.getElementById('sp-title');
+        const spEditorBackdrop = document.getElementById('sp-editor-backdrop');
+        const spEditorTitle = document.getElementById('sp-editor-title');
+        const spEditorSub = document.getElementById('sp-editor-sub');
+        const spEditorInput = document.getElementById('sp-editor-input');
+        const spEditorErr = document.getElementById('sp-editor-err');
+        const spCopyGoalBtn = document.getElementById('sp-copy-goal');
+        const spCopyActualBtn = document.getElementById('sp-copy-actual');
+        const spPlus5Btn = document.getElementById('sp-plus5');
+
+        let spCursor = null;      // {year, month} of the displayed month
+        let spData = {};          // iso -> {target, steps}
+        let spLoaded = false;
+        let spEditingIso = null;
+
+        const spToday = new Date();
+        const spTodayIso = spIso(spToday);
+
+        function spIso(d) {
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+                + `-${String(d.getDate()).padStart(2, '0')}`;
+        }
+        function spAddDays(d, n) {
+            const r = new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+            return r;
+        }
+        function spFmtFull(n) { return Number(n).toLocaleString(); }
+        function spFmtK(n) {
+            if (n == null) return '–';
+            return (n / 1000).toFixed(1) + 'k';
+        }
+        function spMonthLabel(year, month) {
+            return new Date(year, month, 1).toLocaleDateString(undefined,
+                { month: 'long', year: 'numeric' });
+        }
+
+        function ensureStepPlanLoaded() {
+            if (spLoaded) return;
+            spLoaded = true;
+            spCursor = { year: spToday.getFullYear(), month: spToday.getMonth() };
+            spFetchAndRender();
+        }
+
+        async function spFetchAndRender() {
+            const { year, month } = spCursor;
+            const first = new Date(year, month, 1);
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            // Weeks run Monday→Sunday: getDay() is 0=Sun..6=Sat, so Monday maps
+            // to leading 0 and Sunday to 6.
+            const leading = (first.getDay() + 6) % 7;
+            const numWeeks = Math.ceil((leading + daysInMonth) / 7);
+            const gridStart = spAddDays(first, -leading);
+            const gridEnd = spAddDays(gridStart, numWeeks * 7 - 1);
+            // Reach 4 weeks before the grid so we have same-weekday history and
+            // 3-week weekly comparisons for the first visible week.
+            const fetchStart = spAddDays(gridStart, -28);
+
+            spTitle.textContent = spMonthLabel(year, month);
+            try {
+                const res = await fetch(
+                    `/api/step-plan?start=${spIso(fetchStart)}&end=${spIso(gridEnd)}`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const payload = await res.json();
+                spData = {};
+                (payload.days || []).forEach(d => {
+                    spData[d.day] = { target: d.target, steps: d.steps };
+                });
+            } catch (ex) {
+                spGrid.innerHTML =
+                    `<div class="empty-state">Couldn't load step plan: ${escapeHtml(ex.message)}</div>`;
+                return;
+            }
+            spRenderGrid(gridStart, numWeeks);
+        }
+
+        function spWeekTotal(weekStart) {
+            let total = null;
+            for (let i = 0; i < 7; i++) {
+                const s = spData[spIso(spAddDays(weekStart, i))]?.steps;
+                if (s != null) total = (total || 0) + s;
+            }
+            return total;
+        }
+
+        function spWeekGoalTotal(weekStart) {
+            let total = null;
+            for (let i = 0; i < 7; i++) {
+                const t = spData[spIso(spAddDays(weekStart, i))]?.target;
+                if (t != null) total = (total || 0) + t;
+            }
+            return total;
+        }
+
+        function spPctCell(current, prior) {
+            if (prior == null || current == null || prior === 0) {
+                return '<span class="sp-pct sp-flat">–</span>';
+            }
+            const pct = ((current - prior) / prior) * 100;
+            const cls = pct > 0.05 ? 'sp-up' : (pct < -0.05 ? 'sp-down' : 'sp-flat');
+            const sign = pct > 0 ? '+' : '';
+            return `<span class="sp-pct ${cls}">${sign}${pct.toFixed(0)}%</span>`;
+        }
+
+        function spHistoryRows(dayDate) {
+            let rows = '';
+            for (let w = 1; w <= 4; w++) {
+                const hd = spAddDays(dayDate, -7 * w);
+                const rec = spData[spIso(hd)] || {};
+                const goal = rec.target;
+                const steps = rec.steps;
+                let cls = '';
+                if (goal != null && steps != null) {
+                    cls = steps >= goal ? 'sp-met' : 'sp-missed';
+                }
+                const label = `${hd.getMonth() + 1}/${hd.getDate()}`;
+                rows += `<div class="sp-hist-row ${cls}">`
+                    + `<span class="sp-hist-date">${label}</span>`
+                    + `<span class="sp-hist-val">${spFmtK(goal)}/${spFmtK(steps)}</span>`
+                    + `</div>`;
+            }
+            return `<div class="sp-hist">${rows}</div>`;
+        }
+
+        function spCellHtml(dayDate) {
+            const iso = spIso(dayDate);
+            const inMonth = dayDate.getMonth() === spCursor.month;
+            const isToday = iso === spTodayIso;
+            const isPast = iso < spTodayIso;
+            const rec = spData[iso] || {};
+            const target = rec.target;
+            const steps = rec.steps;
+
+            // Every day is editable (past days too, for backfilling goals).
+            const classes = ['sp-cell', 'sp-editable'];
+            if (!inMonth) classes.push('sp-outside');
+            if (isToday) classes.push('sp-today');
+
+            let inner = `<span class="sp-daynum">${dayDate.getDate()}</span>`;
+            if (target != null) {
+                // Colour by day, not by editability: today/future are pending
+                // (yellow); past days are met (green) or missed (red).
+                let chipCls, sub;
+                if (!isPast) {
+                    chipCls = 'sp-future';
+                    sub = '';
+                } else if (steps != null && steps >= target) {
+                    chipCls = 'sp-met';
+                    sub = ` <small>${spFmtFull(steps)}</small>`;
+                } else {
+                    chipCls = 'sp-missed';
+                    sub = ` <small>${steps != null ? spFmtFull(steps) : '—'}</small>`;
+                }
+                inner += `<span class="sp-chip ${chipCls}">${spFmtFull(target)}${sub}</span>`;
+                inner += spHistoryRows(dayDate);
+            }
+            return `<div class="${classes.join(' ')}" data-iso="${iso}" data-editable="1">${inner}</div>`;
+        }
+
+        function spRenderGrid(gridStart, numWeeks) {
+            let html = '';
+            for (let w = 0; w < numWeeks; w++) {
+                const weekStart = spAddDays(gridStart, w * 7);
+                let week = '<div class="sp-week">';
+                for (let d = 0; d < 7; d++) {
+                    week += spCellHtml(spAddDays(weekStart, d));
+                }
+                // Trailing week-comparison column: this week vs the 3 prior
+                // weeks. Past weeks compare actual step totals; the current and
+                // future weeks compare goal totals instead — their actuals are
+                // still incomplete, so an actual-vs-actual % would read as a
+                // large false drop early in the week.
+                const weekEndIso = spIso(spAddDays(weekStart, 6));
+                const useGoal = weekEndIso >= spTodayIso;
+                const metric = useGoal ? spWeekGoalTotal : spWeekTotal;
+                const total = metric(weekStart);
+                const p1 = metric(spAddDays(weekStart, -7));
+                const p2 = metric(spAddDays(weekStart, -14));
+                const p3 = metric(spAddDays(weekStart, -21));
+                const goalTotal = spWeekGoalTotal(weekStart);
+                const fmt = (v) => v != null ? spFmtFull(v) : '–';
+                // Current/future weeks lead with the goal total (their actuals
+                // are incomplete). Past weeks lead with actual steps and show
+                // the goal total as a secondary line, mirroring the day chips.
+                const totalHtml = useGoal
+                    ? `<div class="sp-weekcmp-total">${fmt(goalTotal)} <small>goal</small></div>`
+                    : `<div class="sp-weekcmp-total">${fmt(total)} <small>steps</small></div>`
+                        + `<div class="sp-weekcmp-sub">${fmt(goalTotal)} <small>goal</small></div>`;
+                week += '<div class="sp-weekcmp">'
+                    + totalHtml
+                    + `<div class="sp-weekcmp-row"><span>−1w</span>${spPctCell(total, p1)}</div>`
+                    + `<div class="sp-weekcmp-row"><span>−2w</span>${spPctCell(total, p2)}</div>`
+                    + `<div class="sp-weekcmp-row"><span>−3w</span>${spPctCell(total, p3)}</div>`
+                    + '</div>';
+                week += '</div>';
+                html += week;
+            }
+            spGrid.innerHTML = html;
+        }
+
+        // ---- Editor ----
+        function spOpenEditor(iso) {
+            spEditingIso = iso;
+            const rec = spData[iso] || {};
+            const dayDate = new Date(iso + 'T00:00:00');
+            spEditorTitle.textContent = 'Step target';
+            spEditorSub.textContent = dayDate.toLocaleDateString(undefined,
+                { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+            spEditorInput.value = rec.target != null ? rec.target : '';
+            spEditorErr.textContent = '';
+
+            const lastWeek = spData[spIso(spAddDays(dayDate, -7))] || {};
+            spCopyGoalBtn.disabled = lastWeek.target == null;
+            spCopyActualBtn.disabled = lastWeek.steps == null;
+            spPlus5Btn.disabled = lastWeek.target == null;
+            spCopyGoalBtn.dataset.value = lastWeek.target ?? '';
+            spCopyActualBtn.dataset.value = lastWeek.steps ?? '';
+            spPlus5Btn.dataset.value =
+                lastWeek.target != null ? Math.round(lastWeek.target * 1.05) : '';
+
+            spEditorBackdrop.classList.add('open');
+            spEditorInput.focus();
+        }
+        function spCloseEditor() {
+            spEditorBackdrop.classList.remove('open');
+            spEditingIso = null;
+        }
+
+        spGrid.addEventListener('click', (e) => {
+            const cell = e.target.closest('.sp-cell[data-editable]');
+            if (cell) spOpenEditor(cell.dataset.iso);
+        });
+        [spCopyGoalBtn, spCopyActualBtn, spPlus5Btn].forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (btn.dataset.value) spEditorInput.value = btn.dataset.value;
+                spEditorErr.textContent = '';
+                spEditorInput.focus();
+            });
+        });
+        document.getElementById('sp-editor-cancel').addEventListener('click', spCloseEditor);
+        spEditorBackdrop.addEventListener('click', (e) => {
+            if (e.target === spEditorBackdrop) spCloseEditor();
+        });
+        spEditorBackdrop.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') { e.stopPropagation(); spCloseEditor(); }
+        });
+
+        document.getElementById('sp-editor-save').addEventListener('click', async () => {
+            const iso = spEditingIso;
+            const val = parseInt(String(spEditorInput.value).replace(/[^0-9]/g, ''), 10);
+            if (!val || val <= 0) {
+                spEditorErr.textContent = 'Enter a positive number of steps.';
+                return;
+            }
+            try {
+                const res = await fetch(`/api/step-plan/${iso}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target: val }),
+                });
+                if (!res.ok) {
+                    const body = await res.json().catch(() => ({}));
+                    throw new Error(body.error || `HTTP ${res.status}`);
+                }
+                spData[iso] = { ...(spData[iso] || {}), target: val };
+                spCloseEditor();
+                spFetchAndRender();
+            } catch (ex) {
+                spEditorErr.textContent = `Save failed: ${ex.message}`;
+            }
+        });
+
+        document.getElementById('sp-editor-clear').addEventListener('click', async () => {
+            const iso = spEditingIso;
+            if (!(spData[iso] && spData[iso].target != null)) { spCloseEditor(); return; }
+            try {
+                const res = await fetch(`/api/step-plan/${iso}`, { method: 'DELETE' });
+                if (!res.ok) {
+                    const body = await res.json().catch(() => ({}));
+                    throw new Error(body.error || `HTTP ${res.status}`);
+                }
+                if (spData[iso]) spData[iso].target = null;
+                spCloseEditor();
+                spFetchAndRender();
+            } catch (ex) {
+                spEditorErr.textContent = `Clear failed: ${ex.message}`;
+            }
+        });
+
+        document.getElementById('sp-prev').addEventListener('click', () => {
+            spCursor = { year: spCursor.month === 0 ? spCursor.year - 1 : spCursor.year,
+                         month: (spCursor.month + 11) % 12 };
+            spFetchAndRender();
+        });
+        document.getElementById('sp-next').addEventListener('click', () => {
+            spCursor = { year: spCursor.month === 11 ? spCursor.year + 1 : spCursor.year,
+                         month: (spCursor.month + 1) % 12 };
+            spFetchAndRender();
+        });
+        document.getElementById('sp-today-btn').addEventListener('click', () => {
+            spCursor = { year: spToday.getFullYear(), month: spToday.getMonth() };
+            spFetchAndRender();
         });
 
         // Restore last-selected tab if it still exists, otherwise fall back to
