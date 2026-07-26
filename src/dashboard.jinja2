@@ -1700,6 +1700,10 @@
             <span class="debug-hint">press ? or Esc to close</span>
         </h2>
         <dl>
+            <dt>Sync now</dt>
+            <dd>
+                <button class="debug-action" id="debug-sync">Run garmin sync</button>
+            </dd>
             <dt>Force update</dt>
             <dd>
                 <button class="debug-action danger" id="debug-force-update">Pull & restart</button>
@@ -5193,6 +5197,7 @@
         const debugPanel = document.getElementById('debug-panel');
         const debugStatus = document.getElementById('debug-status');
         const debugForceBtn = document.getElementById('debug-force-update');
+        const debugSyncBtn = document.getElementById('debug-sync');
 
         function openDebug() {
             debugBackdrop.classList.add('open');
@@ -5225,6 +5230,27 @@
             debugStatus.textContent = text;
             debugStatus.className = 'show ' + (kind || '');
         }
+
+        debugSyncBtn.addEventListener('click', async () => {
+            debugSyncBtn.disabled = true;
+            setDebugStatus('Sync started — fetching from Garmin…', 'ok');
+            try {
+                const resp = await fetch('/api/sync', { method: 'POST' });
+                const data = await resp.json().catch(() => ({}));
+                if (data.error) {
+                    setDebugStatus('Failed: ' + data.error, 'err');
+                    debugSyncBtn.disabled = false;
+                    return;
+                }
+                // The job runs detached; it takes a little while to fetch and
+                // upsert. Reload after a delay so fresh data shows up.
+                setDebugStatus('Sync running — reloading shortly…', 'ok');
+                setTimeout(() => location.reload(), 15000);
+            } catch (e) {
+                setDebugStatus('Failed to start sync: ' + e, 'err');
+                debugSyncBtn.disabled = false;
+            }
+        });
 
         debugForceBtn.addEventListener('click', async () => {
             if (!confirm('Force a git pull and restart the dashboard service? The page will become unreachable briefly.')) {

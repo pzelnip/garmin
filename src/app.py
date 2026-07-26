@@ -143,6 +143,11 @@ def dashboard():
 FORCE_UPDATE_SCRIPT = os.path.join(REPO_ROOT, "scripts", "force-update.sh")
 FORCE_UPDATE_LOG = os.path.join(REPO_ROOT, "force-update.log")
 
+# Triggered by the dashboard's debug-panel "Sync now" button. Spawns
+# scripts/run-sync.sh detached to run garmin.py --auto without a restart.
+SYNC_SCRIPT = os.path.join(REPO_ROOT, "scripts", "run-sync.sh")
+SYNC_LOG = os.path.join(REPO_ROOT, "run-sync.log")
+
 
 def _parse_iso_date(iso_date):
     try:
@@ -445,6 +450,31 @@ def force_update():
         # open for the detached child to inherit.
         logfile = open(FORCE_UPDATE_LOG, "a")
         logfile.write(f"\n=== {datetime.now().isoformat()} force-update ===\n")
+        logfile.flush()
+        subprocess.Popen(
+            ["/usr/bin/env", "bash", script],
+            stdout=logfile,
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
+        )
+        return jsonify({"started": True})
+    except Exception as ex:
+        return jsonify({"error": str(ex)}), 500
+
+
+@app.route("/api/sync", methods=["POST"])
+def sync_now():
+    script = os.path.abspath(SYNC_SCRIPT)
+    if not os.path.isfile(script):
+        return jsonify({"error": f"script not found at {script}"}), 500
+    try:
+        logging.info(
+            f"{datetime.now().isoformat()} — sync triggered, spawning {script}"
+        )
+        # Fire-and-forget: the Garmin fetch can take a while, so don't block
+        # the request on it. Capture output to a log for post-mortem.
+        logfile = open(SYNC_LOG, "a")
+        logfile.write(f"\n=== {datetime.now().isoformat()} sync ===\n")
         logfile.flush()
         subprocess.Popen(
             ["/usr/bin/env", "bash", script],
