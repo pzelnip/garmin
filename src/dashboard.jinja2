@@ -1455,6 +1455,59 @@
         }
         .sp-header h2 { margin: 0; font-size: 20px; }
         .sp-header .range-controls { margin-left: auto; }
+        /* Calendar-month goal vs actual totals, next to the month title. */
+        .sp-monthtotal {
+            display: flex;
+            align-items: stretch;
+            gap: 8px;
+            padding: 4px 4px 4px 14px;
+            border-left: 1px solid var(--grid);
+        }
+        .sp-monthtotal:empty { border-left: none; }
+        .sp-monthtotal .sp-mt-item {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            line-height: 1.2;
+            padding: 4px 10px;
+            border-radius: 8px;
+            background: var(--panel-2);
+            border: 1px solid var(--grid);
+        }
+        .sp-monthtotal .sp-mt-label {
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: 10px;
+            color: var(--text-dim);
+        }
+        .sp-monthtotal .sp-mt-val {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text);
+            font-variant-numeric: tabular-nums;
+        }
+        /* Delta chip: actual vs goal, green when met / red when short. */
+        .sp-monthtotal .sp-mt-delta {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            line-height: 1.2;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-variant-numeric: tabular-nums;
+        }
+        .sp-monthtotal .sp-mt-delta .sp-mt-pct { font-size: 15px; font-weight: 700; }
+        .sp-monthtotal .sp-mt-delta .sp-mt-diff { font-size: 10px; }
+        .sp-monthtotal .sp-mt-delta.sp-up {
+            background: rgba(52,211,153,0.14);
+            border: 1px solid rgba(52,211,153,0.4);
+            color: #34d399;
+        }
+        .sp-monthtotal .sp-mt-delta.sp-down {
+            background: rgba(248,113,113,0.14);
+            border: 1px solid rgba(248,113,113,0.4);
+            color: var(--danger);
+        }
         /* 7 day columns + a trailing week-summary column. */
         .sp-dow {
             display: grid;
@@ -2611,6 +2664,7 @@
         </div>
         <div class="sp-header">
             <h2 id="sp-title">—</h2>
+            <div class="sp-monthtotal" id="sp-monthtotal"></div>
             <div class="range-controls">
                 <button class="range-btn" id="sp-prev" aria-label="Previous month">‹</button>
                 <button class="range-btn" id="sp-today-btn">Today</button>
@@ -5028,7 +5082,39 @@
             return `<div class="${classes.join(' ')}" data-iso="${iso}" data-editable="1">${inner}</div>`;
         }
 
+        // Goal / actual step totals for the displayed calendar month only
+        // (days that fall in spCursor.month, ignoring the grid's spill days).
+        function spRenderMonthTotal() {
+            const { year, month } = spCursor;
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            let goalTotal = null, stepsTotal = null;
+            for (let d = 1; d <= daysInMonth; d++) {
+                const rec = spData[spIso(new Date(year, month, d))] || {};
+                if (rec.target != null) goalTotal = (goalTotal || 0) + rec.target;
+                if (rec.steps != null) stepsTotal = (stepsTotal || 0) + rec.steps;
+            }
+            const fmt = (v) => v != null ? spFmtFull(v) : '–';
+            let html =
+                `<div class="sp-mt-item"><span class="sp-mt-label">Goal</span>`
+                + `<span class="sp-mt-val">${fmt(goalTotal)}</span></div>`
+                + `<div class="sp-mt-item"><span class="sp-mt-label">Actual</span>`
+                + `<span class="sp-mt-val">${fmt(stepsTotal)}</span></div>`;
+            // Delta chip only when both totals exist and there's a goal to compare
+            // against. Coloured green when actual has met/beaten goal, red when short.
+            if (goalTotal != null && stepsTotal != null && goalTotal > 0) {
+                const diff = stepsTotal - goalTotal;
+                const pct = (diff / goalTotal) * 100;
+                const cls = diff >= 0 ? 'sp-up' : 'sp-down';
+                const sign = diff >= 0 ? '+' : '−';
+                html += `<div class="sp-mt-delta ${cls}">`
+                    + `<span class="sp-mt-pct">${sign}${Math.abs(pct).toFixed(0)}%</span>`
+                    + `<span class="sp-mt-diff">${sign}${spFmtFull(Math.abs(diff))}</span></div>`;
+            }
+            document.getElementById('sp-monthtotal').innerHTML = html;
+        }
+
         function spRenderGrid(gridStart, numWeeks) {
+            spRenderMonthTotal();
             let html = '';
             for (let w = 0; w < numWeeks; w++) {
                 const weekStart = spAddDays(gridStart, w * 7);
