@@ -88,24 +88,24 @@
         {
           "date": "Jul 31, 2026",
           "title": "Month of 370,000+ steps",
-          "status": "future"
-        },
-        {
-          "date": "Jul 27, 2026",
-          "title": "100K step week",
-          "status": "future"
-        },
-        {
-          "date": "Jul 25 / 26, 2026",
-          "title": "20K steps both days",
-          "status": "current",
-          "note": "You are here — the rung you're climbing now."
+          "status": "current"
         }
       ]
     },
     {
       "name": "Already climbed",
       "rungs": [
+        {
+          "date": "Jul 26, 2026",
+          "title": "100K step week",
+          "status": "done"
+        },
+        {
+          "date": "Jul 25 / 26, 2026",
+          "title": "20K steps both days",
+          "status": "done",
+          "note": "You are here — the rung you're climbing now."
+        },
         {
           "date": "Jul 5, 2026",
           "title": "95K step week",
