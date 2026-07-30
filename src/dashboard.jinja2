@@ -4555,6 +4555,7 @@
                 const res = await fetch(`/api/day/${iso}`);
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 renderDay(await res.json());
+                markDayEditsSaved();
             } catch (e) {
                 const empty = document.getElementById('day-empty');
                 document.getElementById('day-grid').innerHTML = '';
@@ -4720,6 +4721,19 @@
         function setNotesStatus(text, cls) {
             notesStatus.textContent = text;
             notesStatus.className = 'day-notes-status' + (cls ? ' ' + cls : '');
+        }
+
+        // Snapshot of the last-persisted notes/mood for the day on screen, so
+        // the day-rollover watcher can tell "nothing typed yet" from "typed but
+        // not saved" and never reload away unsaved work.
+        let dayBaselineNotes = '';
+        let dayBaselineMood = null;
+        function markDayEditsSaved() {
+            dayBaselineNotes = notesField.value;
+            dayBaselineMood = moodSelected;
+        }
+        function dayEditsPending() {
+            return notesField.value !== dayBaselineNotes || moodSelected !== dayBaselineMood;
         }
 
         // Write/Preview toggle for the notes field. Preview renders the
@@ -4904,6 +4918,7 @@
                 });
                 const body = await res.json().catch(() => ({}));
                 if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+                markDayEditsSaved();
                 setNotesStatus('Saved', 'saved');
                 notesStatusTimer = setTimeout(() => setNotesStatus('', ''), 2000);
                 const savedMsg = moodSelected == null
@@ -5364,6 +5379,34 @@
                 setTimeout(() => location.reload(), 5000);
             }
         });
+
+        // -------- Day-rollover auto-refresh --------
+        // Every panel is rendered for the day the page was loaded on: "today"
+        // and "yesterday" in the Day tab, week-to-date step totals, the last
+        // heatmap cell. A tab left open past midnight keeps showing the
+        // previous day's version of all of it, so reload once the local date
+        // moves on. Checked on a timer (a tab that stayed visible), on
+        // visibility/focus changes (one that sat in the background), and on
+        // pageshow (one restored from the back/forward cache, whose timers
+        // were frozen).
+        const PAGE_RENDERED_DAY = localIso(new Date());
+
+        function maybeReloadForNewDay() {
+            if (localIso(new Date()) === PAGE_RENDERED_DAY) return;
+            // Never reload over work in progress or an open editor — the next
+            // check picks it up once the user is done.
+            if (dayEditsPending()) return;
+            if (spEditorBackdrop.classList.contains('open')) return;
+            if (debugBackdrop.classList.contains('open')) return;
+            location.reload();
+        }
+
+        setInterval(maybeReloadForNewDay, 60 * 1000);
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) maybeReloadForNewDay();
+        });
+        window.addEventListener('focus', maybeReloadForNewDay);
+        window.addEventListener('pageshow', maybeReloadForNewDay);
     </script>
 </body>
 </html>
