@@ -1535,6 +1535,10 @@
             border: 1px solid var(--grid);
             padding: 24px 6px 6px;
             overflow: hidden;
+            /* Shift-clicking to extend a selection would otherwise drag-select
+               the cells' text. */
+            user-select: none;
+            -webkit-user-select: none;
         }
         .sp-cell.sp-outside { opacity: 0.4; }
         .sp-cell.sp-editable { cursor: pointer; }
@@ -1542,6 +1546,62 @@
         .sp-cell.sp-today {
             border-color: var(--accent);
             box-shadow: 0 0 0 2px var(--accent);
+        }
+        /* Multi-select: picked days get a filled tint + a check badge so the
+           selection reads even on cells already outlined as "today". */
+        .sp-cell.sp-selected {
+            background: rgba(129,140,248,0.16);
+            border-color: var(--accent-2);
+            box-shadow: 0 0 0 2px var(--accent-2);
+        }
+        .sp-cell.sp-selected::after {
+            content: '✓';
+            position: absolute;
+            top: 4px;
+            right: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--accent-2);
+        }
+        .sp-grid.sp-selecting .sp-cell.sp-editable:hover { border-color: var(--accent-2); }
+        /* Selection action bar — only visible while days are selected. */
+        .sp-selbar {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: var(--panel);
+            border: 1px solid var(--accent-2);
+        }
+        .sp-selbar.open { display: flex; }
+        .sp-selbar .sp-selcount { font-size: 13px; font-weight: 600; color: var(--text); }
+        .sp-selbar .sp-selerr { font-size: 12px; color: var(--danger); }
+        .sp-selbar .sp-selhint { font-size: 12px; color: var(--text-dim); margin-right: auto; }
+        .sp-selbar button {
+            background: var(--panel-2);
+            border: 1px solid var(--grid);
+            color: var(--text-dim);
+            border-radius: 7px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .sp-selbar button:hover { color: var(--text); border-color: var(--accent-2); }
+        .sp-selbar button.sp-sel-primary {
+            background: var(--accent-2);
+            border-color: var(--accent-2);
+            color: #0f1419;
+        }
+        .sp-selbar button.sp-sel-primary:hover { color: #0f1419; }
+        .sp-selbar button:disabled { opacity: 0.4; cursor: not-allowed; }
+        .sp-selbar button:disabled:hover { color: var(--text-dim); border-color: var(--grid); }
+        .sp-selbar button.sp-sel-primary:disabled:hover { color: #0f1419; }
+        .range-btn.sp-mode-on {
+            border-color: var(--accent-2);
+            color: var(--accent-2);
         }
         .sp-daynum {
             position: absolute;
@@ -1660,6 +1720,7 @@
             cursor: pointer;
             border: 1px solid var(--grid);
         }
+        .sp-editor-actions .sp-btn:disabled { opacity: 0.4; cursor: not-allowed; }
         .sp-btn-save { background: var(--accent); color: #0f1419; border-color: var(--accent); }
         .sp-btn-cancel { background: transparent; color: var(--text-dim); }
         .sp-btn-clear { background: transparent; color: var(--danger); border-color: rgba(248,113,113,0.4); margin-right: auto; }
@@ -2661,15 +2722,27 @@
             a target (past days too, for backfilling); each planned day shows the
             same weekday from the previous four weeks (goal / actual) for
             reference, and each week lists its step total vs the three prior weeks.</p>
+            <p>To set one target across several days at once, ⌘/Ctrl-click days
+            (or hit <em>Select days</em> and click them), then use <em>Set target</em>.
+            Shift-click extends a range; the selection survives month changes.</p>
         </div>
         <div class="sp-header">
             <h2 id="sp-title">—</h2>
             <div class="sp-monthtotal" id="sp-monthtotal"></div>
             <div class="range-controls">
+                <button class="range-btn" id="sp-select-mode">Select days</button>
                 <button class="range-btn" id="sp-prev" aria-label="Previous month">‹</button>
                 <button class="range-btn" id="sp-today-btn">Today</button>
                 <button class="range-btn" id="sp-next" aria-label="Next month">›</button>
             </div>
+        </div>
+        <div class="sp-selbar" id="sp-selbar">
+            <span class="sp-selcount" id="sp-selcount"></span>
+            <span class="sp-selerr" id="sp-selerr"></span>
+            <span class="sp-selhint">⌘/Ctrl-click to toggle · Shift-click for a range · Esc to clear</span>
+            <button type="button" class="sp-sel-primary" id="sp-sel-set">Set target</button>
+            <button type="button" id="sp-sel-clear">Clear targets</button>
+            <button type="button" id="sp-sel-none">Deselect all</button>
         </div>
         <div class="sp-dow">
             <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span>
@@ -4948,11 +5021,27 @@
         const spCopyGoalBtn = document.getElementById('sp-copy-goal');
         const spCopyActualBtn = document.getElementById('sp-copy-actual');
         const spPlus5Btn = document.getElementById('sp-plus5');
+        const spQuickRow = document.querySelector('.sp-editor .sp-quick');
+        const spEditorClearBtn = document.getElementById('sp-editor-clear');
+        const spSelBar = document.getElementById('sp-selbar');
+        const spSelErr = document.getElementById('sp-selerr');
+        const spSelCount = document.getElementById('sp-selcount');
+        const spSelSetBtn = document.getElementById('sp-sel-set');
+        const spSelClearBtn = document.getElementById('sp-sel-clear');
+        const spSelNoneBtn = document.getElementById('sp-sel-none');
+        const spSelModeBtn = document.getElementById('sp-select-mode');
 
         let spCursor = null;      // {year, month} of the displayed month
         let spData = {};          // iso -> {target, steps}
         let spLoaded = false;
-        let spEditingIso = null;
+        // Days the open editor writes to: one for a plain click, many when a
+        // multi-day selection is being edited.
+        let spEditingDays = [];
+        // Multi-select state. Holds ISO strings, so a selection survives month
+        // navigation (only the visible subset gets highlighted).
+        const spSelected = new Set();
+        let spSelectMode = false;   // plain clicks toggle instead of opening the editor
+        let spSelectAnchor = null;  // last-clicked day, for shift-click ranges
 
         const spToday = new Date();
         const spTodayIso = spIso(spToday);
@@ -5075,6 +5164,7 @@
             const classes = ['sp-cell', 'sp-editable'];
             if (!inMonth) classes.push('sp-outside');
             if (isToday) classes.push('sp-today');
+            if (spSelected.has(iso)) classes.push('sp-selected');
 
             let inner = `<span class="sp-daynum">${dayDate.getDate()}</span>`;
             if (target != null) {
@@ -5168,39 +5258,119 @@
                 html += week;
             }
             spGrid.innerHTML = html;
+            spRenderSelBar();
+        }
+
+        // ---- Multi-day selection ----
+        function spDaysSummary(days) {
+            const fmt = (iso) => new Date(iso + 'T00:00:00')
+                .toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+            const shown = days.slice(0, 4).map(fmt).join(', ');
+            return days.length > 4 ? `${shown} +${days.length - 4} more` : shown;
+        }
+        function spSelectedDays() { return [...spSelected].sort(); }
+
+        function spRenderSelBar() {
+            const n = spSelected.size;
+            spSelBar.classList.toggle('open', n > 0 || spSelectMode);
+            spSelCount.textContent = n
+                ? `${n} day${n === 1 ? '' : 's'} selected`
+                : 'No days selected';
+            spSelErr.textContent = '';
+            spSelSetBtn.disabled = n === 0;
+            spSelClearBtn.disabled =
+                ![...spSelected].some(iso => spData[iso]?.target != null);
+        }
+
+        function spSetDaySelected(iso, on) {
+            if (on) spSelected.add(iso); else spSelected.delete(iso);
+            spGrid.querySelector(`.sp-cell[data-iso="${iso}"]`)
+                ?.classList.toggle('sp-selected', on);
+        }
+
+        function spClearSelection() {
+            spSelectedDays().forEach(iso => spSetDaySelected(iso, false));
+            spSelectAnchor = null;
+            spRenderSelBar();
+        }
+
+        function spSelectRange(fromIso, toIso) {
+            const from = new Date(fromIso + 'T00:00:00');
+            const to = new Date(toIso + 'T00:00:00');
+            const step = from <= to ? 1 : -1;
+            for (let d = from; step > 0 ? d <= to : d >= to; d = spAddDays(d, step)) {
+                spSetDaySelected(spIso(d), true);
+            }
+            spRenderSelBar();
+        }
+
+        function spSetSelectMode(on) {
+            spSelectMode = on;
+            spSelModeBtn.classList.toggle('sp-mode-on', on);
+            spSelModeBtn.textContent = on ? 'Selecting…' : 'Select days';
+            spGrid.classList.toggle('sp-selecting', on);
+            spRenderSelBar();
         }
 
         // ---- Editor ----
-        function spOpenEditor(iso) {
-            spEditingIso = iso;
-            const rec = spData[iso] || {};
-            const dayDate = new Date(iso + 'T00:00:00');
-            spEditorTitle.textContent = 'Step target';
-            spEditorSub.textContent = dayDate.toLocaleDateString(undefined,
-                { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-            spEditorInput.value = rec.target != null ? rec.target : '';
+        // `days` is every ISO day the save/clear applies to: one for a plain
+        // click, the whole selection for a bulk edit.
+        function spOpenEditor(days) {
+            spEditingDays = days;
+            const multi = days.length > 1;
+            const dayDate = new Date(days[0] + 'T00:00:00');
+            spEditorTitle.textContent =
+                multi ? `Step target · ${days.length} days` : 'Step target';
+            spEditorSub.textContent = multi
+                ? spDaysSummary(days)
+                : dayDate.toLocaleDateString(undefined,
+                    { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+            // Prefill only when the selected days already agree; a mixed
+            // selection starts blank rather than picking one day's value.
+            const targets = days.map(iso => spData[iso]?.target ?? null);
+            const shared = targets.every(t => t === targets[0]) ? targets[0] : null;
+            spEditorInput.value = shared != null ? shared : '';
             spEditorErr.textContent = '';
 
-            const lastWeek = spData[spIso(spAddDays(dayDate, -7))] || {};
-            spCopyGoalBtn.disabled = lastWeek.target == null;
-            spCopyActualBtn.disabled = lastWeek.steps == null;
-            spPlus5Btn.disabled = lastWeek.target == null;
-            spCopyGoalBtn.dataset.value = lastWeek.target ?? '';
-            spCopyActualBtn.dataset.value = lastWeek.steps ?? '';
-            spPlus5Btn.dataset.value =
-                lastWeek.target != null ? Math.round(lastWeek.target * 1.05) : '';
+            // The quick-fills read one day's previous week, so they have no
+            // single meaning across a multi-day selection.
+            spQuickRow.style.display = multi ? 'none' : '';
+            if (!multi) {
+                const lastWeek = spData[spIso(spAddDays(dayDate, -7))] || {};
+                spCopyGoalBtn.disabled = lastWeek.target == null;
+                spCopyActualBtn.disabled = lastWeek.steps == null;
+                spPlus5Btn.disabled = lastWeek.target == null;
+                spCopyGoalBtn.dataset.value = lastWeek.target ?? '';
+                spCopyActualBtn.dataset.value = lastWeek.steps ?? '';
+                spPlus5Btn.dataset.value =
+                    lastWeek.target != null ? Math.round(lastWeek.target * 1.05) : '';
+            }
+            spEditorClearBtn.disabled =
+                !days.some(iso => spData[iso]?.target != null);
 
             spEditorBackdrop.classList.add('open');
             spEditorInput.focus();
         }
         function spCloseEditor() {
             spEditorBackdrop.classList.remove('open');
-            spEditingIso = null;
+            spEditingDays = [];
         }
 
         spGrid.addEventListener('click', (e) => {
             const cell = e.target.closest('.sp-cell[data-editable]');
-            if (cell) spOpenEditor(cell.dataset.iso);
+            if (!cell) return;
+            const iso = cell.dataset.iso;
+            if (e.shiftKey && spSelectAnchor) {
+                spSelectRange(spSelectAnchor, iso);
+            } else if (e.shiftKey || e.metaKey || e.ctrlKey || spSelectMode) {
+                spSetDaySelected(iso, !spSelected.has(iso));
+                spRenderSelBar();
+            } else {
+                spSelectAnchor = iso;
+                spOpenEditor([iso]);
+                return;
+            }
+            spSelectAnchor = iso;
         });
         [spCopyGoalBtn, spCopyActualBtn, spPlus5Btn].forEach(btn => {
             btn.addEventListener('click', () => {
@@ -5217,46 +5387,101 @@
             if (e.key === 'Escape') { e.stopPropagation(); spCloseEditor(); }
         });
 
+        // One day goes to the per-day route; several go to the bulk route so
+        // the whole set lands in a single request.
+        async function spCheckedFetch(url, options) {
+            const res = await fetch(url, options);
+            if (!res.ok) {
+                const body = await res.json().catch(() => ({}));
+                throw new Error(body.error || `HTTP ${res.status}`);
+            }
+        }
+        const spJsonHeaders = { 'Content-Type': 'application/json' };
+
+        async function spApplyTarget(days, value) {
+            await (days.length === 1
+                ? spCheckedFetch(`/api/step-plan/${days[0]}`, {
+                    method: 'PUT',
+                    headers: spJsonHeaders,
+                    body: JSON.stringify({ target: value }),
+                })
+                : spCheckedFetch('/api/step-plan', {
+                    method: 'PUT',
+                    headers: spJsonHeaders,
+                    body: JSON.stringify({ days, target: value }),
+                }));
+            days.forEach(iso => {
+                spData[iso] = { ...(spData[iso] || {}), target: value };
+            });
+        }
+
+        async function spApplyClear(days) {
+            await (days.length === 1
+                ? spCheckedFetch(`/api/step-plan/${days[0]}`, { method: 'DELETE' })
+                : spCheckedFetch('/api/step-plan', {
+                    method: 'DELETE',
+                    headers: spJsonHeaders,
+                    body: JSON.stringify({ days }),
+                }));
+            days.forEach(iso => { if (spData[iso]) spData[iso].target = null; });
+        }
+
         document.getElementById('sp-editor-save').addEventListener('click', async () => {
-            const iso = spEditingIso;
+            const days = spEditingDays;
             const val = parseInt(String(spEditorInput.value).replace(/[^0-9]/g, ''), 10);
             if (!val || val <= 0) {
                 spEditorErr.textContent = 'Enter a positive number of steps.';
                 return;
             }
             try {
-                const res = await fetch(`/api/step-plan/${iso}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ target: val }),
-                });
-                if (!res.ok) {
-                    const body = await res.json().catch(() => ({}));
-                    throw new Error(body.error || `HTTP ${res.status}`);
-                }
-                spData[iso] = { ...(spData[iso] || {}), target: val };
+                await spApplyTarget(days, val);
                 spCloseEditor();
+                spClearSelection();
                 spFetchAndRender();
             } catch (ex) {
                 spEditorErr.textContent = `Save failed: ${ex.message}`;
             }
         });
 
-        document.getElementById('sp-editor-clear').addEventListener('click', async () => {
-            const iso = spEditingIso;
-            if (!(spData[iso] && spData[iso].target != null)) { spCloseEditor(); return; }
+        spEditorClearBtn.addEventListener('click', async () => {
+            const days = spEditingDays.filter(iso => spData[iso]?.target != null);
+            if (!days.length) { spCloseEditor(); return; }
             try {
-                const res = await fetch(`/api/step-plan/${iso}`, { method: 'DELETE' });
-                if (!res.ok) {
-                    const body = await res.json().catch(() => ({}));
-                    throw new Error(body.error || `HTTP ${res.status}`);
-                }
-                if (spData[iso]) spData[iso].target = null;
+                await spApplyClear(days);
                 spCloseEditor();
+                spClearSelection();
                 spFetchAndRender();
             } catch (ex) {
                 spEditorErr.textContent = `Clear failed: ${ex.message}`;
             }
+        });
+
+        spSelSetBtn.addEventListener('click', () => {
+            if (spSelected.size) spOpenEditor(spSelectedDays());
+        });
+        spSelNoneBtn.addEventListener('click', spClearSelection);
+        spSelModeBtn.addEventListener('click', () => spSetSelectMode(!spSelectMode));
+        spSelClearBtn.addEventListener('click', async () => {
+            const days = spSelectedDays().filter(iso => spData[iso]?.target != null);
+            if (!days.length) return;
+            if (!confirm(`Clear the step target on ${days.length} day${days.length === 1 ? '' : 's'}?`)) {
+                return;
+            }
+            try {
+                await spApplyClear(days);
+                spClearSelection();
+                spFetchAndRender();
+            } catch (ex) {
+                spSelErr.textContent = `Clear failed: ${ex.message}`;
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+            if (spEditorBackdrop.classList.contains('open')) return;
+            if (!spSelected.size && !spSelectMode) return;
+            spClearSelection();
+            spSetSelectMode(false);
         });
 
         document.getElementById('sp-prev').addEventListener('click', () => {

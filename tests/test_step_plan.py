@@ -90,6 +90,80 @@ def test_put_rejects_non_positive_target(client):
     )
 
 
+def _targets_for(days):
+    with db.Session(db.ENGINE) as session:
+        rows = session.exec(select(StepTarget).where(StepTarget.day.in_(days))).all()
+    return {row.day: row.target for row in rows}
+
+
+def test_bulk_put_sets_target_on_arbitrary_days(client):
+    today = date.today()
+    days = [today - timedelta(days=4), today, today + timedelta(days=9)]
+    _seed_target(days[1], 3_000)
+
+    res = client.put(
+        "/api/step-plan",
+        json={"days": [d.isoformat() for d in days], "target": 11_000},
+    )
+
+    assert res.status_code == 200
+    assert res.get_json()["saved"] is True
+    assert _targets_for(days) == dict.fromkeys(days, 11_000)
+
+
+def test_bulk_put_dedupes_repeated_days(client):
+    day = date.today() + timedelta(days=1)
+
+    client.put(
+        "/api/step-plan",
+        json={"days": [day.isoformat(), day.isoformat()], "target": 8_000},
+    )
+
+    with db.Session(db.ENGINE) as session:
+        rows = session.exec(select(StepTarget).where(StepTarget.day == day)).all()
+    assert len(rows) == 1
+
+
+def test_bulk_put_rejects_bad_payloads(client):
+    today = date.today().isoformat()
+    assert client.put("/api/step-plan", json={"target": 5_000}).status_code == 400
+    assert (
+        client.put("/api/step-plan", json={"days": [], "target": 5_000}).status_code
+        == 400
+    )
+    assert (
+        client.put(
+            "/api/step-plan", json={"days": ["nope"], "target": 5_000}
+        ).status_code
+        == 400
+    )
+    assert (
+        client.put("/api/step-plan", json={"days": [today], "target": 0}).status_code
+        == 400
+    )
+    assert client.put("/api/step-plan", json={"days": [today]}).status_code == 400
+
+
+def test_bulk_delete_clears_selected_days_only(client):
+    today = date.today()
+    cleared = [today - timedelta(days=3), today + timedelta(days=2)]
+    kept = today + timedelta(days=5)
+    for day in [*cleared, kept]:
+        _seed_target(day, 9_000)
+
+    res = client.delete(
+        "/api/step-plan", json={"days": [d.isoformat() for d in cleared]}
+    )
+
+    assert res.status_code == 200
+    assert _targets_for([*cleared, kept]) == {kept: 9_000}
+
+
+def test_bulk_delete_rejects_bad_payloads(client):
+    assert client.delete("/api/step-plan", json={}).status_code == 400
+    assert client.delete("/api/step-plan", json={"days": ["x"]}).status_code == 400
+
+
 def test_delete_clears_future_target(client):
     future = date.today() + timedelta(days=2)
     _seed_target(future, 7_000)

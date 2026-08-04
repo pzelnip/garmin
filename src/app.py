@@ -416,6 +416,77 @@ def set_step_target(iso_date):
     return jsonify({"day": iso_date, "target": value, "saved": True})
 
 
+def _parse_bulk_days(payload):
+    """Validate a bulk request's `days` list. Returns (days, error_response).
+
+    Days are de-duplicated and sorted so a repeated date can't produce two
+    rows for the same day.
+    """
+    raw = payload.get("days")
+    if not isinstance(raw, list) or not raw:
+        return None, (jsonify({"error": "expected a non-empty days list"}), 400)
+    days = set()
+    for item in raw:
+        parsed = _parse_iso_date(item) if isinstance(item, str) else None
+        if parsed is None:
+            return None, (jsonify({"error": f"bad day: {item!r}"}), 400)
+        days.add(parsed)
+    return sorted(days), None
+
+
+@app.route("/api/step-plan", methods=["PUT"])
+def set_step_targets_bulk():
+    """Set (upsert) the same step target for several days at once.
+
+    Body: {"days": ["YYYY-MM-DD", ...], "target": positive int}. Backs the
+    Step Planning tab's multi-select, so an arbitrary (non-consecutive) set
+    of days can be given one target in a single round trip.
+    """
+    payload = request.get_json(silent=True) or {}
+    value = payload.get("target")
+    if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+        return jsonify({"error": "target must be a positive integer"}), 400
+    days, error = _parse_bulk_days(payload)
+    if error:
+        return error
+
+    with db_session() as session:
+        existing = {
+            row.day: row
+            for row in session.exec(select(StepTarget).where(StepTarget.day.in_(days)))
+        }
+        for day in days:
+            row = existing.get(day)
+            if row is None:
+                row = StepTarget(day=day, target=value)
+            else:
+                row.target = value
+            session.add(row)
+        session.commit()
+    return jsonify(
+        {
+            "days": [d.isoformat() for d in days],
+            "target": value,
+            "saved": True,
+        }
+    )
+
+
+@app.route("/api/step-plan", methods=["DELETE"])
+def clear_step_targets_bulk():
+    """Clear the step target for several days at once. Body: {"days": [...]}."""
+    days, error = _parse_bulk_days(request.get_json(silent=True) or {})
+    if error:
+        return error
+
+    with db_session() as session:
+        rows = session.exec(select(StepTarget).where(StepTarget.day.in_(days))).all()
+        for row in rows:
+            session.delete(row)
+        session.commit()
+    return jsonify({"days": [d.isoformat() for d in days], "cleared": True})
+
+
 @app.route("/api/step-plan/<iso_date>", methods=["DELETE"])
 def clear_step_target(iso_date):
     """Clear the step target for one day (any day, including past)."""
