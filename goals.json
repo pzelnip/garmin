@@ -77,19 +77,19 @@
         {
           "date": "August 18, 2026 · physio appt",
           "title": "Finish Research & decide on a gym membership",
-          "status": "future"
-        },
-        {
-          "date": "Aug 15 / 16, 2026",
-          "title": "20K steps both days",
-          "status": "current",
-          "note": "2nd day before Lauren."
+          "status": "current"
         }
       ]
     },
     {
       "name": "Already climbed",
       "rungs": [
+        {
+          "date": "Aug 3 / 4, 2026",
+          "title": "20K+ steps both days",
+          "status": "done",
+          "note": "2nd time before Lauren."
+        },
         {
           "date": "Jul 31, 2026",
           "title": "Month of 370,000+ steps",
