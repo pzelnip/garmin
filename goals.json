@@ -65,11 +65,6 @@
           "status": "future"
         },
         {
-          "date": "Aug 31, 2026",
-          "title": "Month of 390,000+ steps",
-          "status": "future"
-        },
-        {
           "date": "August 18, 2026 · physio appt",
           "title": "90% of days since June 2nd hit the step goal",
           "status": "future"
@@ -89,6 +84,16 @@
           "title": "20K+ steps both days",
           "status": "done",
           "note": "2nd time before Lauren."
+        },
+        {
+          "date": "Jul 31, 2026",
+          "title": "Month of 400,000+ steps",
+          "status": "done"
+        },
+        {
+          "date": "Jul 31, 2026",
+          "title": "Month of 390,000+ steps",
+          "status": "done"
         },
         {
           "date": "Jul 31, 2026",
