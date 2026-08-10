@@ -240,7 +240,7 @@ def day_detail(iso_date):
                 "weight_pounds": (
                     round(row.weight_pounds, 1) if row.weight_grams else None
                 ),
-                "bmi": row.bmi,
+                "bmi": round(row.bmi, 3) if row.bmi is not None else None,
                 "body_fat": row.body_fat,
                 "body_water": row.body_water,
                 "bone_mass": row.bone_mass,
