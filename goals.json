@@ -60,16 +60,6 @@
       "name": "Building step volume",
       "rungs": [
         {
-          "date": "September 3, 2026",
-          "title": "110K step week",
-          "status": "future"
-        },
-        {
-          "date": "August 18, 2026 · physio appt",
-          "title": "90% of days since June 2nd hit the step goal",
-          "status": "future"
-        },
-        {
           "date": "August 18, 2026 · physio appt",
           "title": "Finish Research & decide on a gym membership",
           "status": "current"
@@ -79,6 +69,16 @@
     {
       "name": "Already climbed",
       "rungs": [
+        {
+          "date": "August 18, 2026 · physio appt",
+          "title": "90% of days since June 2nd hit the step goal",
+          "status": "done"
+        },
+        {
+          "date": "Aug 17, 2026",
+          "title": "110K step week",
+          "status": "done"
+        },
         {
           "date": "Aug 3 / 4, 2026",
           "title": "20K+ steps both days",
