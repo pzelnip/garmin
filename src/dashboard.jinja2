@@ -1688,7 +1688,7 @@
         .sp-editor h3 { margin: 0 0 4px; font-size: 17px; }
         .sp-editor .sp-editor-sub { color: var(--text-dim); font-size: 13px; margin: 0 0 16px; }
         .sp-editor label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 6px; }
-        .sp-editor input[type="number"] {
+        .sp-editor input[type="number"], .sp-editor input[type="date"] {
             width: 100%;
             background: var(--panel-2);
             border: 1px solid var(--grid);
@@ -1698,7 +1698,7 @@
             padding: 9px 12px;
             margin-bottom: 14px;
         }
-        .sp-editor input[type="number"]:focus { outline: none; border-color: var(--accent); }
+        .sp-editor input[type="number"]:focus, .sp-editor input[type="date"]:focus { outline: none; border-color: var(--accent); }
         .sp-quick { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
         .sp-quick button {
             background: var(--panel-2);
@@ -2585,6 +2585,7 @@
             <button type="button" id="day-next" class="day-nav-btn" aria-label="Next day" title="Next day">›</button>
             <button type="button" id="day-yesterday" class="day-jump-btn" title="Jump to yesterday — last day with Garmin sync data">Yesterday</button>
             <button type="button" id="day-today" class="day-jump-btn" title="Jump to today">Today</button>
+            <button type="button" id="day-export-btn" class="day-jump-btn" title="Export notes for a date range as a Markdown file">Export…</button>
             <span id="day-source" class="day-source"></span>
         </div>
         <div id="day-empty" class="empty-state" style="display: none;">
@@ -2646,6 +2647,22 @@
         </div>
     </div>
     <!-- /DAY TAB -->
+
+    <div class="sp-editor-backdrop" id="export-backdrop">
+        <div class="sp-editor" role="dialog" aria-modal="true" aria-labelledby="export-editor-title">
+            <h3 id="export-editor-title">Export notes</h3>
+            <p class="sp-editor-sub">Download notes for a date range as a Markdown file (days with no notes are skipped).</p>
+            <label for="export-start">From</label>
+            <input type="date" id="export-start">
+            <label for="export-end">To</label>
+            <input type="date" id="export-end">
+            <div class="sp-editor-err" id="export-err"></div>
+            <div class="sp-editor-actions">
+                <button class="sp-btn sp-btn-cancel" id="export-cancel" type="button">Cancel</button>
+                <button class="sp-btn sp-btn-save" id="export-download" type="button">Download</button>
+            </div>
+        </div>
+    </div>
 
     <!-- ============================ GOALS TAB ============================ -->
     {# The ladder is data-driven from goals.json (see _load_goals in app.py),
@@ -4694,6 +4711,51 @@
             setDay(localIso(d));
         });
         updateDayNavButtons();
+
+        // Notes export — small modal that hits /api/notes/export and lets the
+        // browser handle the download via the Content-Disposition header.
+        const exportBtn = document.getElementById('day-export-btn');
+        const exportBackdrop = document.getElementById('export-backdrop');
+        const exportStartInput = document.getElementById('export-start');
+        const exportEndInput = document.getElementById('export-end');
+        const exportErr = document.getElementById('export-err');
+        function openExportModal() {
+            const end = dayPicker.value || localIso(new Date());
+            const startDate = new Date(end + 'T00:00:00');
+            startDate.setDate(startDate.getDate() - 30);
+            exportEndInput.value = end;
+            exportEndInput.max = dayPicker.max;
+            exportStartInput.value = localIso(startDate);
+            exportStartInput.max = dayPicker.max;
+            exportErr.textContent = '';
+            exportBackdrop.classList.add('open');
+            exportStartInput.focus();
+        }
+        function closeExportModal() {
+            exportBackdrop.classList.remove('open');
+        }
+        exportBtn.addEventListener('click', openExportModal);
+        document.getElementById('export-cancel').addEventListener('click', closeExportModal);
+        exportBackdrop.addEventListener('click', (e) => {
+            if (e.target === exportBackdrop) closeExportModal();
+        });
+        exportBackdrop.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') { e.stopPropagation(); closeExportModal(); }
+        });
+        document.getElementById('export-download').addEventListener('click', () => {
+            const start = exportStartInput.value;
+            const end = exportEndInput.value;
+            if (!start || !end) {
+                exportErr.textContent = 'Pick both a start and end date.';
+                return;
+            }
+            if (end < start) {
+                exportErr.textContent = 'End date must be on or after start date.';
+                return;
+            }
+            window.location.href = `/api/notes/export?start=${start}&end=${end}`;
+            closeExportModal();
+        });
 
         // Lazy-load on first tab activation; reuse cached render until the
         // picker is changed.

@@ -2,12 +2,13 @@ import json
 import logging
 import os
 import platform
+import re
 import subprocess
 from datetime import datetime, timedelta
 from functools import cache
 from importlib.metadata import PackageNotFoundError, version
 
-from flask import Flask, jsonify, redirect, render_template, request, url_for
+from flask import Flask, Response, jsonify, redirect, render_template, request, url_for
 from jinja2 import select_autoescape
 from sqlmodel import select
 
@@ -186,6 +187,54 @@ def search_notes():
         results = [process_row(row) for row in session.exec(stmt)]
 
     return jsonify({"query": query, "results": results, "match_len": len(query)})
+
+
+def _bump_markdown_headings(text):
+    """Shift every Markdown heading in `text` down one level (## -> ###, etc)
+    so a day's own headings (e.g. "## Notables") nest under that day's
+    `## YYYY-MM-DD` section in the export rather than colliding with it.
+    """
+    return re.sub(r"^(#+)(\s)", r"#\1\2", text, flags=re.MULTILINE)
+
+
+@app.route("/api/notes/export")
+def export_notes():
+    """Download notes in [start, end] (inclusive) as a Markdown file, one
+    `## YYYY-MM-DD` section per day. Days with empty notes are skipped.
+
+    Query: ?start=YYYY-MM-DD&end=YYYY-MM-DD.
+    """
+    start = _parse_iso_date(request.args.get("start", ""))
+    end = _parse_iso_date(request.args.get("end", ""))
+    if start is None or end is None:
+        return jsonify({"error": "expected start and end as YYYY-MM-DD"}), 400
+    if end < start:
+        return jsonify({"error": "end must be on or after start"}), 400
+
+    with db_session() as session:
+        stmt = (
+            select(DayStats)
+            .where(DayStats.day >= start)
+            .where(DayStats.day <= end)
+            .where(DayStats.notes != "")
+            .order_by(DayStats.day)
+        )
+        rows = session.exec(stmt).all()
+
+    lines = [f"# Notes export: {start.isoformat()} to {end.isoformat()}", ""]
+    for row in rows:
+        lines.append(f"## {row.day.isoformat()}")
+        lines.append("")
+        lines.append(_bump_markdown_headings(row.notes.strip()))
+        lines.append("")
+    body = "\n".join(lines).rstrip() + "\n"
+
+    filename = f"notes_{start.isoformat()}_to_{end.isoformat()}.md"
+    return Response(
+        body,
+        mimetype="text/markdown",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @app.route("/api/day/<iso_date>")

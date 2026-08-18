@@ -180,6 +180,73 @@ def test_search_is_safe_from_sql_injection(client):
         assert len(list(session.exec(select(DayStats)))) == 2
 
 
+# ------------- Tests for notes export (GET /api/notes/export) ------------
+
+
+def test_export_includes_days_with_notes_in_range(client):
+    seed(
+        {
+            date(2026, 1, 1): "day one notes",
+            date(2026, 1, 2): "day two notes",
+            date(2026, 1, 3): "day three notes",
+        }
+    )
+
+    response = client.get("/api/notes/export?start=2026-01-01&end=2026-01-02")
+
+    body = response.get_data(as_text=True)
+    assert response.status_code == 200
+    assert "## 2026-01-01" in body
+    assert "day one notes" in body
+    assert "## 2026-01-02" in body
+    assert "day two notes" in body
+    assert "2026-01-03" not in body
+
+
+def test_export_skips_days_with_empty_notes(client):
+    seed({date(2026, 1, 1): "", date(2026, 1, 2): "has content"})
+
+    response = client.get("/api/notes/export?start=2026-01-01&end=2026-01-02")
+
+    body = response.get_data(as_text=True)
+    assert "## 2026-01-01" not in body
+    assert "## 2026-01-02" in body
+
+
+def test_export_nests_notes_headings_under_the_day_heading(client):
+    seed({date(2026, 1, 1): "## Notables\n* slept well"})
+
+    response = client.get("/api/notes/export?start=2026-01-01&end=2026-01-01")
+
+    body = response.get_data(as_text=True)
+    assert "## 2026-01-01" in body
+    assert "### Notables" in body
+
+
+def test_export_sets_markdown_content_type_and_filename(client):
+    seed({date(2026, 1, 1): "notes"})
+
+    response = client.get("/api/notes/export?start=2026-01-01&end=2026-01-01")
+
+    assert response.mimetype == "text/markdown"
+    assert (
+        'attachment; filename="notes_2026-01-01_to_2026-01-01.md"'
+        in response.headers["Content-Disposition"]
+    )
+
+
+def test_export_rejects_malformed_dates(client):
+    response = client.get("/api/notes/export?start=not-a-date&end=2026-01-01")
+
+    assert response.status_code == 400
+
+
+def test_export_rejects_end_before_start(client):
+    response = client.get("/api/notes/export?start=2026-01-02&end=2026-01-01")
+
+    assert response.status_code == 400
+
+
 # ------------- Tests for day detail (GET /api/day/<iso>) ------------
 
 
