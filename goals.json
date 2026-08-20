@@ -50,18 +50,8 @@
           "status": "future"
         },
         {
-          "date": "Before October 2026",
+          "date": "September 2026",
           "title": "Walk into the gym by myself",
-          "status": "future"
-        }
-      ]
-    },
-    {
-      "name": "Building step volume",
-      "rungs": [
-        {
-          "date": "August 18, 2026 · physio appt",
-          "title": "Finish Research & decide on a gym membership",
           "status": "current"
         }
       ]
@@ -69,6 +59,11 @@
     {
       "name": "Already climbed",
       "rungs": [
+        {
+          "date": "August 18, 2026 · physio appt",
+          "title": "Finish Research & decide on a gym membership",
+          "status": "done"
+        },
         {
           "date": "August 18, 2026 · physio appt",
           "title": "90% of days since June 2nd hit the step goal",
