@@ -10,3 +10,7 @@ cron.log
 force-update.log
 .coverage
 htmlcov/
+
+# Health notes exports / physio summaries — never commit
+physio_notes/
+notes_*_to_*.md

@@ -17,6 +17,7 @@ dev = [
     "black",
     "freezegun",
     "isort",
+    "markdown-it-py>=4.2.0",
     "pytest",
     "pytest-cov",
     "ruff",
