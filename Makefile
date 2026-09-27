@@ -25,11 +25,19 @@ run-server: ## Run the Flask server
 
 .PHONY: remote-dashboard
 remote-dashboard: ## Run the server (non-debug) and expose it via ngrok; see docs/remote-access.md
+	@$(SLEEP_REMINDER)
 	GARMIN_DASHBOARD_DEBUG=0 ./.venv/bin/python src/app.py & trap "kill $$!" EXIT; ngrok start garmin
 
 .PHONY: tunnel
 tunnel: ## Expose an already-running, non-debug server via ngrok
+	@$(SLEEP_REMINDER)
 	ngrok start garmin
+
+SLEEP_REMINDER = printf '\n\033[1;41;97m%s\033[0m\n\033[1;41;97m%s\033[0m\n\033[1;41;97m%s\033[0m\n\n' \
+	'                                                                ' \
+	'   !!!  DON'"'"'T FORGET TO DISABLE SLEEP ON THIS MACHINE  !!!   ' \
+	'                                                                '; \
+	read -rsn1 -p 'Press any key to continue...'; echo
 
 .PHONY: test
 test: ## Run the test suite with pytest
