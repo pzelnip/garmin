@@ -23,6 +23,14 @@ validate-goals: ## Validate + auto-fix goals.json (sorts rungs, canonical format
 run-server: ## Run the Flask server
 	uv run python src/app.py
 
+.PHONY: remote-dashboard
+remote-dashboard: ## Run the server (non-debug) and expose it via ngrok; see docs/remote-access.md
+	GARMIN_DASHBOARD_DEBUG=0 ./.venv/bin/python src/app.py & trap "kill $$!" EXIT; ngrok start garmin
+
+.PHONY: tunnel
+tunnel: ## Expose an already-running, non-debug server via ngrok
+	ngrok start garmin
+
 .PHONY: test
 test: ## Run the test suite with pytest
 	uv run pytest

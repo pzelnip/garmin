@@ -34,9 +34,9 @@
       "problemMatcher": []
     },
     {
-      "label": "Edit goals",
+      "label": "Remote Dashboard",
       "type": "shell",
-      "command": "source .envrc && make edit-goals",
+      "command": "source .envrc && make remote-dashboard",
       "presentation": {
         "focus": true
       },
@@ -52,11 +52,19 @@
       "command": "source .envrc && make test"
     },
     {
+      "label": "Edit goals",
+      "type": "shell",
+      "command": "source .envrc && make edit-goals",
+      "presentation": {
+        "focus": true
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "Generate Coverage Report",
       "type": "shell",
       "group": {
-        "kind": "test",
-        "isDefault": true
+        "kind": "test"
       },
       "command": "source .envrc && make test-coverage && open htmlcov/index.html"
     },

@@ -83,6 +83,10 @@ GARMIN_DASHBOARD_DEBUG=1 ./.venv/bin/python src/app.py
 edits land on refresh). It defaults to `False` so the Pi runs in
 production mode without needing the var.
 
+For access away from home, `make remote-dashboard` serves it from a host
+through an OAuth-gated ngrok tunnel; see
+[docs/remote-access.md](docs/remote-access.md).
+
 `.envrc` is direnv-managed; if you're in a shell where direnv isn't
 active, source it manually with `set -a; source ./.envrc; set +a`
 before running anything that needs the Garmin creds.
