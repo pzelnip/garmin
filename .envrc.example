@@ -16,3 +16,9 @@ export HEALTHCHECKS_URL=""
 # Set to 1, true, or yes to enable Flask's reloader / debugger locally.
 # Leave unset (or set to anything else) for production mode on the Pi.
 export GARMIN_DASHBOARD_DEBUG=1
+
+# Dashboard login. Both are required: the app refuses to serve anything
+# without them. Generate the secret key (signs the session cookie) with:
+#   python3 -c 'import secrets; print(secrets.token_hex(32))'
+export DASHBOARD_PASSWORD=""
+export DASHBOARD_SECRET_KEY=""

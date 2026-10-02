@@ -1,5 +1,6 @@
 from datetime import date
 
+from conftest import TEST_PASSWORD
 from helpers import add_day, seed
 from sqlmodel import select
 
@@ -491,3 +492,65 @@ def test_force_update_500_when_script_missing(client, monkeypatch):
 
     assert response.status_code == 500
     assert "error" in response.get_json()
+
+
+# ------------- Tests for login ------------
+
+
+def _logged_out(client):
+    client.post("/logout")
+    return client
+
+
+def test_page_redirects_to_login_when_logged_out(client):
+    response = _logged_out(client).get("/dashboard")
+
+    assert response.status_code == 302
+    assert response.headers["Location"].startswith("/login?next=/dashboard")
+
+
+def test_api_returns_401_when_logged_out(client):
+    response = _logged_out(client).get("/api/notes/search?q=")
+
+    assert response.status_code == 401
+
+
+def test_login_page_is_reachable_when_logged_out(client):
+    assert _logged_out(client).get("/login").status_code == 200
+
+
+def test_wrong_password_does_not_log_in(client):
+    _logged_out(client)
+
+    response = client.post("/login", data={"password": "nope"})
+
+    assert b"Wrong password" in response.data
+    assert client.get("/api/notes/search?q=").status_code == 401
+
+
+def test_correct_password_logs_in_and_follows_next(client):
+    _logged_out(client)
+
+    response = client.post(
+        "/login?next=/api/notes/search?q=", data={"password": TEST_PASSWORD}
+    )
+
+    assert response.headers["Location"] == "/api/notes/search?q="
+    assert client.get("/api/notes/search?q=").status_code == 200
+
+
+def test_login_ignores_offsite_next(client):
+    _logged_out(client)
+
+    response = client.post(
+        "/login?next=//evil.example", data={"password": TEST_PASSWORD}
+    )
+
+    assert response.headers["Location"] == "/dashboard"
+
+
+def test_everything_locked_when_password_unset(client, monkeypatch):
+    monkeypatch.delenv("DASHBOARD_PASSWORD")
+
+    assert client.get("/api/notes/search?q=").status_code == 503
+    assert client.get("/login").status_code == 503

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Log in · Health Dashboard</title>
+    <link rel="shortcut icon" href="/static/favicon.png" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f1419;
+            --panel: #1a1f2e;
+            --panel-2: #232a3d;
+            --text: #e6e8ec;
+            --text-dim: #8a92a6;
+            --accent: #5eead4;
+            --accent-2: #818cf8;
+            --danger: #f87171;
+            --grid: #2a3147;
+        }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        form {
+            width: min(320px, calc(100vw - 32px));
+            background: var(--panel);
+            border: 1px solid var(--grid);
+            border-radius: 12px;
+            padding: 28px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        h1 {
+            margin: 0 0 4px;
+            font-size: 22px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-2));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        input, button {
+            font: inherit;
+            font-size: 16px;
+            border-radius: 8px;
+            padding: 10px 12px;
+        }
+        input {
+            background: var(--panel-2);
+            color: var(--text);
+            border: 1px solid var(--grid);
+        }
+        input:focus { outline: none; border-color: var(--accent); }
+        button {
+            border: none;
+            background: var(--accent);
+            color: var(--bg);
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .error { color: var(--danger); font-size: 14px; margin: 0; }
+    </style>
+</head>
+<body>
+    <form method="post">
+        <h1>Health Dashboard</h1>
+        <input type="password" name="password" placeholder="Password"
+               autocomplete="current-password" autofocus required />
+        {% if error %}<p class="error">{{ error }}</p>{% endif %}
+        <button type="submit">Log in</button>
+    </form>
+</body>
+</html>

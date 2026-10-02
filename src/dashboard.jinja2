@@ -66,6 +66,8 @@
             border-color: var(--text-dim);
             background: var(--panel-2);
         }
+        .logout-form { margin: 0; }
+        .logout-form .debug-open-btn { margin-left: 0; font-size: 13px; font-family: inherit; }
         .subtitle { color: var(--text-dim); margin-bottom: 28px; }
         h2 { font-weight: 600; font-size: 18px; margin: 0 0 16px; color: var(--text); }
         .grid {
@@ -1840,6 +1842,9 @@
         <button type="button" id="debug-open-btn" class="debug-open-btn"
                 aria-label="Open debug panel"
                 title="Open debug panel (also: ? key)">🐞</button>
+        <form method="post" action="{{ url_for('logout') }}" class="logout-form">
+            <button type="submit" class="debug-open-btn" title="Log out">Log out</button>
+        </form>
     </div>
     <div class="subtitle">{{ data.stats.total_days }} days tracked · {{ "{:,}".format(data.stats.total_steps) }} total steps · {{ "{:,}".format(data.stats.hyd_total_liters) }} L water · {{ "{:,}".format(data.stats.sleep_total_hours) }} h sleep</div>
 

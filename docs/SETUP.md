@@ -46,6 +46,14 @@ Required variables:
 - `HEALTHCHECKS_URL` — ping URL from the
   [healthchecks.io](https://healthchecks.io) check that monitors the cron
   job (see step 6).
+- `DASHBOARD_PASSWORD` — password for the dashboard's login page. Login
+  lasts 30 days or until "Log out". This keeps others on the home network
+  out of the notes; it isn't internet-grade security (plain HTTP on the LAN).
+- `DASHBOARD_SECRET_KEY` — signs the login cookie; any long random string,
+  e.g. `python3 -c 'import secrets; print(secrets.token_hex(32))'`. Changing
+  it logs out every device.
+
+Without both of those the dashboard answers every request with a 503.
 
 `.envrc` is gitignored. The wrapper script sources it directly (no `direnv`
 required), so plain `export FOO=bar` lines are enough.

@@ -3,8 +3,8 @@
 Lets the dashboard be opened from a phone (or any browser) away from home. The
 app runs on one machine, and an [ngrok](https://ngrok.com) tunnel exposes it on
 a public HTTPS URL. Every request must pass a Google login restricted to a
-single account before ngrok forwards it, so the Flask app itself stays
-auth-free.
+single account before ngrok forwards it, then the dashboard's own password
+login as usual.
 
 - No router / firewall changes: the ngrok agent only makes outbound connections.
 - Nothing to install on the phone.

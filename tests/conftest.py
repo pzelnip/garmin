@@ -3,6 +3,8 @@ from sqlmodel import Session, SQLModel, create_engine
 
 import db
 
+TEST_PASSWORD = "test-password"
+
 
 @pytest.fixture(autouse=True)
 def force_sqlite(monkeypatch):
@@ -14,6 +16,7 @@ def force_sqlite(monkeypatch):
     """
     monkeypatch.setenv("CONN_STR", "sqlite://")
     monkeypatch.setattr(db, "ENGINE", None)
+    monkeypatch.setenv("DASHBOARD_PASSWORD", TEST_PASSWORD)
 
 
 @pytest.fixture
@@ -31,7 +34,8 @@ def client(monkeypatch):
 
     Points db.ENGINE at the throwaway engine so route code that opens a
     db_session() reads/writes this DB instead of production Postgres. Use the
-    seed helpers below to populate it before issuing requests.
+    seed helpers below to populate it before issuing requests. Starts logged
+    in; tests of the login flow itself should log out first.
     """
     from app import app
 
@@ -39,7 +43,11 @@ def client(monkeypatch):
     SQLModel.metadata.create_all(engine)
     monkeypatch.setattr(db, "ENGINE", engine)
 
+    monkeypatch.setattr(app, "secret_key", "test-secret")
+
     with app.test_client() as test_client:
+        with test_client.session_transaction() as sess:
+            sess["_user_id"] = "owner"
         yield test_client
 
     engine.dispose()

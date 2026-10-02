@@ -1,3 +1,4 @@
+import hmac
 import json
 import logging
 import os
@@ -9,6 +10,13 @@ from functools import cache
 from importlib.metadata import PackageNotFoundError, version
 
 from flask import Flask, Response, jsonify, redirect, render_template, request, url_for
+from flask_login import (
+    LoginManager,
+    UserMixin,
+    current_user,
+    login_user,
+    logout_user,
+)
 from jinja2 import select_autoescape
 from sqlmodel import select
 
@@ -29,6 +37,68 @@ app.jinja_env.autoescape = select_autoescape(
     enabled_extensions=("html", "htm", "xml", "jinja2"),
     default_for_string=True,
 )
+
+app.secret_key = os.getenv("DASHBOARD_SECRET_KEY")
+app.config.update(
+    SESSION_COOKIE_SAMESITE="Lax",
+    REMEMBER_COOKIE_SAMESITE="Lax",
+    REMEMBER_COOKIE_DURATION=timedelta(days=30),
+)
+
+login_manager = LoginManager(app)
+login_manager.login_view = "login"
+
+
+class Owner(UserMixin):
+    id = "owner"
+
+
+@login_manager.user_loader
+def _load_user(user_id):
+    return Owner() if user_id == Owner.id else None
+
+
+@login_manager.unauthorized_handler
+def _unauthorized():
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "login required"}), 401
+    return redirect(url_for("login", next=request.full_path.rstrip("?")))
+
+
+@app.before_request
+def _require_login():
+    # Gate every route here rather than per-view @login_required, so a new
+    # route can't be added unprotected. Fails closed if not configured.
+    if not os.getenv("DASHBOARD_PASSWORD") or not app.secret_key:
+        return Response("DASHBOARD_PASSWORD and DASHBOARD_SECRET_KEY must be set.", 503)
+    if request.endpoint in ("login", "static") or current_user.is_authenticated:
+        return None
+    return login_manager.unauthorized()
+
+
+def _safe_next(target):
+    # Only follow same-site relative paths, so ?next= can't bounce off-site.
+    if target and target.startswith("/") and not target.startswith("//"):
+        return target
+    return url_for("dashboard")
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    error = None
+    if request.method == "POST":
+        password = request.form.get("password", "")
+        if hmac.compare_digest(password, os.environ["DASHBOARD_PASSWORD"]):
+            login_user(Owner(), remember=True)
+            return redirect(_safe_next(request.args.get("next")))
+        error = "Wrong password."
+    return render_template("login.jinja2", error=error)
+
+
+@app.route("/logout", methods=["POST"])
+def logout():
+    logout_user()
+    return redirect(url_for("login"))
 
 
 @cache
