@@ -153,3 +153,42 @@ def test_process_range_skips_garmin_for_already_synced_day(monkeypatch):
         row = get_steps_per_day_from_db(date(2026, 6, 21), check)
         assert row.step_count == 9999
     engine.dispose()
+
+
+def test_process_range_force_refetches_synced_day_and_keeps_manual_fields(
+    monkeypatch,
+):
+    engine = create_engine("sqlite://")
+    SQLModel.metadata.create_all(engine)
+    monkeypatch.setattr(db, "ENGINE", engine)
+    with Session(engine) as seed_session:
+        seed_session.add(
+            make_day(
+                day=date(2026, 6, 21),
+                step_count=9999,
+                weight_grams=113000.0,
+                notes="Father's day brunch",
+                mood_score=7,
+                source=Source.garmin,
+            )
+        )
+        seed_session.commit()
+
+    import contextlib
+
+    @contextlib.contextmanager
+    def fake_garmin_api():
+        yield None
+
+    monkeypatch.setattr(garmin, "garmin_api", fake_garmin_api)
+    monkeypatch.setattr(garmin, "API", FakeGarminAPI())
+
+    garmin.process_range(date(2026, 6, 21), 1, force=True)
+
+    with Session(engine) as check:
+        row = get_steps_per_day_from_db(date(2026, 6, 21), check)
+        assert row.step_count == 12154
+        assert row.weight_grams == 80000
+        assert row.notes == "Father's day brunch"
+        assert row.mood_score == 7
+    engine.dispose()

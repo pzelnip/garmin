@@ -11,6 +11,11 @@ db-session: ## Start a database session
 pull-and-post: ## Pull data from Garmin into the DB
 	uv run python src/garmin.py $(ARGS)
 
+.PHONY: resync
+resync: ## Re-pull Garmin data for DAY (or DAY..END), overwriting what's stored; keeps notes/mood
+	@test -n "$(DAY)" || { echo "usage: make resync DAY=YYYY-MM-DD [END=YYYY-MM-DD]"; exit 1; }
+	uv run python src/garmin.py --resync $(DAY) $(END)
+
 .PHONY: edit-goals
 edit-goals: ## Edit goals.json in VS Code: validate + publish on save, commit + push on close
 	./scripts/edit-goals.sh

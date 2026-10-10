@@ -113,15 +113,16 @@ def garmin_api():
     yield API
 
 
-def process_range(start_date: date, days: int):
+def process_range(start_date: date, days: int, force: bool = False):
     dates = {start_date + timedelta(days=i): None for i in range(days)}
 
     # grab any existing values from the DB. Manual-entry stubs (created by
     # the dashboard's notes/mood panel before the Garmin sync ran) don't
     # count as "already have Garmin data" — leave them for the fetch loop
-    # below so the upsert lands the real values.
+    # below so the upsert lands the real values. `force` re-fetches every
+    # day regardless, e.g. after a bad reading was corrected in Garmin.
     with db_session() as session:
-        for day in dates:
+        for day in [] if force else dates:
             existing = get_steps_per_day_from_db(day, session)
             if existing is not None and existing.source != Source.manual_entry:
                 dates[day] = existing
@@ -153,6 +154,11 @@ def get_range():
         end_date = date.fromisoformat(sys.argv[3])
         days = (end_date - start_date).days + 1
         return start_date, days
+    elif len(sys.argv) > 1 and sys.argv[1] == "--resync":
+        start_date = date.fromisoformat(sys.argv[2])
+        end_date = date.fromisoformat(sys.argv[3]) if len(sys.argv) > 3 else start_date
+        days = (end_date - start_date).days + 1
+        return start_date, days
     else:
         end_date = get_end_date() - timedelta(days=1)
         days = number_of_days_picker()
@@ -162,7 +168,7 @@ def get_range():
 
 def main():
     start_date, days = get_range()
-    process_range(start_date, days)
+    process_range(start_date, days, force=sys.argv[1:2] == ["--resync"])
 
 
 if __name__ == "__main__":
