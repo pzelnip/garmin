@@ -40,18 +40,13 @@
       "name": "Learning to run",
       "rungs": [
         {
-          "date": "October 2026",
+          "date": "November 2026",
           "title": "Start the run/walk training program",
           "status": "future"
         },
         {
-          "date": "Before October 2026",
-          "title": "Running a bit — run/walk intervals",
-          "status": "future"
-        },
-        {
-          "date": "September 2026",
-          "title": "Walk into the gym by myself",
+          "date": "October 2026",
+          "title": "Start going to the gym by myself",
           "status": "current"
         }
       ]
@@ -59,6 +54,11 @@
     {
       "name": "Already climbed",
       "rungs": [
+        {
+          "date": "Before October 2026",
+          "title": "Running a bit — run/walk intervals",
+          "status": "done"
+        },
         {
           "date": "August 18, 2026 · physio appt",
           "title": "Finish Research & decide on a gym membership",
