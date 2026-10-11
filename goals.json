@@ -40,6 +40,42 @@
       "name": "Learning to run",
       "rungs": [
         {
+          "date": "Mar 9, 2027",
+          "title": "35M lifetime steps",
+          "status": "future",
+          "note": "Beats the 25M → 30M pace (462 days, 10,822.5 steps/day)."
+        },
+        {
+          "date": "Feb 16, 2027",
+          "title": "34.75M lifetime steps",
+          "status": "future"
+        },
+        {
+          "date": "Jan 26, 2027",
+          "title": "34.5M lifetime steps",
+          "status": "future"
+        },
+        {
+          "date": "Jan 5, 2027",
+          "title": "34.25M lifetime steps",
+          "status": "future"
+        },
+        {
+          "date": "Dec 15, 2026",
+          "title": "34M lifetime steps",
+          "status": "future"
+        },
+        {
+          "date": "Nov 24, 2026",
+          "title": "33.75M lifetime steps",
+          "status": "future"
+        },
+        {
+          "date": "Nov 3, 2026",
+          "title": "33.5M lifetime steps",
+          "status": "future"
+        },
+        {
           "date": "November 2026",
           "title": "Start the run/walk training program",
           "status": "future"
