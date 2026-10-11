@@ -30,16 +30,6 @@
           "note": "Not focussed on time."
         },
         {
-          "date": "Feb 2027",
-          "title": "First 5K without walking",
-          "status": "future"
-        }
-      ]
-    },
-    {
-      "name": "Learning to run",
-      "rungs": [
-        {
           "date": "Mar 9, 2027",
           "title": "35M lifetime steps",
           "status": "future",
@@ -50,6 +40,16 @@
           "title": "34.75M lifetime steps",
           "status": "future"
         },
+        {
+          "date": "Feb 2027",
+          "title": "First 5K without walking",
+          "status": "future"
+        }
+      ]
+    },
+    {
+      "name": "Learning to run",
+      "rungs": [
         {
           "date": "Jan 26, 2027",
           "title": "34.5M lifetime steps",
@@ -71,18 +71,23 @@
           "status": "future"
         },
         {
+          "date": "November 15, 2026",
+          "title": "Start the run/walk training program",
+          "status": "future"
+        },
+        {
           "date": "Nov 3, 2026",
           "title": "33.5M lifetime steps",
           "status": "future"
         },
         {
-          "date": "November 2026",
-          "title": "Start the run/walk training program",
+          "date": "October 25, 2026",
+          "title": "Have done all 3 workouts from Lauren at the gym at least once",
           "status": "future"
         },
         {
-          "date": "October 2026",
-          "title": "Start going to the gym by myself",
+          "date": "October 17, 2026",
+          "title": "Go the gym by myself & do workout",
           "status": "current"
         }
       ]
