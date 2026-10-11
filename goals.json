@@ -88,7 +88,8 @@
         {
           "date": "October 17, 2026",
           "title": "Go the gym by myself & do workout",
-          "status": "current"
+          "status": "current",
+          "note": "Second try — missed it in September."
         }
       ]
     },
@@ -99,6 +100,11 @@
           "date": "Before October 2026",
           "title": "Running a bit — run/walk intervals",
           "status": "done"
+        },
+        {
+          "date": "September 2026",
+          "title": "Walk into the gym by myself",
+          "status": "missed"
         },
         {
           "date": "August 18, 2026 · physio appt",

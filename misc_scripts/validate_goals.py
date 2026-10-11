@@ -22,8 +22,8 @@ import sys
 from datetime import date, timedelta
 
 # Read top-to-bottom a phase's rungs go newest -> oldest, so statuses must run
-# future -> current -> done. Ranks let us assert that ordering cheaply.
-STATUS_RANK = {"future": 2, "current": 1, "done": 0}
+# future -> current -> done/missed. Ranks let us assert that ordering cheaply.
+STATUS_RANK = {"future": 2, "current": 1, "done": 0, "missed": 0}
 
 _MONTHS = {}
 for _i, (_full, _ab) in enumerate(
@@ -121,7 +121,7 @@ def _check_schema(data, errors):
             status = r.get("status")
             if status and status not in STATUS_RANK:
                 errors.append(
-                    f"{rwhere}: status {status!r} must be done, current, or future"
+                    f"{rwhere}: status {status!r} must be done, missed, current, or future"
                 )
 
 
@@ -168,7 +168,7 @@ def validate_and_fix(data):
             if rank > prev_rank:
                 errors.append(
                     f'"{r["title"]}" ({r["status"]}, {r["date"]}) is out of place — a '
-                    "done/current rung is sitting above a newer future one. Check its "
+                    "done/missed/current rung is sitting above a newer future one. Check its "
                     "date or its status."
                 )
                 break

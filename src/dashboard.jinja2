@@ -1392,6 +1392,16 @@
         .rung.current .rung-date { color: var(--warn); }
         .rung.current .rung-title { font-weight: 700; }
 
+        /* A missed rung: the bar is cracked through the middle — the climb
+           carried on past it, but it never held. */
+        .rung.missed .bar {
+            background: linear-gradient(to right,
+                var(--danger) 0 42%, transparent 42% 58%, var(--danger) 58% 100%);
+            opacity: 0.6;
+        }
+        .rung.missed .rung-date { color: var(--danger); }
+        .rung.missed .rung-body { opacity: 0.8; }
+
         /* Future rungs read as dimmer than the ones already climbed. */
         .rung.future .rung-body { opacity: 0.72; }
 
@@ -2690,7 +2700,7 @@
             <div class="goals-progress-bar">
                 <div class="goals-progress-fill" style="width: {{ goals.pct }}%;"></div>
             </div>
-            <div class="goals-progress-label">{{ goals.done }} rung{{ '' if goals.done == 1 else 's' }} climbed</div>
+            <div class="goals-progress-label">{{ goals.done }} rung{{ '' if goals.done == 1 else 's' }} climbed{% if goals.missed %} · {{ goals.missed }} missed{% endif %}</div>
         </div>
 
         {% macro rung(r) %}
@@ -2700,7 +2710,7 @@
                     {% if r.status == 'current' %}<span class="rider">🧗</span>{% endif %}
                 </div>
                 <div class="rung-body">
-                    <div class="rung-date">{% if r.status == 'done' %}✓ {% endif %}{{ r.date }}</div>
+                    <div class="rung-date">{% if r.status == 'done' %}✓ {% elif r.status == 'missed' %}✗ {% endif %}{{ r.date }}</div>
                     <div class="rung-title">{{ r.title }}</div>
                     {% if r.note %}<div class="rung-note">{{ r.note }}</div>{% endif %}
                 </div>

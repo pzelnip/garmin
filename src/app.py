@@ -160,7 +160,7 @@ GOALS_PATH = os.path.join(REPO_ROOT, "goals.json")
 
 def _load_goals():
     """Return the goals-ladder structure augmented with progress totals
-    (`done` / `total` / `pct`), or None if no source is available.
+    (`done` / `missed` / `total` / `pct`), or None if no source is available.
 
     Read fresh on every request (deliberately un-cached, so a push to Neon
     shows up on the next refresh). Source order: the Neon `goals` table first,
@@ -180,9 +180,12 @@ def _load_goals():
         except OSError, ValueError:
             return None
     rungs = [r for phase in goals.get("phases", []) for r in phase.get("rungs", [])]
-    total = len(rungs) + (1 if goals.get("summit") else 0)
+    # A missed rung stays on the ladder as history but isn't one to climb.
+    missed = sum(1 for r in rungs if r.get("status") == "missed")
+    total = len(rungs) - missed + (1 if goals.get("summit") else 0)
     done = sum(1 for r in rungs if r.get("status") == "done")
     goals["done"] = done
+    goals["missed"] = missed
     goals["total"] = total
     goals["pct"] = round(done / total * 100) if total else 0
     return goals

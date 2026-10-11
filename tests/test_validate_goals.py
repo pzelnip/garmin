@@ -98,8 +98,21 @@ def test_unparseable_date_is_error():
 def test_bad_status_enum_is_error():
     rungs = copy.deepcopy(VALID_RUNGS)
     rungs[0]["status"] = "inprogress"
-    with pytest.raises(vg.GoalsError, match="done, current, or future"):
+    with pytest.raises(vg.GoalsError, match="done, missed, current, or future"):
         vg.validate_and_fix(_ladder(rungs))
+
+
+def test_missed_rung_sits_with_the_done_rungs():
+    rungs = copy.deepcopy(VALID_RUNGS)
+    rungs.insert(2, {"date": "Jul 10, 2026", "title": "slipped", "status": "missed"})
+    data, changes = vg.validate_and_fix(_ladder(rungs))
+    assert changes == []
+    assert [r["status"] for r in data["phases"][0]["rungs"]] == [
+        "future",
+        "current",
+        "missed",
+        "done",
+    ]
 
 
 def test_load_reports_json_syntax_error(tmp_path):
