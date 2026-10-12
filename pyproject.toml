@@ -1,7 +1,7 @@
 [project]
 name = "garmin"
 version = "0.1.0"
-requires-python = ">=3.14"
+requires-python = ">=3.15"
 dependencies = [
     "bullet",
     "flask",
@@ -25,9 +25,9 @@ dev = [
 ]
 
 [tool.black]
-# Pin target to the interpreter we run under; an open `requires-python = ">=3.14"`
-# otherwise makes black target 3.15 and fail its AST safety check on 3.14.
-target-version = ["py314"]
+# Pin target to the interpreter we run under; an open `requires-python = ">=3.15"`
+# otherwise makes black target a newer version and fail its AST safety check on 3.15.
+target-version = ["py315"]
 
 [tool.isort]
 # Match black's import wrapping so the two don't reformat each other's output.

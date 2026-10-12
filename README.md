@@ -19,7 +19,7 @@ Runs on a Raspberry Pi (production) and works locally on a Mac for development.
 
 ## Tech stack
 
-- Python 3.14+, [Flask](https://flask.palletsprojects.com/),
+- Python 3.15+, [Flask](https://flask.palletsprojects.com/),
   [SQLModel](https://sqlmodel.tiangolo.com/) / SQLAlchemy
 - Postgres (Neon in production); any SQLAlchemy-compatible DB works
 - [garminconnect](https://pypi.org/project/garminconnect/) for Garmin API access

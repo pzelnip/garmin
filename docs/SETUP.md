@@ -5,7 +5,7 @@ host). Paths below assume `/home/pi/temp/sandbox/garmin` — adjust as needed.
 
 ## 1. System prerequisites
 
-- Python 3.13+ (project uses `requires-python = ">=3.13"` per `pyproject.toml`)
+- Python 3.15+ (project uses `requires-python = ">=3.15"` per `pyproject.toml`)
 - `git`, `cron`, `curl`, `psql` (PostgreSQL client; used by `db_sess.sh`)
 - [`uv`](https://github.com/astral-sh/uv) for dependency management:
 
