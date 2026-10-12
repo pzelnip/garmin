@@ -5,7 +5,7 @@ cd /home/pi/temp/sandbox/garmin
 git pull origin main
 
 # Clear python bytecode files to ensure any code changes are picked up.
-find . -type d -name __pycache__ -exec rm -rf {} +
+find . -path ./.venv -prune -o -type d -name __pycache__ -exec rm -rf {} +
 
 set -a
 source ./.envrc
