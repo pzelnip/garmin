@@ -91,6 +91,10 @@ class DayStats(SQLModel, table=True):
 
     @property
     def step_goal_met(self):
+        # Manual-entry stubs (notes/mood logged before the Garmin sync) carry
+        # 0/0 placeholder steps, which would otherwise read as goal met.
+        if self.source == Source.manual_entry:
+            return False
         return self.step_count >= self.daily_step_goal
 
     @property

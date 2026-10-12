@@ -5,6 +5,7 @@ from helpers import make_day
 from sqlalchemy import inspect
 
 from db import (
+    Source,
     db_session,
     get_all_entries,
     get_day_stats_for_date_range,
@@ -216,6 +217,12 @@ def test_step_goal_met(step_count, daily_step_goal, expected):
     row = make_day(step_count=step_count, daily_step_goal=daily_step_goal)
 
     assert row.step_goal_met is expected
+
+
+def test_step_goal_met_false_for_manual_entry_stub():
+    row = make_day(step_count=0, daily_step_goal=0, source=Source.manual_entry)
+
+    assert row.step_goal_met is False
 
 
 # ------------- Tests for DayStats.floors_climbed_goal_met ------------
