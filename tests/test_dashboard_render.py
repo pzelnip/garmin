@@ -197,6 +197,31 @@ def test_seeded_step_values_flow_into_charts(client):
     assert charts["recent"]["steps"] == expected_steps
 
 
+def test_manual_entry_stub_excluded_from_step_stats(client):
+    """A notes/mood stub for today (0/0 placeholder steps, no Garmin data yet)
+    mustn't count as a day in the step stats, but its mood still shows."""
+    yesterday = date.today() - timedelta(days=1)
+    with db.Session(db.ENGINE) as session:
+        for offset in range(5):
+            add_day(session, day=yesterday - timedelta(days=offset))  # goal met
+        add_day(
+            session,
+            day=date.today(),
+            step_count=0,
+            daily_step_goal=0,
+            source=db.Source.manual_entry,
+            mood_score=7,
+        )
+        session.commit()
+
+    response = client.get("/dashboard")
+
+    charts = get_charts_blob(response.get_data(as_text=True))
+    assert charts["recent"]["steps"] == [10_000] * 5
+    assert charts["monthly"]["goal_pct"] == [100.0] * len(charts["monthly"]["labels"])
+    assert charts["mood_timeline"]["values"][-1] == 7
+
+
 def test_milestone_projection_bar_is_in_template(client):
     # The projection bar is computed in client-side JS (no JS execution here),
     # so assert the projection logic ships in the rendered page rather than its

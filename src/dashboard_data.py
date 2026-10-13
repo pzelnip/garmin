@@ -7,7 +7,7 @@ from itertools import accumulate
 from statistics import mean
 
 from analytics import build_streaks, find_current_streak
-from db import get_all_entries
+from db import Source, get_all_entries
 
 DOW_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 DOW_NAMES_FULL = [
@@ -254,9 +254,14 @@ def _build_step_histogram(entries, total_days):
 
 # Cohesive aggregator: assembles the full dashboard payload in one pass.
 def build_dashboard_data():
-    entries = get_all_entries(include_notes=False)
+    all_entries = get_all_entries(include_notes=False)
+    # Manual-entry stubs (notes/mood logged before the Garmin sync) hold 0/0
+    # placeholder steps, so they're kept out of every Garmin-derived stat.
+    entries = [entry for entry in all_entries if entry.source != Source.manual_entry]
     streaks = build_streaks(entries)
-    current_streak = find_current_streak(streaks)
+    current_streak = find_current_streak(
+        streaks, last_synced=entries[-1].day if entries else None
+    )
 
     total_days = len(entries)
     total_steps = sum(entry.step_count for entry in entries)
@@ -550,7 +555,7 @@ def build_dashboard_data():
         mode="avg",
     )
 
-    mood_entries = [entry for entry in entries if entry.mood_score is not None]
+    mood_entries = [entry for entry in all_entries if entry.mood_score is not None]
     mood_total_days = len(mood_entries)
     mood_avg = (
         round(mean(entry.mood_score for entry in mood_entries), 1)

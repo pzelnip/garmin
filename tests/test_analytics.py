@@ -109,3 +109,25 @@ def test_find_current_streak_none_when_no_active_streak():
         current = find_current_streak(streaks)
 
     assert current is None
+
+
+def test_extract_streaks_splits_on_missing_day():
+    given = entries((1, True), (2, True), (4, True))
+
+    streaks = Streak.extract_streaks(given)
+
+    assert [s.days for s in streaks] == [2, 1]
+
+
+def test_is_current_true_before_yesterday_is_synced():
+    streak = Streak(iter(entries((12, True), (13, True))))
+
+    with freeze_time(date(2023, 1, 15)):  # yesterday (Jan 14) not synced yet
+        assert streak.is_current(last_synced=date(2023, 1, 13)) is True
+
+
+def test_is_current_false_when_yesterday_synced_and_missed():
+    streak = Streak(iter(entries((12, True), (13, True))))
+
+    with freeze_time(date(2023, 1, 15)):
+        assert streak.is_current(last_synced=date(2023, 1, 14)) is False
