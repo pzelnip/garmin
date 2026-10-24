@@ -100,7 +100,7 @@ bits:
 
 - `scripts/run-server.sh` — systemd `ExecStart` wrapper (sources
   `.envrc`, exec's `python src/app.py`).
-- `scripts/run-garmin.sh` — cron wrapper (5 AM daily). Pulls latest
+- `scripts/run-garmin.sh` — cron wrapper (2:30 AM daily). Pulls latest
   git, restarts the service, runs `garmin.py --auto`, then pings
   healthchecks.io.
 - `scripts/force-update.sh` — invoked by the dashboard's debug-panel
