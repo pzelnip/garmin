@@ -144,13 +144,13 @@ Phase P already did the notes split and the enum conversion, so this phase only 
 4. Update the Makefile targets: `run-server`, `pull-and-post`, `resync`, `remote-dashboard`, `test`, and new `migrate` / `createsuperuser` targets.
 
 ### Phase 6: Cutover on the Pi
-1. On a quiet evening, after the 2:30 AM cron has run:
+1. On a quiet evening, after the 2:15 AM cron has run:
    - `pg_dump`
    - run `migrate --fake-initial` against **production** Neon (this only adds Django's own tables, because the schema changes already landed in Phase P)
 2. `scripts/run-server.sh` execs `gunicorn config.wsgi -b 0.0.0.0:9329 --workers 2`, with whitenoise for static. Prefer this over `runserver`: on the same systemd unit it costs nothing extra, and it never serves Django's debug pages to someone coming in through the tunnel.
 3. Create the owner superuser and the clinician/friend users in the admin.
 4. **ngrok**: today's Google OAuth gate is restricted to the owner's single account, which would lock out physio and friends. Either widen the traffic policy to an email allow-list or drop the OAuth layer and rely on Django auth + axes. Update [docs/remote-access.md](docs/remote-access.md).
-5. Watch the next 2:30 AM cron run and its healthcheck ping.
+5. Watch the next 2:15 AM cron run and its healthcheck ping.
 
 ### Phase 7: Cleanup
 1. Delete `src/app.py`, `src/db.py`, `src/garmin.py`, Flask, flask-login and sqlmodel. Then drop the legacy `daystats.notes` column, as a Django migration.
@@ -195,7 +195,7 @@ Phase P already did the notes split and the enum conversion, so this phase only 
   - Owner: full parity with today. Writes round-trip.
   - Anonymous: `/dashboard` redirects to login, and `/api/*` returns 401/403.
 - **Schema**: on the Neon branch, `migrate --plan` shows only the expected migrations, `makemigrations --check` is clean, and row counts and a notes checksum match before and after the notes split.
-- **Ingest**: ported `test_garmin.py` passes. On the Pi, `manage.py sync_garmin --resync <recent day>` keeps that day's notes and mood, and the next 2:30 AM cron pings healthchecks.io.
+- **Ingest**: ported `test_garmin.py` passes. On the Pi, `manage.py sync_garmin --resync <recent day>` keeps that day's notes and mood, and the next 2:15 AM cron pings healthchecks.io.
 - **Browser** (manual, as per project convention): log in as each of the three roles through the ngrok URL and confirm:
   - the right tabs appear and the hotkeys skip hidden tabs
   - notes autosave survives a reload (as owner)

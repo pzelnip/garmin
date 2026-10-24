@@ -112,10 +112,10 @@ crontab -e
 Add:
 
 ```shell
-30 2 * * * /home/pi/temp/sandbox/garmin/scripts/run-garmin.sh >> /home/pi/temp/sandbox/garmin/cron.log 2>&1
+15 2 * * * /home/pi/temp/sandbox/garmin/scripts/run-garmin.sh >> /home/pi/temp/sandbox/garmin/cron.log 2>&1
 ```
 
-This runs daily at 02:30 local time. Verify:
+This runs daily at 02:15 local time. Verify:
 
 ```shell
 crontab -l

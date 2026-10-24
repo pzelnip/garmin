@@ -79,7 +79,7 @@ Both must be executable: `chmod +x scripts/*.sh`.
 Edit with `crontab -e`:
 
 ```cron
-30 2 * * * /home/pi/temp/sandbox/garmin/scripts/run-garmin.sh >> /home/pi/temp/sandbox/garmin/cron.log 2>&1
+15 2 * * * /home/pi/temp/sandbox/garmin/scripts/run-garmin.sh >> /home/pi/temp/sandbox/garmin/cron.log 2>&1
 ```
 
 ---
