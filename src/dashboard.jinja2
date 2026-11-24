@@ -5054,8 +5054,9 @@
             }
             daySaveBtn.disabled = true;
             moodClearBtn.disabled = true;
+            const hadMood = dayBaselineMood != null;
             setNotesStatus('Saving…', '');
-            setMoodStatus(moodSelected == null ? 'Clearing…' : 'Saving…', '');
+            setMoodStatus(moodSelected == null && hadMood ? 'Clearing…' : 'Saving…', '');
             const iso = dayPicker.value;
             try {
                 const res = await fetch(`/api/day/${iso}`, {
@@ -5071,9 +5072,9 @@
                 markDayEditsSaved();
                 setNotesStatus('Saved', 'saved');
                 notesStatusTimer = setTimeout(() => setNotesStatus('', ''), 2000);
-                const savedMsg = moodSelected == null
-                    ? 'Cleared — mood score removed'
-                    : `Mood score: ${moodSelected}/10 — thanks for tracking!`;
+                const savedMsg = moodSelected != null
+                    ? `Mood score: ${moodSelected}/10 — thanks for tracking!`
+                    : hadMood ? 'Cleared — mood score removed' : 'Notes saved';
                 setMoodStatus(savedMsg, 'saved');
                 setTimeout(() => setMoodStatus('', ''), 3000);
             } catch (err) {
